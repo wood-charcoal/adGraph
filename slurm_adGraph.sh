@@ -9,7 +9,7 @@
 echo "SLURM_JOB_NODELIST=${SLURM_JOB_NODELIST}"
 echo "SLURM_NODELIST=${SLURM_NODELIST}"
 
-cd /public/home/xdcup_a15/projects/testing/adGraph_hip
+cd ${SLURM_SUBMIT_DIR}
 
 module purge
 module load compiler/gcc/8.2.0
