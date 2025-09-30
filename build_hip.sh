@@ -109,11 +109,17 @@ echo "Build type: $BUILD_TYPE"
 # Configure, build, and install libnvgraph
 mkdir -p ${LIBNVGRAPH_BUILD_DIR}
 cd ${LIBNVGRAPH_BUILD_DIR}
+# cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
+#       -DCMAKE_CXX11_ABI="${BUILD_ABI}" \
+#       -DCMAKE_HIP_COMPILER_ROCM_ROOT="${DTK_ROOT}" \
+#       -DCMAKE_HIP_ABI_COMPILED=Yes \
+#       -DCMAKE_HIP_COMPILER="${DTK_ROOT}/llvm/bin/clang-14" \
+#       -DCMAKE_CXX_COMPILER="${DTK_ROOT}/bin/hipcc" \
+#       -DTHRUST_IGNORE_CUB_VERSION_CHECK=ON \
+#       -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+#       ..
 cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
       -DCMAKE_CXX11_ABI="${BUILD_ABI}" \
-      -DCMAKE_HIP_COMPILER_ROCM_ROOT="${DTK_ROOT}" \
-      -DCMAKE_HIP_ABI_COMPILED=Yes \
-      -DCMAKE_HIP_COMPILER="${DTK_ROOT}/llvm/bin/clang-14" \
       -DCMAKE_CXX_COMPILER="${DTK_ROOT}/bin/hipcc" \
       -DTHRUST_IGNORE_CUB_VERSION_CHECK=ON \
       -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
