@@ -15,8 +15,10 @@ module purge
 module load compiler/gcc/8.2.0
 module load compiler/rocm/dtk-22.04.2
 module load nvidia/cuda/11.3
-module load compiler/cmake/3.20.4
+module load compiler/cmake/3.23.3
 module list
+
+source ./setup_hip_env.sh
 
 # export BUILD_TYPE=Release
 # export BUILD_ABI=ON
@@ -26,9 +28,7 @@ module list
 # export CUDA_TOOLKIT_ROOT_DIR=/public/software/compiler/nvidia/cuda/11.3.1
 # export CMAKE_CUDA_COMPILER=/public/software/compiler/nvidia/cuda/11.3.1/bin/nvcc
 # export PATH=/public/software/compiler/gcc-8.2.0/bin:$PATH
-# export LD_LIBRARY_PATH=/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
-
-source ./setup_hip_env.sh
+export LD_LIBRARY_PATH=/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
 
 ./build_hip.sh
 

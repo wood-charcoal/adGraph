@@ -15,7 +15,7 @@ module purge
 module load compiler/gcc/8.2.0
 module load compiler/rocm/dtk-22.04.2
 module load nvidia/cuda/11.3
-module load compiler/cmake/3.20.4
+module load compiler/cmake/3.23.3
 module list
 
 export DTK_ROOT=/public/software/compiler/rocm/dtk-22.04.2
