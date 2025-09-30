@@ -1,6 +1,9 @@
 ﻿cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(CUDF_TESTS LANGUAGES C CXX CUDA)
+project(CUDF_TESTS LANGUAGES C CXX HIP)
+
+# Enable HIP language support
+enable_language(HIP)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -8,7 +11,7 @@ project(CUDF_TESTS LANGUAGES C CXX CUDA)
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread nvgraph cublas cusparse curand cusolver cudart)
+    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread nvgraph hipblas rocsparse rocrand rocsolver hip_hcc)
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
                             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
@@ -24,13 +27,15 @@ include_directories(
                     "${CMAKE_SOURCE_DIR}/thirdparty/cub"
                     "${CMAKE_SOURCE_DIR}/../external"
                     "${CMAKE_SOURCE_DIR}/../external/cusp"
-                    "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
+                    "$ENV{DTK_ROOT}/include"
+                    "$ENV{DTK_ROOT}/include/hip"
                    )
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
+link_directories("$ENV{DTK_ROOT}/lib"
+                 "$ENV{DTK_ROOT}/lib64"
                  "${CMAKE_BINARY_DIR}/lib"
                  "${GTEST_LIBRARY_DIR}")
 

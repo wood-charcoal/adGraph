@@ -15,9 +15,10 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(NV_GRAPH VERSION 0.4.0 LANGUAGES C CXX CUDA)
+project(NV_GRAPH VERSION 0.4.0 LANGUAGES C CXX HIP)
 
-find_package(CUDA)
+# Enable HIP language support
+enable_language(HIP)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
@@ -27,8 +28,8 @@ set(CMAKE_C_COMPILER $ENV{CC})
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CUDA_STANDARD 14)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_HIP_STANDARD 14)
+set(CMAKE_HIP_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
@@ -40,23 +41,16 @@ set(GPU_ARCHS "" CACHE STRING
    on CTK version.")
 
 if("${GPU_ARCHS}" STREQUAL "")
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_60,code=sm_60")
-  if((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9))
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_70,code=sm_70")
-  endif()
-  if((CUDA_VERSION_MAJOR EQUAL 10) OR (CUDA_VERSION_MAJOR GREATER 10))
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_75,code=compute_75")
-  endif()
+  # Default ROCm GPU architectures
+  set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} --offload-arch=gfx906 --offload-arch=gfx908 --offload-arch=gfx90a")
 else()
   foreach(arch ${GPU_ARCHS})
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${arch},code=sm_${arch}")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} --offload-arch=${arch}")
   endforeach()
-  list(GET GPU_ARCHS -1 ptx)
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${ptx},code=compute_${ptx}")
 endif()
 
 # set warnings as errors
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror cross-execution-space-call -Xcompiler -Wall,-Werror")
+set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -Wall -Werror")
 
 # set default build type
 set(CMAKE_BUILD_TYPE "Release")
@@ -74,7 +68,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         message(STATUS "nvGraph: Disabling the GLIBCXX11 ABI")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -D_GLIBCXX_USE_CXX11_ABI=0")
+        set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
@@ -116,13 +110,15 @@ include_directories(
                     "${CMAKE_SOURCE_DIR}/thirdparty/cnmem/include"
                     "${CMAKE_SOURCE_DIR}/../external"
                     "${CMAKE_SOURCE_DIR}/../external/cusp"
-                    "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
+                    "$ENV{DTK_ROOT}/include"
+                    "$ENV{DTK_ROOT}/include/hip"
                    )
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
+link_directories("$ENV{DTK_ROOT}/lib"
+                 "$ENV{DTK_ROOT}/lib64"
                  "${CMAKE_BINARY_DIR}/lib"
                  "${GTEST_LIBRARY_DIR}")
 
@@ -215,7 +211,7 @@ endif(NVGRAPH_LIGHT MATCHES True)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Building with debugging flags")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
 endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 if(NVGRAPH_LIGHT MATCHES True)
@@ -226,7 +222,7 @@ endif(NVGRAPH_LIGHT MATCHES True)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(nvgraph cublas cusparse curand cusolver cudart )
+target_link_libraries(nvgraph hipblas rocsparse rocrand rocsolver hip_hcc)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
