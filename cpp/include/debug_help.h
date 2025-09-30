@@ -29,7 +29,7 @@ namespace debug {
 	template <typename T>
 	void printDeviceVector(T* dev_ptr, int items, std::string title) {
 		T* host_ptr = (T*)malloc(sizeof(T) * items);
-		cudaMemcpy(host_ptr, dev_ptr, sizeof(T) * items, cudaMemcpyDefault);
+		hipMemcpy(host_ptr, dev_ptr, sizeof(T) * items, hipMemcpyDefault);
 		std::cout << title << ": { ";
 		for (int i = 0; i < items; i++) {
 			std::cout << host_ptr[i] << ((i < items - 1) ? ", " : " ");

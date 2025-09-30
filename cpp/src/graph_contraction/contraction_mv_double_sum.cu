@@ -22,7 +22,7 @@ namespace nvgraph
   //
   MultiValuedCsrGraph<int, double>* contract_graph_mv_double_sum(MultiValuedCsrGraph<int, double>& graph, 
                                                   int* pV, size_t n,
-                                                  cudaStream_t stream,
+                                                  hipStream_t stream,
                                                   const int& VCombine,
                                                   const int& VReduce,
                                                   const int& ECombine,

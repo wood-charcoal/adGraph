@@ -22,7 +22,7 @@ namespace nvgraph
   //
   CsrGraph<int>* contract_graph_csr_min(CsrGraph<int>& graph,
                                 int* pV, size_t n,
-                                cudaStream_t stream,
+                                hipStream_t stream,
                                 const int& VCombine,
                                 const int& VReduce,
                                 const int& ECombine,

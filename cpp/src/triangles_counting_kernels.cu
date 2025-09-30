@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -19,7 +20,7 @@
 #define __STDC_LIMIT_MACROS 1
 #define __STDC_FORMAT_MACROS 1
 #endif
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 
 #include <assert.h>
 
@@ -28,10 +29,10 @@
 
 #include <nvgraph_error.hxx>
 
-#include "cub/cub.cuh"
+#include "hipcub/hipcub.hpp"
 #include <thrust/iterator/counting_iterator.h>
 #include "sm_utils.h"
-using namespace cub;
+using namespace hipcub;
 
 #include "cnmem.h"
 
@@ -60,7 +61,7 @@ namespace nvgraph
   {
 
 // hide behind 
-    void* tmp_get(size_t size, cudaStream_t stream)
+    void* tmp_get(size_t size, hipStream_t stream)
                   {
       void *t = NULL;
       cnmemStatus_t status = cnmemMalloc(&t, size, stream);
@@ -76,7 +77,7 @@ namespace nvgraph
       return t;
     }
 
-    void tmp_release(void* ptr, cudaStream_t stream)
+    void tmp_release(void* ptr, hipStream_t stream)
                      {
       cnmemStatus_t status = cnmemFree(ptr, stream);
       if (status != CNMEM_STATUS_SUCCESS)
@@ -94,13 +95,13 @@ namespace nvgraph
                                  int num_items,
                                  ReductionOpT reduction_op,
                                  T init,
-                                 cudaStream_t stream = 0,
+                                 hipStream_t stream = 0,
                                  bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::Reduce(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Reduce(d_temp_storage, temp_storage_bytes,
                                 d_in,
                                 d_out, num_items, reduction_op,
                                 init,
@@ -108,7 +109,7 @@ namespace nvgraph
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::Reduce(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Reduce(d_temp_storage, temp_storage_bytes,
                                 d_in,
                                 d_out, num_items, reduction_op,
                                 init,
@@ -123,20 +124,20 @@ namespace nvgraph
     template<typename InputIteratorT, typename OutputIteratorT>
     static inline void cubSum(InputIteratorT d_in, OutputIteratorT d_out,
                               int num_items,
-                              cudaStream_t stream = 0,
+                              hipStream_t stream = 0,
                               bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
@@ -151,13 +152,13 @@ namespace nvgraph
     static inline void cubSortKeys(KeyT *d_keys_in, KeyT *d_keys_out, int num_items,
                                    int begin_bit = 0,
                                    int end_bit = sizeof(KeyT) * 8,
-                                   cudaStream_t stream = 0,
+                                   hipStream_t stream = 0,
                                    bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes,
                                      d_keys_in,
                                      d_keys_out, num_items,
                                      begin_bit,
@@ -166,7 +167,7 @@ namespace nvgraph
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes,
                                      d_keys_in,
                                      d_keys_out, num_items,
                                      begin_bit,
@@ -185,13 +186,13 @@ namespace nvgraph
                                     ValueT *d_values_out,
                                     int num_items,
                                     int begin_bit = 0, int end_bit = sizeof(KeyT) * 8,
-                                    cudaStream_t stream = 0,
+                                    hipStream_t stream = 0,
                                     bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
                                       d_keys_in,
                                       d_keys_out, d_values_in,
                                       d_values_out,
@@ -201,7 +202,7 @@ namespace nvgraph
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
                                       d_keys_in,
                                       d_keys_out, d_values_in,
                                       d_values_out,
@@ -221,12 +222,12 @@ namespace nvgraph
                                               ValueT *d_values_out,
                                               int num_items,
                                               int begin_bit = 0, int end_bit = sizeof(KeyT) * 8,
-                                              cudaStream_t stream = 0,
+                                              hipStream_t stream = 0,
                                               bool debug_synchronous = false) {
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
                                                 d_keys_in,
                                                 d_keys_out, d_values_in,
                                                 d_values_out,
@@ -236,7 +237,7 @@ namespace nvgraph
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
                                                 d_keys_in,
                                                 d_keys_out, d_values_in,
                                                 d_values_out,
@@ -254,13 +255,13 @@ namespace nvgraph
     static inline void cubUnique(InputIteratorT d_in, OutputIteratorT d_out,
                                  NumSelectedIteratorT d_num_selected_out,
                                  int num_items,
-                                 cudaStream_t stream = 0,
+                                 hipStream_t stream = 0,
                                  bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes,
                                 d_in,
                                 d_out, d_num_selected_out,
                                 num_items,
@@ -268,7 +269,7 @@ namespace nvgraph
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes,
                                 d_in,
                                 d_out, d_num_selected_out,
                                 num_items,
@@ -288,12 +289,12 @@ namespace nvgraph
                                  LengthsOutputIteratorT d_counts_out,
                                  NumRunsOutputIteratorT d_num_runs_out,
                                  int num_items,
-                                 cudaStream_t stream = 0, bool debug_synchronous = false) {
+                                 hipStream_t stream = 0, bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes,
                                          d_in,
                                          d_unique_out, d_counts_out,
                                          d_num_runs_out,
@@ -302,7 +303,7 @@ namespace nvgraph
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes,
                                          d_in,
                                          d_unique_out, d_counts_out,
                                          d_num_runs_out,
@@ -319,20 +320,20 @@ namespace nvgraph
         typename OutputIteratorT>
     static inline void cubMin(InputIteratorT d_in, OutputIteratorT d_out,
                               int num_items,
-                              cudaStream_t stream = 0,
+                              hipStream_t stream = 0,
                               bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
@@ -347,20 +348,20 @@ namespace nvgraph
         typename OutputIteratorT>
     static inline void cubMax(InputIteratorT d_in, OutputIteratorT d_out,
                               int num_items,
-                              cudaStream_t stream = 0,
+                              hipStream_t stream = 0,
                               bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
@@ -378,13 +379,13 @@ namespace nvgraph
     static inline void cubIf(InputIteratorT d_in, OutputIteratorT d_out,
                              NumSelectedIteratorT d_num_selected_out,
                              int num_items, SelectOp select_op,
-                             cudaStream_t stream = 0,
+                             hipStream_t stream = 0,
                              bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::If(d_temp_storage, temp_storage_bytes,
                             d_in,
                             d_out, d_num_selected_out,
                             num_items,
@@ -393,7 +394,7 @@ namespace nvgraph
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::If(d_temp_storage, temp_storage_bytes,
                             d_in,
                             d_out, d_num_selected_out,
                             num_items,
@@ -414,13 +415,13 @@ namespace nvgraph
                                   OutputIteratorT d_out,
                                   NumSelectedIteratorT d_num_selected_out,
                                   int num_items,
-                                  cudaStream_t stream = 0,
+                                  hipStream_t stream = 0,
                                   bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes,
                                  d_in,
                                  d_flags, d_out, d_num_selected_out,
                                  num_items,
@@ -428,7 +429,7 @@ namespace nvgraph
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes,
                                  d_in,
                                  d_flags, d_out, d_num_selected_out,
                                  num_items,
@@ -444,20 +445,20 @@ namespace nvgraph
         typename OutputIteratorT>
     static inline void cubExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out,
                                        int num_items,
-                                       cudaStream_t stream = 0,
+                                       hipStream_t stream = 0,
                                        bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
                                     d_in,
                                     d_out, num_items, stream,
                                     debug_synchronous);
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
                                     d_in,
                                     d_out, num_items, stream,
                                     debug_synchronous);
@@ -472,20 +473,20 @@ namespace nvgraph
         typename OutputIteratorT>
     static inline void cubInclusiveSum(InputIteratorT d_in, OutputIteratorT d_out,
                                        int num_items,
-                                       cudaStream_t stream = 0,
+                                       hipStream_t stream = 0,
                                        bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
                                     d_in,
                                     d_out, num_items, stream,
                                     debug_synchronous);
       cudaCheckError()
       ;
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
                                     d_in,
                                     d_out, num_items, stream,
                                     debug_synchronous);
@@ -509,13 +510,13 @@ namespace nvgraph
                                       NumRunsOutputIteratorT d_num_runs_out,
                                       ReductionOpT reduction_op,
                                       int num_items,
-                                      cudaStream_t stream = 0,
+                                      hipStream_t stream = 0,
                                       bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes,
                                      d_keys_in,
                                      d_unique_out,
                                      d_values_in,
@@ -526,7 +527,7 @@ namespace nvgraph
                                      stream, debug_synchronous);
       cudaCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes,
                                      d_keys_in,
                                      d_unique_out,
                                      d_values_in,
@@ -694,7 +695,7 @@ namespace nvgraph
                     size_t bmldL0,
                     unsigned int *bmapL1_d,
                     size_t bmldL1,
-                    cudaStream_t stream) {
+                    hipStream_t stream) {
 
       // still best overall (with no psum)
       tricnt_b2b_k<THREADS, 32, BLK_BWL0> <<<nblock, THREADS, 0, stream>>>(m->nrows, m->rows_d,
@@ -830,7 +831,7 @@ namespace nvgraph
     }
 
     template<typename T>
-    void tricnt_bsh(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, size_t bmld, cudaStream_t stream) {
+    void tricnt_bsh(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, size_t bmld, hipStream_t stream) {
 
       tricnt_bsh_k<THREADS, 32> <<<nblock, THREADS, sizeof(unsigned int) * bmld, stream>>>(m->nrows,
                                                                                            m->rows_d,
@@ -1013,7 +1014,7 @@ namespace nvgraph
                     uint64_t *ocnt_d,
                     unsigned int *bmap_d,
                     size_t bmld,
-                    cudaStream_t stream) {
+                    hipStream_t stream) {
 
       dim3 block(32, THREADS / 32);
       tricnt_wrp_ps_k<32, THREADS / 32, WP_LEN_TH1, WP_LEN_TH2> <<<nblock, block, 0, stream>>>(m->nrows,
@@ -1116,11 +1117,11 @@ namespace nvgraph
     }
 
     template<typename T>
-    void tricnt_thr(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, cudaStream_t stream) {
+    void tricnt_thr(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, hipStream_t stream) {
 
-      cudaFuncSetCacheConfig(tricnt_thr_k<THREADS, TH_CENT_K_LOCLEN, typename type_utils<T>::LOCINT,
+      hipFuncSetCacheConfig(reinterpret_cast<const void*>(tricnt_thr_k<THREADS), TH_CENT_K_LOCLEN, typename type_utils<T>::LOCINT,
                                  typename type_utils<T>::LOCINT, uint64_t>,
-                             cudaFuncCachePreferL1);
+                             hipFuncCachePreferL1);
 
       tricnt_thr_k<THREADS, TH_CENT_K_LOCLEN> <<<nblock, THREADS, 0, stream>>>(m->nrows, m->rows_d,
                                                                                m->roff_d,
@@ -1143,7 +1144,7 @@ namespace nvgraph
     void myCudaMemset(unsigned long long *p,
                       unsigned long long v,
                       long long n,
-                      cudaStream_t stream) {
+                      hipStream_t stream) {
       if (n <= 0)
         return;
       myset<<<DIV_UP(n, THREADS), THREADS, 0, stream>>>(p, v, n);
@@ -1169,7 +1170,7 @@ namespace nvgraph
                                    T *p_nonempty,
                                    T *n_nonempty,
                                    size_t n,
-                                   cudaStream_t stream)
+                                   hipStream_t stream)
                                    {
       if (n <= 0)
         return;
@@ -1178,21 +1179,21 @@ namespace nvgraph
       T* d_out_num = (T*) tmp_get(sizeof(*n_nonempty), stream);
 
       cubIf(it, p_nonempty, d_out_num, n, temp_func, stream);
-      cudaMemcpy(n_nonempty, d_out_num, sizeof(*n_nonempty), cudaMemcpyDeviceToHost);
+      hipMemcpy(n_nonempty, d_out_num, sizeof(*n_nonempty), hipMemcpyDeviceToHost);
       cudaCheckError();
       tmp_release(d_out_num, stream);
       cudaCheckError();
     }
 
     template<typename T>
-    uint64_t reduce(uint64_t *v_d, T n, cudaStream_t stream) {
+    uint64_t reduce(uint64_t *v_d, T n, hipStream_t stream) {
 
       uint64_t n_h;
       uint64_t *n_d = (uint64_t *) tmp_get(sizeof(*n_d), stream);
 
       cubSum(v_d, n_d, n, stream);
       cudaCheckError();
-      cudaMemcpy(&n_h, n_d, sizeof(*n_d), cudaMemcpyDeviceToHost);
+      hipMemcpy(&n_h, n_d, sizeof(*n_d), hipMemcpyDeviceToHost);
       cudaCheckError();
       tmp_release(n_d, stream);
 
@@ -1204,17 +1205,17 @@ namespace nvgraph
                                   spmat_t<int> *m,
                                   uint64_t *ocnt_d,
                                   size_t bmld,
-                                  cudaStream_t stream);
+                                  hipStream_t stream);
     template void tricnt_wrp<int>(int nblock,
                                   spmat_t<int> *m,
                                   uint64_t *ocnt_d,
                                   unsigned int *bmap_d,
                                   size_t bmld,
-                                  cudaStream_t stream);
+                                  hipStream_t stream);
     template void tricnt_thr<int>(int nblock,
                                   spmat_t<int> *m,
                                   uint64_t *ocnt_d,
-                                  cudaStream_t stream);
+                                  hipStream_t stream);
     template void tricnt_b2b<int>(int nblock,
                                   spmat_t<int> *m,
                                   uint64_t *ocnt_d,
@@ -1222,14 +1223,14 @@ namespace nvgraph
                                   size_t bmldL0,
                                   unsigned int *bmapL1_d,
                                   size_t bmldL1,
-                                  cudaStream_t stream);
+                                  hipStream_t stream);
 
-    template uint64_t reduce<int>(uint64_t *v_d, int n, cudaStream_t stream);
+    template uint64_t reduce<int>(uint64_t *v_d, int n, hipStream_t stream);
     template void create_nondangling_vector<int>(const int *roff,
                                                  int *p_nonempty,
                                                  int *n_nonempty,
                                                  size_t n,
-                                                 cudaStream_t stream);
+                                                 hipStream_t stream);
 
   } // end namespace triangle counting
 

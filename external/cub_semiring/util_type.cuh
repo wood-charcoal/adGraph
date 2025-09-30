@@ -41,7 +41,7 @@
 #include "util_arch.cuh"
 #include "util_namespace.cuh"
 
-#include "cuComplex.h"
+#include "hip/hip_complex.h"
 
 /// Optional outer namespace(s)
 CUB_NS_PREFIX
@@ -1062,28 +1062,28 @@ template <typename _T>
 struct TypeConst;
 
 template <>
-struct TypeConst<cuComplex>
+struct TypeConst<hipComplex>
 {
-    static __host__ __device__ __forceinline__ cuComplex Zero()
+    static __host__ __device__ __forceinline__ hipComplex Zero()
     {
-        return make_cuComplex(0.f, 0.f);
+        return make_hipComplex(0.f, 0.f);
     }
-    static __host__ __device__ __forceinline__ cuComplex One()
+    static __host__ __device__ __forceinline__ hipComplex One()
     {
-        return make_cuComplex(1.f, 0.f);
+        return make_hipComplex(1.f, 0.f);
     }
 };
 
 template <>
-struct TypeConst<cuDoubleComplex>
+struct TypeConst<hipDoubleComplex>
 {
-    static __host__ __device__ __forceinline__ cuDoubleComplex Zero()
+    static __host__ __device__ __forceinline__ hipDoubleComplex Zero()
     {
-        return make_cuDoubleComplex(0.f, 0.f);
+        return make_hipDoubleComplex(0.f, 0.f);
     }
-    static __host__ __device__ __forceinline__ cuDoubleComplex One()
+    static __host__ __device__ __forceinline__ hipDoubleComplex One()
     {
-        return make_cuDoubleComplex(1.f, 0.f);
+        return make_hipDoubleComplex(1.f, 0.f);
     }
 };
 
@@ -1181,8 +1181,8 @@ template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTE
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-template <> struct NumericTraits<cuComplex> :           BaseTraits<FLOATING_POINT, false, false, void, cuComplex> {};
-template <> struct NumericTraits<cuDoubleComplex> :     BaseTraits<FLOATING_POINT, false, false, void, cuDoubleComplex> {};
+template <> struct NumericTraits<hipComplex> :           BaseTraits<FLOATING_POINT, false, false, void, hipComplex> {};
+template <> struct NumericTraits<hipDoubleComplex> :     BaseTraits<FLOATING_POINT, false, false, void, hipDoubleComplex> {};
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 

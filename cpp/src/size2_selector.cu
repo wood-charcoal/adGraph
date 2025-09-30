@@ -55,7 +55,7 @@ void renumberAndCountAggregates(Vector<IndexType> &aggregates, const IndexType n
                thrust::make_permutation_iterator(scratch_thrust_dev_ptr, aggregates_thrust_dev_ptr + n),
          aggregates_thrust_dev_ptr);
   cudaCheckError();
-  cudaMemcpy(&num_aggregates, &scratch.raw()[scratch.get_size()-1], sizeof(int), cudaMemcpyDefault); //num_aggregates = scratch.raw()[scratch.get_size()-1];
+  hipMemcpy(&num_aggregates, &scratch.raw()[scratch.get_size()-1], sizeof(int), hipMemcpyDefault); //num_aggregates = scratch.raw()[scratch.get_size()-1];
   cudaCheckError();
 
 }
@@ -142,7 +142,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
         ones.fill(1.0);
         ValueType alpha = 1.0, beta =0.0;
         Cusparse::csrmv(false, false, n, n, nnz,&alpha,A_nonzero_values_ptr, A_row_offsets_ptr, A_column_indices_ptr, ones.raw(),&beta, row_sum.raw());
-        cudaFuncSetCacheConfig(computeEdgeWeightsBlockDiaCsr_V2<IndexType,ValueType,float>,cudaFuncCachePreferL1);
+        hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType),ValueType,float>,hipFuncCachePreferL1);
         computeEdgeWeights_simple<<<num_blocks_V2,threads_per_block,0,this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_row_sum_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, this->m_weight_formula);
         cudaCheckError();  
         break; 
@@ -156,7 +156,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
        computeDiagonalKernelCSR<<<num_blocks,threads_per_block,0,this->m_stream>>>(n, A.get_raw_row_offsets(), A.get_raw_column_indices(), diag_idx.raw());
        cudaCheckError();
 
-       cudaFuncSetCacheConfig(computeEdgeWeightsBlockDiaCsr_V2<IndexType,ValueType,float>,cudaFuncCachePreferL1);
+       hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType),ValueType,float>,hipFuncCachePreferL1);
        computeEdgeWeightsBlockDiaCsr_V2<<<num_blocks_V2,threads_per_block,0,this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_dia_idx_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, bsize,this->m_aggregation_edge_weight_component, this->m_weight_formula);
        cudaCheckError();  
        break; 
@@ -208,11 +208,11 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
       if( s == 0 ) 
       {
         // count unaggregated vertices
-        cudaMemsetAsync(d_unaggregated, 0, sizeof(int), this->m_stream);
+        hipMemsetAsync(d_unaggregated, 0, sizeof(int), this->m_stream);
         countAggregates<IndexType,threads_per_block><<<num_blocks,threads_per_block,0,this->m_stream>>>(n, aggregates_ptr, d_unaggregated);
         cudaCheckError();
 
-        cudaMemcpyAsync(unaggregated, d_unaggregated, sizeof(int), cudaMemcpyDeviceToHost, this->m_stream);
+        hipMemcpyAsync(unaggregated, d_unaggregated, sizeof(int), hipMemcpyDeviceToHost, this->m_stream);
         throttle_event->record(this->m_stream);
         cudaCheckError();
       }
@@ -224,7 +224,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
         numUnassigned = *unaggregated;
       }
 #else
-      cudaStreamSynchronize(this->m_stream);
+      hipStreamSynchronize(this->m_stream);
       numUnassigned_previous = numUnassigned;
       numUnassigned = (int)thrust::count(aggregates_thrust_dev_ptr, aggregates_thrust_dev_ptr+n,-1);
       cudaCheckError();

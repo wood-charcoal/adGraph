@@ -39,7 +39,7 @@
 namespace nvgraph
 {
 template <typename IndexType_, typename ValueType_>
-Pagerank<IndexType_, ValueType_>::Pagerank(const ValuedCsrGraph <IndexType, ValueType>& network, Vector<ValueType>& dangling_nodes, cudaStream_t stream)
+Pagerank<IndexType_, ValueType_>::Pagerank(const ValuedCsrGraph <IndexType, ValueType>& network, Vector<ValueType>& dangling_nodes, hipStream_t stream)
     :m_network(network), m_a(dangling_nodes), m_stream(stream)
 {
     // initialize cuda libs outside of the solve (this is slow)
@@ -103,9 +103,9 @@ bool Pagerank<IndexType_, ValueType_>::solve_it()
     
     //spmv : pr = network * tmp
 #ifdef NEW_CSRMV
-    ValueType_ alpha = cub_semiring::cub::PlusTimesSemiring<ValueType_>::times_ident(); // 1.
-    ValueType_ beta = cub_semiring::cub::PlusTimesSemiring<ValueType_>::times_null(); // 0.
-    SemiringDispatch<IndexType_, ValueType_>::template Dispatch< cub_semiring::cub::PlusTimesSemiring<ValueType_> >(
+    ValueType_ alpha = cub_semiring::hipcub::PlusTimesSemiring<ValueType_>::times_ident(); // 1.
+    ValueType_ beta = cub_semiring::hipcub::PlusTimesSemiring<ValueType_>::times_null(); // 0.
+    SemiringDispatch<IndexType_, ValueType_>::template Dispatch< cub_semiring::hipcub::PlusTimesSemiring<ValueType_> >(
         m_network.get_raw_values(),
         m_network.get_raw_row_offsets(),
         m_network.get_raw_column_indices(),

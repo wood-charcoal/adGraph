@@ -21,7 +21,7 @@
 namespace nvgraph {
 
     template <typename IndexType_, typename ValueType_>
-    int lobpcg_simplified(cublasHandle_t cublasHandle, cusolverDnHandle_t cusolverHandle,
+    int lobpcg_simplified(hipblasHandle_t cublasHandle, cusolverDnHandle_t cusolverHandle,
                           IndexType_ n, IndexType_ k,
                           /*const*/ Matrix<IndexType_,ValueType_> * A,
                           ValueType_ * __restrict__ eigVecs_dev,

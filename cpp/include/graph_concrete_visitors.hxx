@@ -1139,7 +1139,7 @@ namespace nvgraph
     //
     SubGraphExtractorVisitor(CsrGraph<IndexType_>& graph,    
 			     const VectorI& vSub, 
-			     cudaStream_t stream):
+			     hipStream_t stream):
       row_ptr_(graph.get_raw_row_offsets(), graph.get_raw_row_offsets()+graph.get_num_vertices()+1),
       col_ind_(graph.get_raw_column_indices(), graph.get_raw_column_indices()+graph.get_num_edges()),	  
       extractor_(vSub),
@@ -1151,7 +1151,7 @@ namespace nvgraph
     //
     SubGraphExtractorVisitor(CsrGraph<IndexType_>& graph,
 			     const VectorI& eSub,       
-			     cudaStream_t stream,
+			     hipStream_t stream,
 			     bool use_edges):     //just to differentiate vertex vs. edge semantics; value not used
       row_ptr_(graph.get_raw_row_offsets(), graph.get_raw_row_offsets()+graph.get_num_vertices()+1),
       col_ind_(graph.get_raw_column_indices(), graph.get_raw_column_indices()+graph.get_num_edges()),
@@ -1335,7 +1335,7 @@ namespace nvgraph
     VectorI row_ptr_;
     VectorI col_ind_;
     SubGraphExtractorFunctor<VectorI, VectorV> extractor_;
-    cudaStream_t stream_;
+    hipStream_t stream_;
     CsrGraph<IndexType_>* subgraph_; // to be constructed
   };
 
@@ -1418,7 +1418,7 @@ namespace nvgraph
 
   template<typename IndexT, typename ValueT>
   CsrGraph<IndexT>* extract_from_vertex_subset(CsrGraph<IndexT>& graph, 
-					       IndexT* pV, size_t n, cudaStream_t stream)
+					       IndexT* pV, size_t n, hipStream_t stream)
   {
     typedef thrust::device_vector<IndexT> VectorI;
     typedef thrust::device_vector<ValueT> VectorV;
@@ -1433,7 +1433,7 @@ namespace nvgraph
 
   template<typename IndexT, typename ValueT>
   CsrGraph<IndexT>* extract_from_edge_subset(CsrGraph<IndexT>& graph, 
-					     IndexT* pV, size_t n, cudaStream_t stream)
+					     IndexT* pV, size_t n, hipStream_t stream)
   {
     typedef thrust::device_vector<IndexT> VectorI;
     typedef thrust::device_vector<ValueT> VectorV;

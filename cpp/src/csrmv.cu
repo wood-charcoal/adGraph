@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -28,15 +29,15 @@
  namespace nvgraph{
 
  //Calculates SM to be used-add to cpp host file
-__forceinline__ cudaError_t SmVersion(int &smVersion, int deviceOrdinal)
+__forceinline__ hipError_t SmVersion(int &smVersion, int deviceOrdinal)
 {
-    cudaError_t error = cudaSuccess; //assume sucess and state otherwise if fails condition
+    hipError_t error = hipSuccess; //assume sucess and state otherwise if fails condition
     do
     {
         //Find out SM version
         int major, minor;
-        if (error = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, deviceOrdinal)) break;
-        if (error = cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, deviceOrdinal)) break;
+        if (error = hipDeviceGetAttribute(&major, hipDeviceAttributeComputeCapabilityMajor, deviceOrdinal)) break;
+        if (error = hipDeviceGetAttribute(&minor, hipDeviceAttributeComputeCapabilityMinor, deviceOrdinal)) break;
         smVersion = 100 * major + 10 * minor;
     } while(0);
     return error;
@@ -517,9 +518,9 @@ struct DispatchSpmv
 		typedef SpmvBlockThread<128,3> SpmvPolicyT; //use instead of PtxPolicy come backa nd use cusparse to determine the architetcure 
 	};//for <128,1> 1 item per thread need a reduction by key
 
-	__forceinline__ static cudaError_t Dispatch(CsrMvParams<IndexType_,ValueType_> spParams, const SemiRingType_ &SR, cudaStream_t stream = 0)
+	__forceinline__ static hipError_t Dispatch(CsrMvParams<IndexType_,ValueType_> spParams, const SemiRingType_ &SR, hipStream_t stream = 0)
 	{
-		cudaError_t error = cudaSuccess;	
+		hipError_t error = hipSuccess;	
 		//could move this block to initkernel fucntion 
 		int blockThreads = Policy350::SpmvPolicyT::BLOCK_THREADS;
 		int itemsPerThread = Policy350::SpmvPolicyT::ITEMS_PER_THREAD;
@@ -530,16 +531,16 @@ struct DispatchSpmv
 		do { //do-while loop condition at end of loop
 			//Get device ordinal
 			int deviceOrdinal, smVersion, smCount, maxDimx;
-			if (error = cudaGetDevice(&deviceOrdinal)) break;
+			if (error = hipGetDevice(&deviceOrdinal)) break;
 
 			//Get device SM version
 			if (error = SmVersion(smVersion, deviceOrdinal)) break;
 
-			//Get SM count-cudaDeviceGetAttribute is built in cuda function
-			if (error = cudaDeviceGetAttribute(&smCount, cudaDevAttrMultiProcessorCount, deviceOrdinal)) break;
+			//Get SM count-hipDeviceGetAttribute is built in cuda function
+			if (error = hipDeviceGetAttribute(&smCount, hipDeviceAttributeMultiprocessorCount, deviceOrdinal)) break;
 
 			//Get max dimension of the grid in the x direction
-			if (error = cudaDeviceGetAttribute(&maxDimx, cudaDevAttrMaxGridDimX, deviceOrdinal)) break;
+			if (error = hipDeviceGetAttribute(&maxDimx, hipDeviceAttributeMaxGridDimX, deviceOrdinal)) break;
 
 			int numMergeItems = spParams.m + spParams.nnz; //total amount of work for one diagonal/thread
 			
@@ -589,7 +590,7 @@ struct DispatchSpmv
 				numMergeTiles);                
 			cudaCheckError();
 			//Run reduce by key kernel if necessary
-			//if (error = cudaPeekAtLastError()) break; //check for failure to launch
+			//if (error = hipPeekAtLastError()) break; //check for failure to launch
 			if (numMergeTiles > 1)
 			{
 				DeviceSegmentReductionByKeyKernel<typename Policy350Reduction::SpmvPolicyT, IndexType_, ValueType_, SemiRingType_> 
@@ -601,7 +602,7 @@ struct DispatchSpmv
 											   numSegmentRedTiles,
 											   SR);
 				cudaCheckError();
-				//if (error = cudaPeekAtLastError()) break; //check for failure to launch of fixup kernel
+				//if (error = hipPeekAtLastError()) break; //check for failure to launch of fixup kernel
 			}
 		} while(0); //make sure executes exactly once to give chance to break earlier with errors
 		cudaCheckError();              
@@ -611,9 +612,9 @@ struct DispatchSpmv
 };
 
 template<typename IndexType_, typename ValueType_, typename SemiRingType_>
-cudaError_t callDispatchSpmv(CsrMvParams<IndexType_, ValueType_> &spParams, const SemiRingType_ &SR, cudaStream_t stream = 0)
+hipError_t callDispatchSpmv(CsrMvParams<IndexType_, ValueType_> &spParams, const SemiRingType_ &SR, hipStream_t stream = 0)
 {
-	cudaError_t error;
+	hipError_t error;
 	//determine semiring type
 	if (spParams.beta == SR.times_null)
 	{
@@ -634,11 +635,11 @@ cudaError_t callDispatchSpmv(CsrMvParams<IndexType_, ValueType_> &spParams, cons
 }
 
 template<typename IndexType_, typename ValueType_>
-cudaError_t callSemiringSpmv(CsrMvParams<IndexType_, ValueType_> &spParams, Semiring SR, cudaStream_t stream = 0)
+hipError_t callSemiringSpmv(CsrMvParams<IndexType_, ValueType_> &spParams, Semiring SR, hipStream_t stream = 0)
 {
     // This is dangerous but we need to initialize this value, probably it's
     // better to return success than to return some misleading error code
-	cudaError_t error = cudaSuccess;
+	hipError_t error = hipSuccess;
 	switch(SR)
 	{
 		case PlusTimes:
@@ -677,7 +678,7 @@ cudaError_t callSemiringSpmv(CsrMvParams<IndexType_, ValueType_> &spParams, Semi
 
 //create a device function interface to call the above dispatch function
 template <typename IndexType_, typename ValueType_>
-cudaError_t csrmv_mp(
+hipError_t csrmv_mp(
 	IndexType_ n,
 	IndexType_ m, 
 	IndexType_ nnz,
@@ -689,7 +690,7 @@ cudaError_t csrmv_mp(
 	ValueType_ beta,
 	ValueType_ *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream)
+	hipStream_t stream)
 { //create user interface
 	 //calling device kernel depends on tempalte boolean parameters fro alpha/beta
 	//Set parameters for struct
@@ -710,7 +711,7 @@ cudaError_t csrmv_mp(
 
 
 template<typename IndexType_, typename ValueType_>
-cudaError_t csrmv_mp(
+hipError_t csrmv_mp(
 	IndexType_ n,
 	IndexType_ m,
 	IndexType_ nnz,
@@ -720,7 +721,7 @@ cudaError_t csrmv_mp(
 	ValueType_ beta,
 	ValueType_ *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	)
 {
 	 //calling device kernel depends on tempalte boolean parameters fro alpha/beta
@@ -742,7 +743,7 @@ cudaError_t csrmv_mp(
 }
 
 //declare template types to be called
-template cudaError_t csrmv_mp<int, double>(
+template hipError_t csrmv_mp<int, double>(
 	int n,
 	int m, 
 	int nnz,
@@ -754,10 +755,10 @@ template cudaError_t csrmv_mp<int, double>(
 	double beta,
 	double *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	);
 
-template cudaError_t csrmv_mp<long long, double>(
+template hipError_t csrmv_mp<long long, double>(
 	long long n,
 	long long m, 
 	long long nnz,
@@ -769,10 +770,10 @@ template cudaError_t csrmv_mp<long long, double>(
 	double beta,
 	double *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	);
 
-template cudaError_t csrmv_mp<int, float>(
+template hipError_t csrmv_mp<int, float>(
 	int n,
 	int m, 
 	int nnz,
@@ -784,10 +785,10 @@ template cudaError_t csrmv_mp<int, float>(
 	float beta,
 	float *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	);
 //for 64 bit support which may not be needed
-template cudaError_t csrmv_mp<long long, float>(
+template hipError_t csrmv_mp<long long, float>(
 	long long n,
 	long long m, 
 	long long nnz,
@@ -799,10 +800,10 @@ template cudaError_t csrmv_mp<long long, float>(
 	float beta,
 	float *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	);
 //assume embedding booleans in the reals
-/*template cudaError_t csrmv_mp<int, bool>(
+/*template hipError_t csrmv_mp<int, bool>(
 	int n,
 	int m, 
 	int nnz,
@@ -816,7 +817,7 @@ template cudaError_t csrmv_mp<long long, float>(
 	Semiring SR
 	);
 //for 64 bit support which may not be needed
-template cudaError_t csrmv_mp<long long, bool>(
+template hipError_t csrmv_mp<long long, bool>(
 	long long n,
 	long long m, 
 	long long nnz,
@@ -831,7 +832,7 @@ template cudaError_t csrmv_mp<long long, bool>(
 	);*/
 
 //declare template types to be called using valued_csr_graph version
-template cudaError_t csrmv_mp<int, double>(
+template hipError_t csrmv_mp<int, double>(
 	int n,
 	int m, 
 	int nnz,
@@ -841,10 +842,10 @@ template cudaError_t csrmv_mp<int, double>(
 	double beta,
 	double *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	);
 
-template cudaError_t csrmv_mp<long long, double>(
+template hipError_t csrmv_mp<long long, double>(
 	long long n,
 	long long m, 
 	long long nnz,
@@ -854,10 +855,10 @@ template cudaError_t csrmv_mp<long long, double>(
 	double beta,
 	double *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	);
 
-template cudaError_t csrmv_mp<int, float>(
+template hipError_t csrmv_mp<int, float>(
 	int n,
 	int m, 
 	int nnz,
@@ -867,10 +868,10 @@ template cudaError_t csrmv_mp<int, float>(
 	float beta,
 	float *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	);
 //for 64 bit support which may not be needed
-template cudaError_t csrmv_mp<long long, float>(
+template hipError_t csrmv_mp<long long, float>(
 	long long n,
 	long long m, 
 	long long nnz,
@@ -880,10 +881,10 @@ template cudaError_t csrmv_mp<long long, float>(
 	float beta,
 	float *dVectorY,
 	Semiring SR, 
-	cudaStream_t stream
+	hipStream_t stream
 	);
 
-/*template cudaError_t csrmv_mp<int, bool>(
+/*template hipError_t csrmv_mp<int, bool>(
 	int n,
 	int m, 
 	int nnz,
@@ -895,7 +896,7 @@ template cudaError_t csrmv_mp<long long, float>(
 	Semiring SR
 	);
 //for 64 bit support which may not be needed
-template cudaError_t csrmv_mp<long long, bool>(
+template hipError_t csrmv_mp<long long, bool>(
 	long long n,
 	long long m, 
 	long long nnz,

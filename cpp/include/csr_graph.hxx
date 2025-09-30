@@ -37,7 +37,7 @@ private:
 protected:
     /*! Storage for the cuda stream
      */
-    cudaStream_t stream_;
+    hipStream_t stream_;
 
     /*! Storage for the row offsets of the CSR data structure.  Also called the "row pointer" array.
      */
@@ -62,7 +62,7 @@ public:
      *  \param num_cols Number of columns.
      *  \param num_entries Number of nonzero graph entries.
      */
-    CsrGraph(size_t num_rows, size_t num_entries, cudaStream_t stream, bool external = false)
+    CsrGraph(size_t num_rows, size_t num_entries, hipStream_t stream, bool external = false)
         : Parent(num_rows, num_entries),
           stream_(stream)
           {
@@ -113,7 +113,7 @@ public:
     inline void set_raw_column_indices(IndexType* ptr) {column_indices = attachDevicePtr<IndexType>(ptr, stream_); }
     inline const IndexType* get_raw_row_offsets()  const { return row_offsets.get(); }
     inline const IndexType* get_raw_column_indices()  const { return column_indices.get(); }
-    inline cudaStream_t get_stream() const { return stream_; }
+    inline hipStream_t get_stream() const { return stream_; }
 
     /*! Resize graph dimensions and underlying storage
      *

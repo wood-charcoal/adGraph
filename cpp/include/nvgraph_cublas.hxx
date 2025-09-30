@@ -16,7 +16,7 @@
  
 #pragma once
 
-#include <cublas_v2.h>
+#include <hipblas.h>
 #include <iostream>
 #include "debug_macros.h"
 
@@ -27,33 +27,33 @@ class Cublas;
 class Cublas
 {
 private:
-    static cublasHandle_t m_handle;
+    static hipblasHandle_t m_handle;
     // Private ctor to prevent instantiation.
     Cublas();
     ~Cublas();
 public:
 
     // Get the handle.
-    static cublasHandle_t get_handle()
+    static hipblasHandle_t get_handle()
     {
         if (m_handle == 0)
-            CHECK_CUBLAS(cublasCreate(&m_handle));
+            CHECK_CUBLAS(hipblasCreate(&m_handle));
         return m_handle;
     }
 
     static void destroy_handle()
     {
         if (m_handle != 0)
-            CHECK_CUBLAS(cublasDestroy(m_handle));
+            CHECK_CUBLAS(hipblasDestroy(m_handle));
         m_handle = 0;
     }
 
     static void set_pointer_mode_device();
     static void set_pointer_mode_host();
-    static void setStream(cudaStream_t stream) 
+    static void setStream(hipStream_t stream) 
     {   
-        cublasHandle_t handle = Cublas::get_handle();
-        CHECK_CUBLAS(cublasSetStream(handle, stream));
+        hipblasHandle_t handle = Cublas::get_handle();
+        CHECK_CUBLAS(hipblasSetStream(handle, stream));
     }
 
     template <typename T>
@@ -83,7 +83,7 @@ public:
                      const T* beta, T* y, const int incy, const int offsetx, const int offsety, const int offseta);
     
     template <typename T>
-    static void trsv_v2( cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int n, 
+    static void trsv_v2( hipblasFillMode_t uplo, hipblasOperation_t trans, hipblasDiagType_t diag, int n, 
 			      const T *A, int lda, T *x, int incx, int offseta);
 
     template <typename T>

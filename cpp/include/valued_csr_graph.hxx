@@ -54,7 +54,7 @@ public:
      *  \param num_rows Number of rows.
      *  \param num_entries Number of nonzero graph entries.
      */
-    ValuedCsrGraph(size_t num_rows, size_t num_entries, cudaStream_t stream)
+    ValuedCsrGraph(size_t num_rows, size_t num_entries, hipStream_t stream)
         : Parent(num_rows, num_entries, stream),
           values(allocateDevice<ValueType>(num_entries, NULL)) {}
 

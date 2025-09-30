@@ -33,26 +33,26 @@ namespace nvgraph
   // Timer 
   struct cuda_timer::event_pair
   {
-    cudaEvent_t start;
-    cudaEvent_t end;
+    hipEvent_t start;
+    hipEvent_t end;
   };
   cuda_timer::cuda_timer(): p(new event_pair()) { }
   
   void cuda_timer::start()
   {
-    cudaEventCreate(&p->start);
-    cudaEventCreate(&p->end);
-    cudaEventRecord(p->start, 0);
+    hipEventCreate(&p->start);
+    hipEventCreate(&p->end);
+    hipEventRecord(p->start, 0);
     cudaCheckError();
   }
   float cuda_timer::stop()
   {
-    cudaEventRecord(p->end, 0);
-    cudaEventSynchronize(p->end);
+    hipEventRecord(p->end, 0);
+    hipEventSynchronize(p->end);
     float elapsed_time;
-    cudaEventElapsedTime(&elapsed_time, p->start, p->end);
-    cudaEventDestroy(p->start);
-    cudaEventDestroy(p->end);
+    hipEventElapsedTime(&elapsed_time, p->start, p->end);
+    hipEventDestroy(p->start);
+    hipEventDestroy(p->end);
     cudaCheckError();
     return elapsed_time;
   }

@@ -30,9 +30,9 @@
 extern "C" {
 #include "mmio.h"
 }
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <cuda_profiler_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_profile.h>
 #include <library_types.h>
 #include <thrust/host_vector.h>
 #include <thrust/adjacent_difference.h>
@@ -44,10 +44,10 @@ extern "C" {
 
 #define CUDACHECK(cudaCall)         \
   do {                \
-    cudaError_t e = (cudaCall);         \
-    if(e != cudaSuccess) {          \
+    hipError_t e = (cudaCall);         \
+    if(e != hipSuccess) {          \
       fprintf(stderr, "CUDA Error (%s:%d): %s\n",   \
-        __FILE__, __LINE__, cudaGetErrorString(e)); \
+        __FILE__, __LINE__, hipGetErrorString(e)); \
     }               \
   } while(0)
 

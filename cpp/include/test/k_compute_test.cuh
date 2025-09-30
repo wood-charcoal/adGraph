@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
@@ -98,7 +99,7 @@ void k_compute_test( thrust::device_vector<int> &csr_ptr_d,
 
   hr_clock.start();
   kernal_test<<<block_size,grid_size>>>(size , csr_ptr_d_raw_ptr, csr_val_d_raw_ptr, 0, k_d_raw_cast_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
 //  nvlouvain::display_vec(k_d);
   hr_clock.stop(&timed); 
   double raw_ptr_time(timed);  
@@ -109,7 +110,7 @@ void k_compute_test( thrust::device_vector<int> &csr_ptr_d,
   T* k_iter_d_raw_ptr = thrust::raw_pointer_cast(k_iter_d.data());
   hr_clock.start();
   kernal_test_iter<<<block_size, grid_size>>>(size, csr_ptr_d.begin(), csr_val_d.begin(), 0, k_iter_d_raw_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed);
   double iter_time(timed);
 //  nvlouvain::display_vec(k_iter_d);
@@ -118,7 +119,7 @@ void k_compute_test( thrust::device_vector<int> &csr_ptr_d,
   thrust::device_vector<T> k_d_ptr_d(size);
   hr_clock.start();
   kernal_test_dev_ptr<<<block_size, grid_size>>>(size, csr_ptr_d.begin(), csr_val_d.begin(), 0, k_d_ptr_d.data());
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed);
   double dev_ptr_time(timed);
 //  nvlouvain::display_vec(k_d_ptr_d);

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -36,7 +37,7 @@ __global__ void update_dn_kernel(int num_vertices, ValueType_* aa, ValueType_ be
 }
 
 template <typename ValueType_>
-void update_dangling_nodes(int num_vertices, ValueType_* dangling_nodes, ValueType_ damping_factor, cudaStream_t stream)
+void update_dangling_nodes(int num_vertices, ValueType_* dangling_nodes, ValueType_ damping_factor, hipStream_t stream)
 {
 	
 	int num_threads = 256;
@@ -49,7 +50,7 @@ void update_dangling_nodes(int num_vertices, ValueType_* dangling_nodes, ValueTy
 
 //Explicit
 
-template void update_dangling_nodes<double> (int num_vertices, double* dangling_nodes, double damping_factor, cudaStream_t stream);
-template void update_dangling_nodes<float> (int num_vertices, float* dangling_nodes, float damping_factor, cudaStream_t stream);
+template void update_dangling_nodes<double> (int num_vertices, double* dangling_nodes, double damping_factor, hipStream_t stream);
+template void update_dangling_nodes<float> (int num_vertices, float* dangling_nodes, float damping_factor, hipStream_t stream);
 } // end namespace nvgraph
 

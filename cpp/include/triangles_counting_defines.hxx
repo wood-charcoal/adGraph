@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include <limits.h>
 
 #ifdef _MSC_VER

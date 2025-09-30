@@ -40,14 +40,14 @@ typedef enum
 } nvgraphGraphStatus_t;
 
 struct nvgraphContext {
-   cudaStream_t stream;
+   hipStream_t stream;
    cnmemDevice_t cnmem_device;  
    int nvgraphIsInitialized;  
 };
 
 struct nvgraphGraphDescr {
    nvgraphGraphStatus_t graphStatus;
-   cudaDataType T;							// This is the type of values for the graph
+   hipblasDatatype_t T;							// This is the type of values for the graph
    nvgraphTopologyType_t TT;				// The topology type (class to cast graph_handle pointer to)
    void* graph_handle;						// Opaque pointer to the graph class object
 };

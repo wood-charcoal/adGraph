@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -1988,10 +1989,10 @@ namespace nvgraph
 							Value_type *Ac_vals )
     {
       const size_t NUM_WARPS = CTA_SIZE / WARP_SIZE;
-      cudaStream_t stream = 0; // for now...
+      hipStream_t stream = 0; // for now...
 
       size_t work_offset = GRID_SIZE*NUM_WARPS;
-      cudaMemcpyAsync( hash_wk.get_work_queue(), &work_offset, sizeof(IndexT), cudaMemcpyHostToDevice, stream );
+      hipMemcpyAsync( hash_wk.get_work_queue(), &work_offset, sizeof(IndexT), hipMemcpyHostToDevice, stream );
       cudaCheckError();
 
       fill_A_kernel_1x1<8, CTA_SIZE, SMEM_SIZE, 32, false><<<GRID_SIZE, CTA_SIZE>>>( 
@@ -2196,12 +2197,12 @@ namespace nvgraph
     {
       const size_t NUM_WARPS = CTA_SIZE / WARP_SIZE;
 
-      //AMGX uses pool allocator thrust::global_thread_handle::cudaMallocHost(), here...
+      //AMGX uses pool allocator thrust::global_thread_handle::hipMallocHost(), here...
       //
       SHARED_PREFIX::shared_ptr<IndexT> h_status(new IndexT);
       SHARED_PREFIX::shared_ptr<IndexT> h_work_offset(new IndexT);
 
-      cudaStream_t stream = 0; // for now...
+      hipStream_t stream = 0; // for now...
 
       int attempt = 0;
       for( bool done = false ; !done && attempt < 10 ; ++attempt )
@@ -2216,13 +2217,13 @@ namespace nvgraph
 		  // Reset the status.
 		  IndexT *p_status = h_status.get();
 		  *p_status = 0;
-		  cudaMemcpyAsync( hash_wk.get_status(), p_status, sizeof(IndexT), cudaMemcpyHostToDevice, stream );
+		  hipMemcpyAsync( hash_wk.get_status(), p_status, sizeof(IndexT), hipMemcpyHostToDevice, stream );
 		  cudaCheckError();
 
 		  // Reset the work queue.
 		  IndexT *p_work_offset = h_work_offset.get();
 		  *p_work_offset = GRID_SIZE*NUM_WARPS;
-		  cudaMemcpyAsync( hash_wk.get_work_queue(), p_work_offset, sizeof(IndexT), cudaMemcpyHostToDevice, stream );
+		  hipMemcpyAsync( hash_wk.get_work_queue(), p_work_offset, sizeof(IndexT), hipMemcpyHostToDevice, stream );
 		  cudaCheckError();
 
 		  // Launch the kernel.
@@ -2231,8 +2232,8 @@ namespace nvgraph
 		  cudaCheckError();
   
 		  // Read the result from count_non_zeroes.
-		  cudaMemcpyAsync( p_status, hash_wk.get_status(), sizeof(IndexT), cudaMemcpyDeviceToHost, stream ); 
-		  cudaStreamSynchronize(stream); 
+		  hipMemcpyAsync( p_status, hash_wk.get_status(), sizeof(IndexT), hipMemcpyDeviceToHost, stream ); 
+		  hipStreamSynchronize(stream); 
 		  done = (*p_status == 0);
 
 		  cudaCheckError();

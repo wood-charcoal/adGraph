@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -51,9 +52,9 @@ void counting_sort_by_key(const thrust::execution_policy<DerivedPolicy> &exec,
           std::cout<<"Error keys.size()!= vals.size()\n" ;
     }
 */
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
     thrust::stable_sort_by_key(exec, keys.begin(), keys.end(), vals.begin());
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 //    std::cout<<"## done stable_sort_by_key\n";
 }
 
@@ -203,7 +204,7 @@ void generate_superverticies_graph(const int n_vertex, const int num_aggregates,
   // Copy A.values to V array
   thrust::copy(thrust::device, csr_val_d.begin(), csr_val_d.begin() + n_edges, V.begin()); 
   cudaCheckError();
-  //cudaDeviceSynchronize();
+  //hipDeviceSynchronize();
   
 
   // Sort (I,J,V) by rows and columns (I,J)
@@ -211,7 +212,7 @@ void generate_superverticies_graph(const int n_vertex, const int num_aggregates,
   sort_by_row_and_column(thrust::device, I, J, V);
   cudaCheckError();
 
-  cudaDeviceSynchronize();
+  hipDeviceSynchronize();
 
   // compute unique number of nonzeros in the output
   IndexType NNZ = thrust::inner_product(thrust::make_zip_iterator(thrust::make_tuple(I.begin(), J.begin())),

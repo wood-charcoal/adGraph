@@ -21,14 +21,14 @@
 #include <fstream>
 #include <chrono>
 
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/generate.h>
 #include <thrust/reduce.h>
 #include <thrust/functional.h>
-#include <cusparse.h>
+#include <hipsparse.h>
 
 #include "graph_utils.cuh"
 #include "modularity.cuh"
@@ -60,8 +60,8 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
   log.setstate(std::ios_base::failbit);
 #endif
   num_level = 0;
-  cusparseHandle_t cusp_handle;
-  cusparseCreate(&cusp_handle);
+  hipsparseHandle_t cusp_handle;
+  hipsparseCreate(&cusp_handle);
 
   int n_edges = num_edges;
   int n_vertex = num_vertex;
@@ -225,7 +225,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
 
     hr_clock.start();
     size2_sector.setAggregates(cusp_handle, current_n_vertex, n_edges, csr_ptr_ptr, csr_ind_ptr, csr_val_ptr , aggregates, num_aggregates);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
     hr_clock.stop(&timed);
     diff_time = timed;
 
@@ -238,10 +238,10 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
 
     // start update modularty 
     hr_clock.start();
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     generate_cluster_inv(current_n_vertex, c_size, cluster_d.begin(), cluster_inv_ptr, cluster_inv_ind);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     hr_clock.stop(&timed);
     diff_time = timed;
@@ -303,7 +303,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
                                     new_csr_ptr, new_csr_ind, new_csr_val, 
                                     aggregates_tmp_d);
 
-      CUDA_CALL(cudaDeviceSynchronize());
+      CUDA_CALL(hipDeviceSynchronize());
       if(current_n_vertex == num_vertex){
         // copy inital aggregates assignments as initial clustering
         thrust::copy(thrust::device, aggregates_tmp_d.begin(), aggregates_tmp_d.begin() +  current_n_vertex, clustering.begin());
@@ -371,7 +371,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
                         csr_ptr_d, csr_ind_d, csr_val_d, 
                         cluster_d, cluster_inv_ptr, cluster_inv_ind, 
                         weighted, k_vec_ptr, Q_arr_ptr, delta_Q_arr_ptr); // delta_Q_arr_ptr is temp_i
-        CUDA_CALL(cudaDeviceSynchronize());
+        CUDA_CALL(hipDeviceSynchronize());
 
         LOG()<<Q<<std::endl;
 
@@ -397,7 +397,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
         thrust::copy(thrust::device, new_csr_val.begin(), new_csr_val.begin() + n_edges, csr_val_d.begin());
       }
 
-      //cudaMemGetInfo(&mem_free, &mem_tot);
+      //hipMemGetInfo(&mem_free, &mem_tot);
       //std::cout<<"Mem usage : "<< (float)(mem_tot-mem_free)/(1<<30) <<std::endl;
     }else {
       LOG()<<"Didn't increase in modularity\n";
@@ -430,7 +430,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
   //LOG()<<"Final modularity: "<<COLOR_MGT<<best_modularity<<COLOR_WHT<<std::endl;
   log.clear();  
   final_modularity = best_modularity;
-  cudaMemcpy ( cluster_vec, thrust::raw_pointer_cast(clustering.data()), n_vertex*sizeof(int), cudaMemcpyDefault );
+  hipMemcpy ( cluster_vec, thrust::raw_pointer_cast(clustering.data()), n_vertex*sizeof(int), hipMemcpyDefault );
   return NVLOUVAIN_OK;
 }
 
@@ -448,8 +448,8 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
   log.setstate(std::ios_base::failbit);
 #endif
   num_level = 0;
-  cusparseHandle_t cusp_handle;
-  cusparseCreate(&cusp_handle);
+  hipsparseHandle_t cusp_handle;
+  hipsparseCreate(&cusp_handle);
 
   int n_edges = num_edges;
   int n_vertex = num_vertex;
@@ -593,7 +593,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
 
     hr_clock.start();
     size2_sector.setAggregates(cusp_handle, current_n_vertex, n_edges, csr_ptr_ptr, csr_ind_ptr, csr_val_ptr , aggregates, num_aggregates);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
     hr_clock.stop(&timed);
     diff_time = timed;
 
@@ -606,10 +606,10 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
 
     // start update modularty 
     hr_clock.start();
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     generate_cluster_inv(current_n_vertex, c_size, cluster_d.begin(), cluster_inv_ptr, cluster_inv_ind);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     hr_clock.stop(&timed);
     diff_time = timed;
@@ -675,7 +675,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
                                     new_csr_ptr, new_csr_ind, new_csr_val, 
                                     aggregates_tmp_d);
 
-      CUDA_CALL(cudaDeviceSynchronize());
+      CUDA_CALL(hipDeviceSynchronize());
       hr_clock.stop(&timed);
       diff_time = timed;
       LOG() <<"Complete generate_superverticies_graph size of graph: "<<current_n_vertex<<" -> "<<best_c_size<<" runtime: "<<diff_time/1000<<std::endl;
@@ -734,7 +734,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
                         csr_ptr_d, csr_ind_d, csr_val_d, 
                         cluster_d, cluster_inv_ptr, cluster_inv_ind, 
                         weighted, k_vec_ptr, Q_arr_ptr, delta_Q_arr_ptr); // delta_Q_arr_ptr is temp_i
-        CUDA_CALL(cudaDeviceSynchronize());
+        CUDA_CALL(hipDeviceSynchronize());
 
         LOG()<<Q<<std::endl;
 

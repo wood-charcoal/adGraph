@@ -21,7 +21,7 @@
 #include <nvgraph_error.hxx>
 #include <nvgraph_vector.hxx>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include <triangles_counting_defines.hxx>
 
@@ -44,11 +44,11 @@ private:
     uint64_t            m_triangles_number;
     spmat_t<IndexType>  m_mat;
     int                 m_dev_id;
-    cudaDeviceProp      m_dev_props;
+    hipDeviceProp_t      m_dev_props;
 
     Vector<IndexType>   m_seq;
 
-    cudaStream_t        m_stream;
+    hipStream_t        m_stream;
 
     bool m_done;
 
@@ -59,7 +59,7 @@ private:
 
 public:
     // Simple constructor 
-    TrianglesCount(const CsrGraph <IndexType>& graph, cudaStream_t stream = NULL, int device_id = -1);
+    TrianglesCount(const CsrGraph <IndexType>& graph, hipStream_t stream = NULL, int device_id = -1);
     // Simple destructor
     ~TrianglesCount();
 

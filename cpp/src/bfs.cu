@@ -36,28 +36,28 @@ namespace nvgraph {
 		deterministic = false;
 		//Working data
 		//Each vertex can be in the frontier at most once
-		cudaMalloc(&frontier, n * sizeof(IndexType));
+		hipMalloc(&frontier, n * sizeof(IndexType));
 		cudaCheckError()
 		;
 
 		//We will update frontier during the execution
-		//We need the orig to reset frontier, or cudaFree
+		//We need the orig to reset frontier, or hipFree
 		original_frontier = frontier;
 
 		//size of bitmaps for vertices
 		vertices_bmap_size = (n / (8 * sizeof(int)) + 1);
 		//ith bit of visited_bmap is set <=> ith vertex is visited
-		cudaMalloc(&visited_bmap, sizeof(int) * vertices_bmap_size);
+		hipMalloc(&visited_bmap, sizeof(int) * vertices_bmap_size);
 		cudaCheckError()
 		;
 
 		//ith bit of isolated_bmap is set <=> degree of ith vertex = 0
-		cudaMalloc(&isolated_bmap, sizeof(int) * vertices_bmap_size);
+		hipMalloc(&isolated_bmap, sizeof(int) * vertices_bmap_size);
 		cudaCheckError()
 		;
 
 		//vertices_degree[i] = degree of vertex i
-		cudaMalloc(&vertex_degree, sizeof(IndexType) * n);
+		hipMalloc(&vertex_degree, sizeof(IndexType) * n);
 		cudaCheckError()
 		;
 
@@ -65,10 +65,10 @@ namespace nvgraph {
 		cub_exclusive_sum_alloc(n + 1, d_cub_exclusive_sum_storage, cub_exclusive_sum_storage_bytes);
 
 		//We will need (n+1) ints buffer for two differents things (bottom up or top down) - sharing it since those uses are mutually exclusive
-		cudaMalloc(&buffer_np1_1, (n + 1) * sizeof(IndexType));
+		hipMalloc(&buffer_np1_1, (n + 1) * sizeof(IndexType));
 		cudaCheckError()
 		;
-		cudaMalloc(&buffer_np1_2, (n + 1) * sizeof(IndexType));
+		hipMalloc(&buffer_np1_2, (n + 1) * sizeof(IndexType));
 		cudaCheckError()
 		;
 
@@ -92,15 +92,15 @@ namespace nvgraph {
 
 		//We use buckets of edges (32 edges per bucket for now, see exact macro in bfs_kernels). frontier_vertex_degree_buckets_offsets[i] is the index k such as frontier[k] is the source of the first edge of the bucket
 		//See top down kernels for more details
-		cudaMalloc(	&exclusive_sum_frontier_vertex_buckets_offsets,
+		hipMalloc(	&exclusive_sum_frontier_vertex_buckets_offsets,
 						((nnz / TOP_DOWN_EXPAND_DIMX + 1) * NBUCKETS_PER_BLOCK + 2) * sizeof(IndexType));
 		cudaCheckError()
 		;
 
 		//Init device-side counters
 		//Those counters must be/can be reset at each bfs iteration
-		//Keeping them adjacent in memory allow use call only one cudaMemset - launch latency is the current bottleneck
-		cudaMalloc(&d_counters_pad, 4 * sizeof(IndexType));
+		//Keeping them adjacent in memory allow use call only one hipMemset - launch latency is the current bottleneck
+		hipMalloc(&d_counters_pad, 4 * sizeof(IndexType));
 		cudaCheckError()
 		;
 
@@ -112,19 +112,19 @@ namespace nvgraph {
 		//Lets use this int* for the next 3 lines
 		//Its dereferenced value is not initialized - so we dont care about what we put in it
 		IndexType * d_nisolated = d_new_frontier_cnt;
-		cudaMemsetAsync(d_nisolated, 0, sizeof(IndexType), stream);
+		hipMemsetAsync(d_nisolated, 0, sizeof(IndexType), stream);
 		cudaCheckError()
 		;
 
 		//Computing isolated_bmap
 		//Only dependent on graph - not source vertex - done once
 		flag_isolated_vertices(n, isolated_bmap, row_offsets, vertex_degree, d_nisolated, stream);
-		cudaMemcpyAsync(&nisolated, d_nisolated, sizeof(IndexType), cudaMemcpyDeviceToHost, stream);
+		hipMemcpyAsync(&nisolated, d_nisolated, sizeof(IndexType), hipMemcpyDeviceToHost, stream);
 		cudaCheckError()
 		;
 
 		//We need nisolated to be ready to use
-		cudaStreamSynchronize(stream);
+		hipStreamSynchronize(stream);
 		cudaCheckError()
 		;
 
@@ -146,7 +146,7 @@ namespace nvgraph {
 
 		//We need distances to use bottom up
 		if (directed && !computeDistances)
-			cudaMalloc(&distances, n * sizeof(IndexType));
+			hipMalloc(&distances, n * sizeof(IndexType));
 
 		cudaCheckError()
 		;
@@ -165,12 +165,12 @@ namespace nvgraph {
 		//more than that for wiki and twitter graphs
 
 		if (directed) {
-			cudaMemsetAsync(visited_bmap, 0, vertices_bmap_size * sizeof(int), stream);
+			hipMemsetAsync(visited_bmap, 0, vertices_bmap_size * sizeof(int), stream);
 		} else {
-			cudaMemcpyAsync(	visited_bmap,
+			hipMemcpyAsync(	visited_bmap,
 									isolated_bmap,
 									vertices_bmap_size * sizeof(int),
-									cudaMemcpyDeviceToDevice,
+									hipMemcpyDeviceToDevice,
 									stream);
 		}
 		cudaCheckError()
@@ -186,7 +186,7 @@ namespace nvgraph {
 		//If needed, setting all predecessors to non-existent (-1)
 		if (computePredecessors)
 		{
-			cudaMemsetAsync(predecessors, -1, n * sizeof(IndexType), stream);
+			hipMemsetAsync(predecessors, -1, n * sizeof(IndexType), stream);
 			cudaCheckError()
 			;
 		}
@@ -199,7 +199,7 @@ namespace nvgraph {
 
 		if (distances)
 		{
-			cudaMemsetAsync(&distances[source_vertex], 0, sizeof(IndexType), stream);
+			hipMemsetAsync(&distances[source_vertex], 0, sizeof(IndexType), stream);
 			cudaCheckError()
 			;
 		}
@@ -209,14 +209,14 @@ namespace nvgraph {
 		int current_visited_bmap_source_vert = 0;
 
 		if (!directed) {
-			cudaMemcpyAsync(&current_visited_bmap_source_vert,
+			hipMemcpyAsync(&current_visited_bmap_source_vert,
 									&visited_bmap[source_vertex / INT_SIZE],
 									sizeof(int),
-									cudaMemcpyDeviceToHost);
+									hipMemcpyDeviceToHost);
 			cudaCheckError()
 			;
 			//We need current_visited_bmap_source_vert
-			cudaStreamSynchronize(stream);
+			hipStreamSynchronize(stream);
 			cudaCheckError()
 			;
 			//We could detect that source is isolated here
@@ -234,19 +234,19 @@ namespace nvgraph {
 
 		m |= current_visited_bmap_source_vert;
 
-		cudaMemcpyAsync(	&visited_bmap[source_vertex / INT_SIZE],
+		hipMemcpyAsync(	&visited_bmap[source_vertex / INT_SIZE],
 								&m,
 								sizeof(int),
-								cudaMemcpyHostToDevice,
+								hipMemcpyHostToDevice,
 								stream);
 		cudaCheckError()
 		;
 
 		//Adding source_vertex to init frontier
-		cudaMemcpyAsync(	&frontier[0],
+		hipMemcpyAsync(	&frontier[0],
 								&source_vertex,
 								sizeof(IndexType),
-								cudaMemcpyHostToDevice,
+								hipMemcpyHostToDevice,
 								stream);
 		cudaCheckError()
 		;
@@ -285,16 +285,16 @@ namespace nvgraph {
 							nf + 1,
 							stream);
 
-		cudaMemcpyAsync(	&mf,
+		hipMemcpyAsync(	&mf,
 								&exclusive_sum_frontier_vertex_degree[nf],
 								sizeof(IndexType),
-								cudaMemcpyDeviceToHost,
+								hipMemcpyDeviceToHost,
 								stream);
 		cudaCheckError()
 		;
 
 		//We need mf
-		cudaStreamSynchronize(stream);
+		hipStreamSynchronize(stream);
 		cudaCheckError()
 		;
 
@@ -341,20 +341,20 @@ namespace nvgraph {
 											nf + 1,
 											stream);
 
-						cudaMemcpyAsync(	&mf,
+						hipMemcpyAsync(	&mf,
 												&exclusive_sum_frontier_vertex_degree[nf],
 												sizeof(IndexType),
-												cudaMemcpyDeviceToHost,
+												hipMemcpyDeviceToHost,
 												stream);
 						cudaCheckError()
 						;
 
-						cudaMemcpyAsync(&mu, d_mu, sizeof(IndexType), cudaMemcpyDeviceToHost, stream);
+						hipMemcpyAsync(&mu, d_mu, sizeof(IndexType), hipMemcpyDeviceToHost, stream);
 						cudaCheckError()
 						;
 
 						//We will need mf and mu
-						cudaStreamSynchronize(stream);
+						hipStreamSynchronize(stream);
 						cudaCheckError()
 						;
 
@@ -394,15 +394,15 @@ namespace nvgraph {
 
 				mu -= mf;
 
-				cudaMemcpyAsync(	&nf,
+				hipMemcpyAsync(	&nf,
 										d_new_frontier_cnt,
 										sizeof(IndexType),
-										cudaMemcpyDeviceToHost,
+										hipMemcpyDeviceToHost,
 										stream);
 				cudaCheckError();
 
 				//We need nf
-				cudaStreamSynchronize(stream);
+				hipStreamSynchronize(stream);
 				cudaCheckError();
 
 				if (nf) {
@@ -415,16 +415,16 @@ namespace nvgraph {
 										exclusive_sum_frontier_vertex_degree,
 										nf + 1,
 										stream);
-					cudaMemcpyAsync(	&mf,
+					hipMemcpyAsync(	&mf,
 											&exclusive_sum_frontier_vertex_degree[nf],
 											sizeof(IndexType),
-											cudaMemcpyDeviceToHost,
+											hipMemcpyDeviceToHost,
 											stream);
 					cudaCheckError()
 					;
 
 					//We need mf
-					cudaStreamSynchronize(stream);
+					hipStreamSynchronize(stream);
 					cudaCheckError()
 					;
 				}
@@ -460,15 +460,15 @@ namespace nvgraph {
 				//The number of vertices left unvisited decreases
 				//If it wasnt necessary last time, it wont be this time
 				if (size_last_left_unvisited_queue) {
-					cudaMemcpyAsync(	&size_last_left_unvisited_queue,
+					hipMemcpyAsync(	&size_last_left_unvisited_queue,
 											d_left_unvisited_cnt,
 											sizeof(IndexType),
-											cudaMemcpyDeviceToHost,
+											hipMemcpyDeviceToHost,
 											stream);
 					cudaCheckError()
 					;
 					//We need last_left_unvisited_size
-					cudaStreamSynchronize(stream);
+					hipStreamSynchronize(stream);
 					cudaCheckError()
 					;
 					bottom_up_large(	left_unvisited_queue,
@@ -485,16 +485,16 @@ namespace nvgraph {
 											stream,
 											deterministic);
 				}
-				cudaMemcpyAsync(	&nf,
+				hipMemcpyAsync(	&nf,
 										d_new_frontier_cnt,
 										sizeof(IndexType),
-										cudaMemcpyDeviceToHost,
+										hipMemcpyDeviceToHost,
 										stream);
 				cudaCheckError()
 				;
 
 				//We will need nf
-				cudaStreamSynchronize(stream);
+				hipStreamSynchronize(stream);
 				cudaCheckError()
 				;
 
@@ -527,7 +527,7 @@ namespace nvgraph {
 
 	template<typename IndexType>
 	void Bfs<IndexType>::resetDevicePointers() {
-		cudaMemsetAsync(d_counters_pad, 0, 4 * sizeof(IndexType), stream);
+		hipMemsetAsync(d_counters_pad, 0, 4 * sizeof(IndexType), stream);
 		cudaCheckError()
 		;
 	}
@@ -538,19 +538,19 @@ namespace nvgraph {
 		;
 
 		//the vectors have a destructor that takes care of cleaning
-		cudaFree(original_frontier);
-		cudaFree(visited_bmap);
-		cudaFree(isolated_bmap);
-		cudaFree(vertex_degree);
-		cudaFree(d_cub_exclusive_sum_storage);
-		cudaFree(buffer_np1_1);
-		cudaFree(buffer_np1_2);
-		cudaFree(exclusive_sum_frontier_vertex_buckets_offsets);
-		cudaFree(d_counters_pad);
+		hipFree(original_frontier);
+		hipFree(visited_bmap);
+		hipFree(isolated_bmap);
+		hipFree(vertex_degree);
+		hipFree(d_cub_exclusive_sum_storage);
+		hipFree(buffer_np1_1);
+		hipFree(buffer_np1_2);
+		hipFree(exclusive_sum_frontier_vertex_buckets_offsets);
+		hipFree(d_counters_pad);
 
 		//In that case, distances is a working data
 		if (directed && !computeDistances)
-			cudaFree(distances);
+			hipFree(distances);
 
 		cudaCheckError()
 		;

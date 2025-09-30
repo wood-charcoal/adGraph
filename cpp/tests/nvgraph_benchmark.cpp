@@ -66,8 +66,8 @@ extern "C" {
 
 #define CUDA_SAFE_CALL(call) \
 {\
-    cudaError_t status = (call) ;\
-    if ( cudaSuccess != status )\
+    hipError_t status = (call) ;\
+    if ( hipSuccess != status )\
     {\
         std::cout << "Error #" << status << " in " << __FILE__ << ":" << __LINE__ << std::endl;\
         exit(1);\
@@ -80,7 +80,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<double>
 { 
-    static const cudaDataType_t Type = CUDA_R_64F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_64F;
     static const double inf;
     static const double tol;
     typedef union fpint 
@@ -96,7 +96,7 @@ const double nvgraph_Const<double>::tol = 1e-6; // this is what we use as a tole
 template <>
 struct nvgraph_Const<float>
 { 
-    static const cudaDataType_t Type = CUDA_R_32F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32F;
     static const float inf;
     static const float tol;
 
@@ -114,7 +114,7 @@ const float nvgraph_Const<float>::tol = 1e-4;
 template <>
 struct nvgraph_Const<int>
 { 
-    static const cudaDataType_t Type = CUDA_R_32I;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32I;
     static const int inf;
     static const int tol;
 
@@ -216,10 +216,10 @@ void run_srspmv_bench(const SrSPMV_Usecase& param)
         //printf ("data1[%d]==%f, data2[%d]==%f\n", i, data1[i], i, data2[i]);
     }
     void*  vertexptr[2] = {(void*)&data1[0], (void*)&data2[0]};
-    cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
     
     void*  edgeptr[1] = {(void*)&csr_read_val[0]};
-    cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
     int weight_index = 0;
     int x_index = 0;
@@ -237,7 +237,7 @@ void run_srspmv_bench(const SrSPMV_Usecase& param)
     int repeat = std::max(param.repeats, 1);
     NVGRAPH_SAFE_CALL(nvgraphSrSpmv(handle, g1, weight_index, (void*)&alphaT, x_index, (void*)&betaT, y_index, sr));
     NVGRAPH_SAFE_CALL(nvgraphSrSpmv(handle, g1, weight_index, (void*)&alphaT, x_index, (void*)&betaT, y_index, sr));
-    CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    CUDA_SAFE_CALL(hipDeviceSynchronize());
     std::cout << "Running spmv for " << repeat << " times..." << std::endl;
     std::cout << "n = " << n << ", nnz = " << nnz << std::endl;
     for (int i = 0; i < repeat; i++)
@@ -245,7 +245,7 @@ void run_srspmv_bench(const SrSPMV_Usecase& param)
         start = second();
         start = second();
         NVGRAPH_SAFE_CALL(nvgraphSrSpmv(handle, g1, weight_index, (void*)&alphaT, x_index, (void*)&betaT, y_index, sr));
-        CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        CUDA_SAFE_CALL(hipDeviceSynchronize());
         stop = second();
         total += stop - start;
     }
@@ -371,10 +371,10 @@ void run_widest_bench(const WidestPath_Usecase& param)
     size_t numsets = 1;
     std::vector<T> calculated_res(n);
     //void*  vertexptr[1] = {(void*)&calculated_res[0]};
-    cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
     
     void*  edgeptr[1] = {(void*)&read_val[0]};
-    cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
     NVGRAPH_SAFE_CALL(nvgraphAllocateVertexData(handle, g1, numsets, type_v));
     NVGRAPH_SAFE_CALL(nvgraphAllocateEdgeData(handle, g1, numsets, type_e ));
@@ -470,9 +470,9 @@ void run_sssp_bench(const SSSP_Usecase& param)
 
     // set up graph data
     size_t numsets = 1;
-    cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
     void*  edgeptr[1] = {(void*)&read_val[0]};
-    cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
     NVGRAPH_SAFE_CALL(nvgraphAllocateVertexData(handle, g1, numsets, type_v));
     NVGRAPH_SAFE_CALL(nvgraphAllocateEdgeData(handle, g1, numsets, type_e ));
@@ -589,7 +589,7 @@ void run_traversal_bench(const Traversal_Usecase& param)
 
     // set up graph data
     size_t numsets = 1;
-    cudaDataType_t type_v[1] = {nvgraph_Const<int>::Type};
+    hipblasDatatype_t type_v[1] = {nvgraph_Const<int>::Type};
 
     NVGRAPH_SAFE_CALL(nvgraphAllocateVertexData(handle, g1, numsets, type_v));
 
@@ -688,10 +688,10 @@ void run_pagerank_bench(const Pagerank_Usecase& param)
     // set up graph data
     std::vector<T> calculated_res(n, (T)1.0/n);
     void*  vertexptr[2] = {(void*)&dangling[0], (void*)&calculated_res[0]};
-    cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
     
     void*  edgeptr[1] = {(void*)&read_val[0]};
-    cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
     NVGRAPH_SAFE_CALL(nvgraphAllocateVertexData(handle, g1, 2, type_v));
     NVGRAPH_SAFE_CALL(nvgraphSetVertexData(handle, g1, vertexptr[0], 0 ));
@@ -794,9 +794,9 @@ void run_modularity_bench(const ModMax_Usecase& param)
     //std::vector<T> eigVecs_h(n*clustering_params.n_clusters);
 
     //could also be on device
-    int *clustering_d; cudaMalloc((void**)&clustering_d , n*sizeof(int));
-    T* eigVals_d; cudaMalloc((void**)&eigVals_d, clustering_params.n_clusters*sizeof(T));
-    T* eigVecs_d; cudaMalloc((void**)&eigVecs_d, n*clustering_params.n_clusters*sizeof(T));
+    int *clustering_d; hipMalloc((void**)&clustering_d , n*sizeof(int));
+    T* eigVals_d; hipMalloc((void**)&eigVals_d, clustering_params.n_clusters*sizeof(T));
+    T* eigVecs_d; hipMalloc((void**)&eigVecs_d, n*clustering_params.n_clusters*sizeof(T));
     
     NVGRAPH_SAFE_CALL( nvgraphCreateGraphDescr(handle, &g1));  
 
@@ -807,7 +807,7 @@ void run_modularity_bench(const ModMax_Usecase& param)
     // set up graph data
     size_t numsets = 1;
     void*  edgeptr[1] = {(void*)&csrValA[0]};
-    cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
     NVGRAPH_SAFE_CALL( nvgraphAllocateEdgeData(handle, g1, numsets, type_e ));
     NVGRAPH_SAFE_CALL( nvgraphSetEdgeData(handle, g1, (void *)edgeptr[0], 0 ));   
     
@@ -828,7 +828,7 @@ void run_modularity_bench(const ModMax_Usecase& param)
 
     //Print
     //std::vector<int> clust_h(n);
-    //cudaMemcpy(&clust_h[0], clustering_d,n*sizeof(int),cudaMemcpyDeviceToHost);
+    //hipMemcpy(&clust_h[0], clustering_d,n*sizeof(int),hipMemcpyDeviceToHost);
     //printf("\n ");
     //for (int i = 0; i < n; ++i)
     //   printf("%d ", clust_h [i]);
@@ -862,16 +862,16 @@ void run_modularity_bench(const ModMax_Usecase& param)
     //     //printf("%d ", parts_h[i]);
     // }
     // // Analyse quality
-    // cudaMemcpy(clustering_d,&parts_h[0],n*sizeof(int),cudaMemcpyHostToDevice);
+    // hipMemcpy(clustering_d,&parts_h[0],n*sizeof(int),hipMemcpyHostToDevice);
     // //NVGRAPH_SAFE_CALL( nvgraphAnalyzeModularityClustering(handle, g1, weight_index, clustering_params.n_clusters, clustering_d, &modularity1));  
     // //printf("%f\n", modularity1);
     // NVGRAPH_SAFE_CALL(nvgraphAnalyzeBalancedCut(handle, g1, weight_index, clustering_params.n_clusters, clustering_d, &ec, &rc));  
     // printf("%f\n", rc);
 
     //exit
-    cudaFree(clustering_d);
-    cudaFree(eigVals_d);
-    cudaFree(eigVecs_d);
+    hipFree(clustering_d);
+    hipFree(eigVals_d);
+    hipFree(eigVecs_d);
     NVGRAPH_SAFE_CALL(nvgraphDestroyGraphDescr(handle, g1));
 }
 
@@ -942,9 +942,9 @@ void run_balancedCut_bench(const BalancedCut_Usecase& param)
     //std::vector<T> eigVecs_h(n*clustering_params.n_clusters);
 
     //could also be on device
-    int *clustering_d; cudaMalloc((void**)&clustering_d , n*sizeof(int));
-    T* eigVals_d; cudaMalloc((void**)&eigVals_d, clustering_params.n_clusters*sizeof(T));
-    T* eigVecs_d; cudaMalloc((void**)&eigVecs_d, n*clustering_params.n_clusters*sizeof(T));
+    int *clustering_d; hipMalloc((void**)&clustering_d , n*sizeof(int));
+    T* eigVals_d; hipMalloc((void**)&eigVals_d, clustering_params.n_clusters*sizeof(T));
+    T* eigVecs_d; hipMalloc((void**)&eigVecs_d, n*clustering_params.n_clusters*sizeof(T));
     
     NVGRAPH_SAFE_CALL( nvgraphCreateGraphDescr(handle, &g1));  
 
@@ -955,7 +955,7 @@ void run_balancedCut_bench(const BalancedCut_Usecase& param)
     // set up graph data
     size_t numsets = 1;
     void*  edgeptr[1] = {(void*)&csrValA[0]};
-    cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
     NVGRAPH_SAFE_CALL( nvgraphAllocateEdgeData(handle, g1, numsets, type_e ));
     NVGRAPH_SAFE_CALL( nvgraphSetEdgeData(handle, g1, (void *)edgeptr[0], 0 ));   
     
@@ -976,9 +976,9 @@ void run_balancedCut_bench(const BalancedCut_Usecase& param)
     printf("%f\n", score);
 
     //exit
-    cudaFree(clustering_d);
-    cudaFree(eigVals_d);
-    cudaFree(eigVecs_d);
+    hipFree(clustering_d);
+    hipFree(eigVals_d);
+    hipFree(eigVecs_d);
 
     NVGRAPH_SAFE_CALL(nvgraphDestroyGraphDescr(handle, g1));
 }

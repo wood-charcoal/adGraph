@@ -32,7 +32,7 @@ private:
     ValueType m_residual;
     int m_iterations;
     bool m_is_setup;
-    cudaStream_t m_stream;
+    hipStream_t m_stream;
     bool solve_it();
     void setup(IndexType source_index, Vector<ValueType>& source_connection,  Vector<ValueType>& WidestPath_result);
 public:
@@ -42,7 +42,7 @@ public:
     ~WidestPath(void) {};
     // Create a WidestPath solver attached to a the transposed of a  weighted network
     // *** network is the transposed/CSC*** 
-    WidestPath(const ValuedCsrGraph <IndexType, ValueType>& network, cudaStream_t stream = 0):m_network(network),m_is_setup(false), m_stream(stream)  {};
+    WidestPath(const ValuedCsrGraph <IndexType, ValueType>& network, hipStream_t stream = 0):m_network(network),m_is_setup(false), m_stream(stream)  {};
    
     /*! Find the Widest Path from  the vertex source_index to every other vertices.
      *

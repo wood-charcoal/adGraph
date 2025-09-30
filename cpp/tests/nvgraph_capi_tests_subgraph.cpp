@@ -303,12 +303,12 @@ protected:
 		float vertexvals0[] = { 0.1f, 0.15893e-20f, 1e27f, 13.2f, 0.f };
 		float vertexvals1[] = { 13., 322.64, 1e28, -1.4, 22.3 };
 		void* vertexptr[] = { (void*) vertexvals0, (void*) vertexvals1 };
-		cudaDataType_t type_v[] = { CUDA_R_32F, CUDA_R_32F };
+		hipblasDatatype_t type_v[] = { HIPBLAS_R_32F, HIPBLAS_R_32F };
 		float edgevals0[] = { 0.1f, 0.9153e-20f, 0.42e27f, 185.23, 1e21f, 15.6f, 215.907f, 912.2f,
 				0.2f };
 		float edgevals1[] = { 13., 322.64, 1e28, 197534.2, 0.1, 0.425e-5, 5923.4, 0.12e-12, 52. };
 		void* edgeptr[] = { (void*) edgevals0, (void*) edgevals1 };
-		cudaDataType_t type_e[] = { CUDA_R_32F, CUDA_R_32F };
+		hipblasDatatype_t type_e[] = { HIPBLAS_R_32F, HIPBLAS_R_32F };
 
 		status = nvgraphAllocateVertexData(nvgraph_handle, initial_graph, numsets, type_v);
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -1100,11 +1100,11 @@ TEST_F(NvgraphCAPITests_SubgraphCSR, CSRContractionNetworkX)
 
 		std::vector<float> vdata(topoData.nvertices, 1.);
 		void* vptr[] = { (void*) &vdata[0] };
-		cudaDataType_t type_v[] = { CUDA_R_32F };
+		hipblasDatatype_t type_v[] = { HIPBLAS_R_32F };
 
 		std::vector<float> edata(topoData.nedges, 1.);
 		void* eptr[] = { (void*) &edata[0] };
-		cudaDataType_t type_e[] = { CUDA_R_32F };
+		hipblasDatatype_t type_e[] = { HIPBLAS_R_32F };
 
 		status = nvgraphAllocateVertexData(nvgraph_handle,
 														netx_graph,

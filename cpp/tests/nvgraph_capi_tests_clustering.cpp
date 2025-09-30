@@ -36,7 +36,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<double>
 { 
-    static const cudaDataType_t Type = CUDA_R_64F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_64F;
     static const double inf;
     static const double tol;
     typedef union fpint 
@@ -52,7 +52,7 @@ const double nvgraph_Const<double>::tol = 1e-6; // this is what we use as a tole
 template <>
 struct nvgraph_Const<float>
 { 
-    static const cudaDataType_t Type = CUDA_R_32F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32F;
     static const float inf;
     static const float tol;
 
@@ -71,7 +71,7 @@ template <typename T>
 bool enough_device_memory(int n, int nnz, size_t add)
 {
     size_t mtotal, mfree;
-    cudaMemGetInfo(&mfree, &mtotal);
+    hipMemGetInfo(&mfree, &mtotal);
     if (mfree > add + sizeof(T)*3*(n + nnz)) 
         return true;
     return false;
@@ -221,7 +221,7 @@ class NVGraphCAPITests_SpectralClustering : public ::testing::TestWithParam<Spec
             return;
         }
 
-        cudaMalloc((void**)&clustering_d , n*sizeof(int));
+        hipMalloc((void**)&clustering_d , n*sizeof(int));
 
         nvgraphGraphDescr_t g1 = NULL;
         status = nvgraphCreateGraphDescr(handle, &g1);  
@@ -235,7 +235,7 @@ class NVGraphCAPITests_SpectralClustering : public ::testing::TestWithParam<Spec
         size_t numsets = 1;
         
         void*  edgeptr[1] = {(void*)&csrValA[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateEdgeData(handle, g1, numsets, type_e );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -294,7 +294,7 @@ class NVGraphCAPITests_SpectralClustering : public ::testing::TestWithParam<Spec
         else
              EXPECT_GE(random_score, score); //we want less edge cut
 
-        cudaFree(clustering_d);
+        hipFree(clustering_d);
         status = nvgraphDestroyGraphDescr(handle, g1);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
     }
@@ -548,7 +548,7 @@ class NVGraphCAPITests_Selector : public ::testing::TestWithParam<Selector_Useca
             return;
         }
         //int *aggregates_d;
-        //cudaMalloc((void**)&aggregates_d , n*sizeof(int));
+        //hipMalloc((void**)&aggregates_d , n*sizeof(int));
 
         nvgraphGraphDescr_t g1 = NULL;
         status = nvgraphCreateGraphDescr(handle, &g1);  
@@ -561,10 +561,10 @@ class NVGraphCAPITests_Selector : public ::testing::TestWithParam<Selector_Useca
         // set up graph data
         size_t numsets = 1;
         //void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        //cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
+        //hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&csrValA[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         //status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         //ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);

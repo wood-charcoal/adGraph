@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
+ * hipcub::AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
  */
 
 #pragma once

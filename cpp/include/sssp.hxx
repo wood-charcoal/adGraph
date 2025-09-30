@@ -36,7 +36,7 @@ private:
     int m_iterations;
     bool m_is_setup;
 
-    cudaStream_t m_stream;
+    hipStream_t m_stream;
 
     bool solve_it();
     void setup(IndexType source_index, Vector<ValueType>& source_connection,  Vector<ValueType>& sssp_result);
@@ -49,7 +49,7 @@ public:
 
     // Create a Sssp solver attached to a the transposed of a  weighted network
     // *** network is the transposed/CSC*** 
-    Sssp(const ValuedCsrGraph <IndexType, ValueType>& network, cudaStream_t stream = 0):m_network(network),m_is_setup(false), m_stream(stream)  {};
+    Sssp(const ValuedCsrGraph <IndexType, ValueType>& network, hipStream_t stream = 0):m_network(network),m_is_setup(false), m_stream(stream)  {};
    
     /*! Find the sortest path from  the vertex source_index to every other vertices.
      *

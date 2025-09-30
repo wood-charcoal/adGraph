@@ -91,10 +91,10 @@ static inline int check_int_ptr(const int* p)
 	return ret;
 }
 
-static inline int check_uniform_type_array(const cudaDataType_t * t, size_t sz)
+static inline int check_uniform_type_array(const hipblasDatatype_t * t, size_t sz)
 															{
 	int ret = 0;
-	cudaDataType_t uniform_type = t[0];
+	hipblasDatatype_t uniform_type = t[0];
 	for (size_t i = 1; i < sz; i++)
 			{
 		if (t[i] != uniform_type)
@@ -123,38 +123,38 @@ namespace nvgraph
 	extern CsrGraph<int>* extract_subgraph_by_vertices(CsrGraph<int>& graph,
 																		int* pV,
 																		size_t n,
-																		cudaStream_t stream);
+																		hipStream_t stream);
 	extern MultiValuedCsrGraph<int, float>* extract_subgraph_by_vertices(MultiValuedCsrGraph<int,
 																										float>& graph,
 																								int* pV,
 																								size_t n,
-																								cudaStream_t stream);
+																								hipStream_t stream);
 	extern MultiValuedCsrGraph<int, double>* extract_subgraph_by_vertices(MultiValuedCsrGraph<int,
 																											double>& graph,
 																									int* pV,
 																									size_t n,
-																									cudaStream_t stream);
+																									hipStream_t stream);
 
 	extern CsrGraph<int>* extract_subgraph_by_edges(CsrGraph<int>& graph,
 																	int* pV,
 																	size_t n,
-																	cudaStream_t stream);
+																	hipStream_t stream);
 	extern MultiValuedCsrGraph<int, float>* extract_subgraph_by_edges(MultiValuedCsrGraph<int, float>& graph,
 																							int* pV,
 																							size_t n,
-																							cudaStream_t stream);
+																							hipStream_t stream);
 	extern MultiValuedCsrGraph<int, double>* extract_subgraph_by_edges(MultiValuedCsrGraph<int,
 																										double>& graph,
 																								int* pV,
 																								size_t n,
-																								cudaStream_t stream);
+																								hipStream_t stream);
 
 #ifndef NVGRAPH_LIGHT
 
 	extern CsrGraph<int>* contract_graph_csr_mul(CsrGraph<int>& graph,
 																int* pV,
 																size_t n,
-																cudaStream_t stream,
+																hipStream_t stream,
 																const int& VCombine,
 																const int& VReduce,
 																const int& ECombine,
@@ -163,7 +163,7 @@ namespace nvgraph
 	extern CsrGraph<int>* contract_graph_csr_sum(CsrGraph<int>& graph,
 																int* pV,
 																size_t n,
-																cudaStream_t stream,
+																hipStream_t stream,
 																const int& VCombine,
 																const int& VReduce,
 																const int& ECombine,
@@ -172,7 +172,7 @@ namespace nvgraph
 	extern CsrGraph<int>* contract_graph_csr_min(CsrGraph<int>& graph,
 																int* pV,
 																size_t n,
-																cudaStream_t stream,
+																hipStream_t stream,
 																const int& VCombine,
 																const int& VReduce,
 																const int& ECombine,
@@ -181,7 +181,7 @@ namespace nvgraph
 	extern CsrGraph<int>* contract_graph_csr_max(CsrGraph<int>& graph,
 																int* pV,
 																size_t n,
-																cudaStream_t stream,
+																hipStream_t stream,
 																const int& VCombine,
 																const int& VReduce,
 																const int& ECombine,
@@ -191,7 +191,7 @@ namespace nvgraph
 																										float>& graph,
 																								int* pV,
 																								size_t n,
-																								cudaStream_t stream,
+																								hipStream_t stream,
 																								const int& VCombine,
 																								const int& VReduce,
 																								const int& ECombine,
@@ -201,7 +201,7 @@ namespace nvgraph
 																										float>& graph,
 																								int* pV,
 																								size_t n,
-																								cudaStream_t stream,
+																								hipStream_t stream,
 																								const int& VCombine,
 																								const int& VReduce,
 																								const int& ECombine,
@@ -211,7 +211,7 @@ namespace nvgraph
 																										float>& graph,
 																								int* pV,
 																								size_t n,
-																								cudaStream_t stream,
+																								hipStream_t stream,
 																								const int& VCombine,
 																								const int& VReduce,
 																								const int& ECombine,
@@ -221,7 +221,7 @@ namespace nvgraph
 																										float>& graph,
 																								int* pV,
 																								size_t n,
-																								cudaStream_t stream,
+																								hipStream_t stream,
 																								const int& VCombine,
 																								const int& VReduce,
 																								const int& ECombine,
@@ -231,7 +231,7 @@ namespace nvgraph
 																											double>& graph,
 																									int* pV,
 																									size_t n,
-																									cudaStream_t stream,
+																									hipStream_t stream,
 																									const int& VCombine,
 																									const int& VReduce,
 																									const int& ECombine,
@@ -241,7 +241,7 @@ namespace nvgraph
 																											double>& graph,
 																									int* pV,
 																									size_t n,
-																									cudaStream_t stream,
+																									hipStream_t stream,
 																									const int& VCombine,
 																									const int& VReduce,
 																									const int& ECombine,
@@ -251,7 +251,7 @@ namespace nvgraph
 																											double>& graph,
 																									int* pV,
 																									size_t n,
-																									cudaStream_t stream,
+																									hipStream_t stream,
 																									const int& VCombine,
 																									const int& VReduce,
 																									const int& ECombine,
@@ -261,7 +261,7 @@ namespace nvgraph
 																											double>& graph,
 																									int* pV,
 																									size_t n,
-																									cudaStream_t stream,
+																									hipStream_t stream,
 																									const int& VCombine,
 																									const int& VReduce,
 																									const int& ECombine,
@@ -348,8 +348,8 @@ namespace nvgraph
 		{
 			int device;
 
-			CHECK_CUDA(cudaFree((void * )0));
-			CHECK_CUDA(cudaGetDevice(&device));
+			CHECK_CUDA(hipFree((void * )0));
+			CHECK_CUDA(hipGetDevice(&device));
 			struct nvgraphContext *ctx = NULL;
 			ctx = (struct nvgraphContext *) malloc(sizeof(*ctx));
 			if (!ctx) {
@@ -358,13 +358,13 @@ namespace nvgraph
 
 			//cnmem
 			memset(&ctx->cnmem_device, 0, sizeof(ctx->cnmem_device)); // init all to 0
-			ctx->cnmem_device.device = device; // cnmem runs on the device set by cudaSetDevice
+			ctx->cnmem_device.device = device; // cnmem runs on the device set by hipSetDevice
 
 			size_t init_alloc = 1; // Initial allocation tentative, it is currently 1 so this feature is basically disabeled.
 
 			// Warning : Should uncomment that if using init_alloc > 1
 			//size_t freeMem, totalMem;
-			//cudaMemGetInfo(&freeMem, &totalMem);
+			//hipMemGetInfo(&freeMem, &totalMem);
 			//if (freeMem < init_alloc) // Couldn't find enough memory to do the initial alloc
 			//    init_alloc = 1; // (0 is used as default parameter in cnmem)
 
@@ -404,8 +404,8 @@ namespace nvgraph
 		{
 			int device;
 
-			CHECK_CUDA(cudaFree((void * )0));
-			CHECK_CUDA(cudaGetDevice(&device));
+			CHECK_CUDA(hipFree((void * )0));
+			CHECK_CUDA(hipGetDevice(&device));
 			struct nvgraphContext *ctx = NULL;
 			ctx = (struct nvgraphContext *) malloc(sizeof(*ctx));
 			if (!ctx) {
@@ -414,13 +414,13 @@ namespace nvgraph
 
 			//cnmem
 			memset(&ctx->cnmem_device, 0, sizeof(ctx->cnmem_device)); // init all to 0
-			ctx->cnmem_device.device = device; // cnmem runs on the device set by cudaSetDevice
+			ctx->cnmem_device.device = device; // cnmem runs on the device set by hipSetDevice
 
 			size_t init_alloc = 1; // Initial allocation tentative, it is currently 1 so this feature is basically disabeled.
 
 			// Warning : Should uncomment that if using init_alloc > 1
 			//size_t freeMem, totalMem;
-			//cudaMemGetInfo(&freeMem, &totalMem);
+			//hipMemGetInfo(&freeMem, &totalMem);
 			//if (freeMem < init_alloc) // Couldn't find enough memory to do the initial alloc
 			//    init_alloc = 1; // (0 is used as default parameter in cnmem)
 
@@ -516,7 +516,7 @@ namespace nvgraph
 			{
 				if (descrG->TT == NVGRAPH_2D_32I_32I) {
 					switch (descrG->T) {
-						case CUDA_R_32I: {
+						case HIPBLAS_R_32I: {
 							nvgraph::Matrix2d<int32_t, int32_t, int32_t>* m =
 									static_cast<nvgraph::Matrix2d<int32_t, int32_t, int32_t>*>(descrG->graph_handle);
 							delete m;
@@ -538,17 +538,17 @@ namespace nvgraph
 							break;
 						}
 						case HAS_VALUES: {
-							if (descrG->T == CUDA_R_32F) {
+							if (descrG->T == HIPBLAS_R_32F) {
 								nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 										static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 								delete MCSRG;
 							}
-							else if (descrG->T == CUDA_R_64F) {
+							else if (descrG->T == HIPBLAS_R_64F) {
 								nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 										static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 								delete MCSRG;
 							}
-							else if (descrG->T == CUDA_R_32I) {
+							else if (descrG->T == HIPBLAS_R_32I) {
 								nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
 										static_cast<nvgraph::MultiValuedCsrGraph<int, int>*>(descrG->graph_handle);
 								delete MCSRG;
@@ -571,7 +571,7 @@ namespace nvgraph
 		return getCAPIStatusForError(rc);
 	}
 
-	nvgraphStatus_t NVGRAPH_API nvgraphSetStream_impl(nvgraphHandle_t handle, cudaStream_t stream)
+	nvgraphStatus_t NVGRAPH_API nvgraphSetStream_impl(nvgraphHandle_t handle, hipStream_t stream)
 																		{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -646,15 +646,15 @@ namespace nvgraph
 				// Create the internal CSR representation
 				nvgraph::CsrGraph<int> * CSRG = new nvgraph::CsrGraph<int>(v, e, handle->stream);
 
-				CHECK_CUDA(cudaMemcpy(CSRG->get_raw_row_offsets(),
+				CHECK_CUDA(hipMemcpy(CSRG->get_raw_row_offsets(),
 												neighborhood,
 												(size_t )((CSRG->get_num_vertices() + 1) * sizeof(int)),
-												cudaMemcpyDefault));
+												hipMemcpyDefault));
 
-				CHECK_CUDA(cudaMemcpy(CSRG->get_raw_column_indices(),
+				CHECK_CUDA(hipMemcpy(CSRG->get_raw_column_indices(),
 												edgedest,
 												(size_t )((CSRG->get_num_edges()) * sizeof(int)),
-												cudaMemcpyDefault));
+												hipMemcpyDefault));
 
 				// Set the graph handle
 				descrG->graph_handle = CSRG;
@@ -663,7 +663,7 @@ namespace nvgraph
 			else if (TT == NVGRAPH_2D_32I_32I) {
 				nvgraph2dCOOTopology32I_t td = static_cast<nvgraph2dCOOTopology32I_t>(topologyData);
 				switch (td->valueType) {
-					case CUDA_R_32I: {
+					case HIPBLAS_R_32I: {
 						if (!td->nvertices || !td->nedges || !td->source_indices
 								|| !td->destination_indices || !td->numDevices || !td->devices
 								|| !td->blockN)
@@ -769,7 +769,7 @@ namespace nvgraph
 			else if (TT == NVGRAPH_2D_32I_32I) {
 				nvgraph2dCOOTopology32I_t td = static_cast<nvgraph2dCOOTopology32I_t>(topologyData);
 				switch (td->valueType) {
-					case CUDA_R_32I: {
+					case HIPBLAS_R_32I: {
 						if (!td->nvertices || !td->nedges || !td->source_indices
 								|| !td->destination_indices || !td->numDevices || !td->devices
 								|| !td->blockN)
@@ -860,17 +860,17 @@ namespace nvgraph
 				}
 
 				if (neighborhood != NULL) {
-					CHECK_CUDA(cudaMemcpy(neighborhood,
+					CHECK_CUDA(hipMemcpy(neighborhood,
 													CSRG->get_raw_row_offsets(),
 													(size_t )((v + 1) * sizeof(int)),
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 				}
 
 				if (edgedest != NULL) {
-					CHECK_CUDA(cudaMemcpy(edgedest,
+					CHECK_CUDA(hipMemcpy(edgedest,
 													CSRG->get_raw_column_indices(),
 													(size_t )((e) * sizeof(int)),
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 				}
 
 			}
@@ -882,7 +882,7 @@ namespace nvgraph
 	nvgraphStatus_t NVGRAPH_API nvgraphAllocateVertexData_impl(nvgraphHandle_t handle,
 																					nvgraphGraphDescr_t descrG,
 																					size_t numsets,
-																					cudaDataType_t *settypes)
+																					hipblasDatatype_t *settypes)
 																					{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -895,7 +895,7 @@ namespace nvgraph
 
 			if (descrG->graphStatus == HAS_TOPOLOGY) // need to convert CsrGraph to MultiValuedCsrGraph first
 					{
-				if (*settypes == CUDA_R_32F)
+				if (*settypes == HIPBLAS_R_32F)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -903,7 +903,7 @@ namespace nvgraph
 							int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (*settypes == CUDA_R_64F)
+				else if (*settypes == HIPBLAS_R_64F)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -911,7 +911,7 @@ namespace nvgraph
 							int, double>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (*settypes == CUDA_R_32I)
+				else if (*settypes == HIPBLAS_R_32I)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -933,19 +933,19 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			// Allocate and transfer
-			if (*settypes == CUDA_R_32F)
+			if (*settypes == HIPBLAS_R_32F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 				MCSRG->allocateVertexData(numsets, NULL);
 			}
-			else if (*settypes == CUDA_R_64F)
+			else if (*settypes == HIPBLAS_R_64F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 				MCSRG->allocateVertexData(numsets, NULL);
 			}
-			else if (*settypes == CUDA_R_32I)
+			else if (*settypes == HIPBLAS_R_32I)
 					{
 				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, int>*>(descrG->graph_handle);
@@ -962,7 +962,7 @@ namespace nvgraph
 	nvgraphStatus_t NVGRAPH_API nvgraphAttachVertexData_impl(nvgraphHandle_t handle,
 															 nvgraphGraphDescr_t descrG,
 															 size_t setnum,
-															 cudaDataType_t settype,
+															 hipblasDatatype_t settype,
 															 void *vertexData)
 															 {
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
@@ -973,7 +973,7 @@ namespace nvgraph
 
 			if (descrG->graphStatus == HAS_TOPOLOGY) // need to convert CsrGraph to MultiValuedCsrGraph first
 					{
-				if (settype == CUDA_R_32F)
+				if (settype == HIPBLAS_R_32F)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -981,7 +981,7 @@ namespace nvgraph
 							int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (settype == CUDA_R_64F)
+				else if (settype == HIPBLAS_R_64F)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -989,7 +989,7 @@ namespace nvgraph
 							int, double>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (settype == CUDA_R_32I)
+				else if (settype == HIPBLAS_R_32I)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -1011,19 +1011,19 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			// transfer
-			if (settype == CUDA_R_32F)
+			if (settype == HIPBLAS_R_32F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 				MCSRG->attachVertexData(setnum, (float*)vertexData, NULL);
 			}
-			else if (settype == CUDA_R_64F)
+			else if (settype == HIPBLAS_R_64F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 				MCSRG->attachVertexData(setnum, (double*)vertexData, NULL);
 			}
-			else if (settype == CUDA_R_32I)
+			else if (settype == HIPBLAS_R_32I)
 					{
 				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, int>*>(descrG->graph_handle);
@@ -1039,7 +1039,7 @@ namespace nvgraph
 	nvgraphStatus_t NVGRAPH_API nvgraphAllocateEdgeData_impl(nvgraphHandle_t handle,
 																				nvgraphGraphDescr_t descrG,
 																				size_t numsets,
-																				cudaDataType_t *settypes)
+																				hipblasDatatype_t *settypes)
 																				{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1052,7 +1052,7 @@ namespace nvgraph
 			// Look at what kind of graph we have
 			if (descrG->graphStatus == HAS_TOPOLOGY) // need to convert CsrGraph to MultiValuedCsrGraph first
 					{
-				if (*settypes == CUDA_R_32F)
+				if (*settypes == HIPBLAS_R_32F)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -1060,7 +1060,7 @@ namespace nvgraph
 							int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (*settypes == CUDA_R_64F)
+				else if (*settypes == HIPBLAS_R_64F)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -1068,7 +1068,7 @@ namespace nvgraph
 							int, double>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (*settypes == CUDA_R_32I)
+				else if (*settypes == HIPBLAS_R_32I)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -1090,19 +1090,19 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			// Allocate and transfer
-			if (*settypes == CUDA_R_32F)
+			if (*settypes == HIPBLAS_R_32F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 				MCSRG->allocateEdgeData(numsets, NULL);
 			}
-			else if (*settypes == CUDA_R_64F)
+			else if (*settypes == HIPBLAS_R_64F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 				MCSRG->allocateEdgeData(numsets, NULL);
 			}
-			else if (*settypes == CUDA_R_32I)
+			else if (*settypes == HIPBLAS_R_32I)
 					{
 				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, int>*>(descrG->graph_handle);
@@ -1120,7 +1120,7 @@ namespace nvgraph
 	nvgraphStatus_t NVGRAPH_API nvgraphAttachEdgeData_impl(nvgraphHandle_t handle,
 														   nvgraphGraphDescr_t descrG,
 														   size_t setnum,
-														   cudaDataType_t settype,
+														   hipblasDatatype_t settype,
 														   void *edgeData)
 														   {
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
@@ -1131,7 +1131,7 @@ namespace nvgraph
 			// Look at what kind of graph we have
 			if (descrG->graphStatus == HAS_TOPOLOGY) // need to convert CsrGraph to MultiValuedCsrGraph first
 					{
-				if (settype == CUDA_R_32F)
+				if (settype == HIPBLAS_R_32F)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -1139,7 +1139,7 @@ namespace nvgraph
 							int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (settype == CUDA_R_64F)
+				else if (settype == HIPBLAS_R_64F)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -1147,7 +1147,7 @@ namespace nvgraph
 							int, double>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (settype == CUDA_R_32I)
+				else if (settype == HIPBLAS_R_32I)
 						{
 					nvgraph::CsrGraph<int> *CSRG =
 							static_cast<nvgraph::CsrGraph<int>*>(descrG->graph_handle);
@@ -1169,19 +1169,19 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			// Allocate and transfer
-			if (settype == CUDA_R_32F)
+			if (settype == HIPBLAS_R_32F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 				MCSRG->attachEdgeData(setnum, (float*)edgeData, NULL);
 			}
-			else if (settype == CUDA_R_64F)
+			else if (settype == HIPBLAS_R_64F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 				MCSRG->attachEdgeData(setnum, (double*)edgeData, NULL);
 			}
-			else if (settype == CUDA_R_32I)
+			else if (settype == HIPBLAS_R_32I)
 					{
 				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, int>*>(descrG->graph_handle);
@@ -1211,38 +1211,38 @@ namespace nvgraph
 			if (descrG->graphStatus != HAS_VALUES) // need a MultiValuedCsrGraph
 				FatalError("Graph should have allocated values.", NVGRAPH_ERR_BAD_PARAMETERS);
 
-			if (descrG->T == CUDA_R_32F)
+			if (descrG->T == HIPBLAS_R_32F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy(MCSRG->get_raw_vertex_dim(setnum),
+				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
 								(float*) vertexData,
 								(size_t) ((MCSRG->get_num_vertices()) * sizeof(float)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
-			else if (descrG->T == CUDA_R_64F)
+			else if (descrG->T == HIPBLAS_R_64F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy(MCSRG->get_raw_vertex_dim(setnum),
+				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
 								(double*) vertexData,
 								(size_t) ((MCSRG->get_num_vertices()) * sizeof(double)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
-			else if (descrG->T == CUDA_R_32I)
+			else if (descrG->T == HIPBLAS_R_32I)
 					{
 				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, int>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy(MCSRG->get_raw_vertex_dim(setnum),
+				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
 								(int*) vertexData,
 								(size_t) ((MCSRG->get_num_vertices()) * sizeof(int)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1271,38 +1271,38 @@ namespace nvgraph
 			if (descrG->graphStatus != HAS_VALUES) // need a MultiValuedCsrGraph
 				FatalError("Graph should have values.", NVGRAPH_ERR_BAD_PARAMETERS);
 
-			if (descrG->T == CUDA_R_32F)
+			if (descrG->T == HIPBLAS_R_32F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy((float*) vertexData,
+				hipMemcpy((float*) vertexData,
 								MCSRG->get_raw_vertex_dim(setnum),
 								(size_t) ((MCSRG->get_num_vertices()) * sizeof(float)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
-			else if (descrG->T == CUDA_R_64F)
+			else if (descrG->T == HIPBLAS_R_64F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy((double*) vertexData,
+				hipMemcpy((double*) vertexData,
 								MCSRG->get_raw_vertex_dim(setnum),
 								(size_t) ((MCSRG->get_num_vertices()) * sizeof(double)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
-			else if (descrG->T == CUDA_R_32I)
+			else if (descrG->T == HIPBLAS_R_32I)
 					{
 				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, int>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy((int*) vertexData,
+				hipMemcpy((int*) vertexData,
 								MCSRG->get_raw_vertex_dim(setnum),
 								(size_t) ((MCSRG->get_num_vertices()) * sizeof(int)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1320,7 +1320,7 @@ namespace nvgraph
 																				nvgraphTopologyType_t srcTType,
 																				void *srcTopology,
 																				void *srcEdgeData,
-																				cudaDataType_t *dataType,
+																				hipblasDatatype_t *dataType,
 																				nvgraphTopologyType_t dstTType,
 																				void *dstTopology,
 																				void *dstEdgeData)
@@ -1333,9 +1333,9 @@ namespace nvgraph
 				FatalError("Incorrect parameters.", NVGRAPH_ERR_BAD_PARAMETERS);
 
 			size_t sizeT;
-			if (*dataType == CUDA_R_32F)
+			if (*dataType == HIPBLAS_R_32F)
 				sizeT = sizeof(float);
-			else if (*dataType == CUDA_R_64F)
+			else if (*dataType == HIPBLAS_R_64F)
 				sizeT = sizeof(double);
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1346,18 +1346,18 @@ namespace nvgraph
 				nvgraphCSRTopology32I_t dstT = static_cast<nvgraphCSRTopology32I_t>(dstTopology);
 				dstT->nvertices = srcT->nvertices;
 				dstT->nedges = srcT->nedges;
-				CHECK_CUDA(cudaMemcpy(dstT->source_offsets,
+				CHECK_CUDA(hipMemcpy(dstT->source_offsets,
 												srcT->source_offsets,
 												(srcT->nvertices + 1) * sizeof(int),
-												cudaMemcpyDefault));
-				CHECK_CUDA(cudaMemcpy(dstT->destination_indices,
+												hipMemcpyDefault));
+				CHECK_CUDA(hipMemcpy(dstT->destination_indices,
 												srcT->destination_indices,
 												srcT->nedges * sizeof(int),
-												cudaMemcpyDefault));
-				CHECK_CUDA(cudaMemcpy(dstEdgeData,
+												hipMemcpyDefault));
+				CHECK_CUDA(hipMemcpy(dstEdgeData,
 												srcEdgeData,
 												srcT->nedges * sizeT,
-												cudaMemcpyDefault));
+												hipMemcpyDefault));
 			} else if (srcTType == NVGRAPH_CSR_32 && dstTType == NVGRAPH_CSC_32) {           // CSR2CSC
 				nvgraphCSRTopology32I_t srcT = static_cast<nvgraphCSRTopology32I_t>(srcTopology);
 				nvgraphCSCTopology32I_t dstT = static_cast<nvgraphCSCTopology32I_t>(dstTopology);
@@ -1368,8 +1368,8 @@ namespace nvgraph
 							srcT->source_offsets, srcT->destination_indices,
 							dstEdgeData,
 							dstT->source_indices, dstT->destination_offsets,
-							CUSPARSE_ACTION_NUMERIC,
-							CUSPARSE_INDEX_BASE_ZERO, dataType);
+							HIPSPARSE_ACTION_NUMERIC,
+							HIPSPARSE_INDEX_BASE_ZERO, dataType);
 			} else if (srcTType == NVGRAPH_CSR_32 && dstTType == NVGRAPH_COO_32) {           // CSR2COO
 				nvgraphCSRTopology32I_t srcT = static_cast<nvgraphCSRTopology32I_t>(srcTopology);
 				nvgraphCOOTopology32I_t dstT = static_cast<nvgraphCOOTopology32I_t>(dstTopology);
@@ -1381,29 +1381,29 @@ namespace nvgraph
 								srcT->nedges,
 								srcT->nvertices,
 								dstT->source_indices,
-								CUSPARSE_INDEX_BASE_ZERO);
-					CHECK_CUDA(cudaMemcpy(dstT->destination_indices,
+								HIPSPARSE_INDEX_BASE_ZERO);
+					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
 													srcT->destination_indices,
 													srcT->nedges * sizeof(int),
-													cudaMemcpyDefault));
-					CHECK_CUDA(cudaMemcpy(dstEdgeData,
+													hipMemcpyDefault));
+					CHECK_CUDA(hipMemcpy(dstEdgeData,
 													srcEdgeData,
 													srcT->nedges * sizeT,
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 				} else if (dstT->tag == NVGRAPH_SORTED_BY_DESTINATION) {
 					// Step 1: Convert to COO_Source
 					csr2coo(srcT->source_offsets,
 								srcT->nedges,
 								srcT->nvertices,
 								dstT->source_indices,
-								CUSPARSE_INDEX_BASE_ZERO);
+								HIPSPARSE_INDEX_BASE_ZERO);
 					// Step 2: Convert to COO_Destination
 					cooSortByDestination(srcT->nvertices, srcT->nvertices, srcT->nedges,
 												srcEdgeData,
 												dstT->source_indices, srcT->destination_indices,
 												dstEdgeData,
 												dstT->source_indices, dstT->destination_indices,
-												CUSPARSE_INDEX_BASE_ZERO,
+												HIPSPARSE_INDEX_BASE_ZERO,
 												dataType);
 				} else {
 					return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1419,25 +1419,25 @@ namespace nvgraph
 							srcT->source_indices, srcT->destination_offsets,
 							dstEdgeData,
 							dstT->source_offsets, dstT->destination_indices,
-							CUSPARSE_ACTION_NUMERIC,
-							CUSPARSE_INDEX_BASE_ZERO, dataType);
+							HIPSPARSE_ACTION_NUMERIC,
+							HIPSPARSE_INDEX_BASE_ZERO, dataType);
 			} else if (srcTType == NVGRAPH_CSC_32 && dstTType == NVGRAPH_CSC_32) {           // CSC2CSC
 				nvgraphCSCTopology32I_t srcT = static_cast<nvgraphCSCTopology32I_t>(srcTopology);
 				nvgraphCSCTopology32I_t dstT = static_cast<nvgraphCSCTopology32I_t>(dstTopology);
 				dstT->nvertices = srcT->nvertices;
 				dstT->nedges = srcT->nedges;
-				CHECK_CUDA(cudaMemcpy(dstT->destination_offsets,
+				CHECK_CUDA(hipMemcpy(dstT->destination_offsets,
 												srcT->destination_offsets,
 												(srcT->nvertices + 1) * sizeof(int),
-												cudaMemcpyDefault));
-				CHECK_CUDA(cudaMemcpy(dstT->source_indices,
+												hipMemcpyDefault));
+				CHECK_CUDA(hipMemcpy(dstT->source_indices,
 												srcT->source_indices,
 												srcT->nedges * sizeof(int),
-												cudaMemcpyDefault));
-				CHECK_CUDA(cudaMemcpy(dstEdgeData,
+												hipMemcpyDefault));
+				CHECK_CUDA(hipMemcpy(dstEdgeData,
 												srcEdgeData,
 												srcT->nedges * sizeT,
-												cudaMemcpyDefault));
+												hipMemcpyDefault));
 			} else if (srcTType == NVGRAPH_CSC_32 && dstTType == NVGRAPH_COO_32) {           // CSC2COO
 				nvgraphCSCTopology32I_t srcT = static_cast<nvgraphCSCTopology32I_t>(srcTopology);
 				nvgraphCOOTopology32I_t dstT = static_cast<nvgraphCOOTopology32I_t>(dstTopology);
@@ -1449,14 +1449,14 @@ namespace nvgraph
 								srcT->nedges,
 								srcT->nvertices,
 								dstT->destination_indices,
-								CUSPARSE_INDEX_BASE_ZERO);
+								HIPSPARSE_INDEX_BASE_ZERO);
 					// Step 2: Convert to COO_Source
 					cooSortBySource(srcT->nvertices, srcT->nvertices, srcT->nedges,
 											srcEdgeData,
 											srcT->source_indices, dstT->destination_indices,
 											dstEdgeData,
 											dstT->source_indices, dstT->destination_indices,
-											CUSPARSE_INDEX_BASE_ZERO,
+											HIPSPARSE_INDEX_BASE_ZERO,
 											dataType);
 				} else if (dstT->tag == NVGRAPH_SORTED_BY_DESTINATION || dstT->tag == NVGRAPH_DEFAULT
 						|| dstT->tag == NVGRAPH_UNSORTED) {
@@ -1464,15 +1464,15 @@ namespace nvgraph
 								srcT->nedges,
 								srcT->nvertices,
 								dstT->destination_indices,
-								CUSPARSE_INDEX_BASE_ZERO);
-					CHECK_CUDA(cudaMemcpy(dstT->source_indices,
+								HIPSPARSE_INDEX_BASE_ZERO);
+					CHECK_CUDA(hipMemcpy(dstT->source_indices,
 													srcT->source_indices,
 													srcT->nedges * sizeof(int),
-													cudaMemcpyDefault));
-					CHECK_CUDA(cudaMemcpy(dstEdgeData,
+													hipMemcpyDefault));
+					CHECK_CUDA(hipMemcpy(dstEdgeData,
 													srcEdgeData,
 													srcT->nedges * sizeT,
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 				} else {
 					return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
 				}
@@ -1487,22 +1487,22 @@ namespace nvgraph
 								srcT->nedges,
 								srcT->nvertices,
 								dstT->source_offsets,
-								CUSPARSE_INDEX_BASE_ZERO);
-					CHECK_CUDA(cudaMemcpy(dstT->destination_indices,
+								HIPSPARSE_INDEX_BASE_ZERO);
+					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
 													srcT->destination_indices,
 													srcT->nedges * sizeof(int),
-													cudaMemcpyDefault));
-					CHECK_CUDA(cudaMemcpy(dstEdgeData,
+													hipMemcpyDefault));
+					CHECK_CUDA(hipMemcpy(dstEdgeData,
 													srcEdgeData,
 													srcT->nedges * sizeT,
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 				} else if (srcT->tag == NVGRAPH_SORTED_BY_DESTINATION) {
 					cood2csr(srcT->nvertices, srcT->nvertices, srcT->nedges,
 								srcEdgeData,
 								srcT->source_indices, srcT->destination_indices,
 								dstEdgeData,
 								dstT->source_offsets, dstT->destination_indices,
-								CUSPARSE_INDEX_BASE_ZERO,
+								HIPSPARSE_INDEX_BASE_ZERO,
 								dataType);
 				} else if (srcT->tag == NVGRAPH_DEFAULT || srcT->tag == NVGRAPH_UNSORTED) {
 					coou2csr(srcT->nvertices, srcT->nvertices, srcT->nedges,
@@ -1510,7 +1510,7 @@ namespace nvgraph
 								srcT->source_indices, srcT->destination_indices,
 								dstEdgeData,
 								dstT->source_offsets, dstT->destination_indices,
-								CUSPARSE_INDEX_BASE_ZERO,
+								HIPSPARSE_INDEX_BASE_ZERO,
 								dataType);
 				} else {
 					return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1526,29 +1526,29 @@ namespace nvgraph
 								srcT->source_indices, srcT->destination_indices,
 								dstEdgeData,
 								dstT->source_indices, dstT->destination_offsets,
-								CUSPARSE_INDEX_BASE_ZERO,
+								HIPSPARSE_INDEX_BASE_ZERO,
 								dataType);
 				} else if (srcT->tag == NVGRAPH_SORTED_BY_DESTINATION) {
 					coo2csr(srcT->destination_indices,
 								srcT->nedges,
 								srcT->nvertices,
 								dstT->destination_offsets,
-								CUSPARSE_INDEX_BASE_ZERO);
-					CHECK_CUDA(cudaMemcpy(dstT->source_indices,
+								HIPSPARSE_INDEX_BASE_ZERO);
+					CHECK_CUDA(hipMemcpy(dstT->source_indices,
 													srcT->source_indices,
 													srcT->nedges * sizeof(int),
-													cudaMemcpyDefault));
-					CHECK_CUDA(cudaMemcpy(dstEdgeData,
+													hipMemcpyDefault));
+					CHECK_CUDA(hipMemcpy(dstEdgeData,
 													srcEdgeData,
 													srcT->nedges * sizeT,
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 				} else if (srcT->tag == NVGRAPH_DEFAULT || srcT->tag == NVGRAPH_UNSORTED) {
 					coou2csc(srcT->nvertices, srcT->nvertices, srcT->nedges,
 								srcEdgeData,
 								srcT->source_indices, srcT->destination_indices,
 								dstEdgeData,
 								dstT->source_indices, dstT->destination_offsets,
-								CUSPARSE_INDEX_BASE_ZERO,
+								HIPSPARSE_INDEX_BASE_ZERO,
 								dataType);
 				} else {
 					return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1560,25 +1560,25 @@ namespace nvgraph
 				dstT->nedges = srcT->nedges;
 				if (srcT->tag == dstT->tag || dstT->tag == NVGRAPH_DEFAULT
 						|| dstT->tag == NVGRAPH_UNSORTED) {
-					CHECK_CUDA(cudaMemcpy(dstT->source_indices,
+					CHECK_CUDA(hipMemcpy(dstT->source_indices,
 													srcT->source_indices,
 													srcT->nedges * sizeof(int),
-													cudaMemcpyDefault));
-					CHECK_CUDA(cudaMemcpy(dstT->destination_indices,
+													hipMemcpyDefault));
+					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
 													srcT->destination_indices,
 													srcT->nedges * sizeof(int),
-													cudaMemcpyDefault));
-					CHECK_CUDA(cudaMemcpy(dstEdgeData,
+													hipMemcpyDefault));
+					CHECK_CUDA(hipMemcpy(dstEdgeData,
 													srcEdgeData,
 													srcT->nedges * sizeT,
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 				} else if (dstT->tag == NVGRAPH_SORTED_BY_SOURCE) {
 					cooSortBySource(srcT->nvertices, srcT->nvertices, srcT->nedges,
 											srcEdgeData,
 											srcT->source_indices, srcT->destination_indices,
 											dstEdgeData,
 											dstT->source_indices, dstT->destination_indices,
-											CUSPARSE_INDEX_BASE_ZERO,
+											HIPSPARSE_INDEX_BASE_ZERO,
 											dataType);
 				} else if (dstT->tag == NVGRAPH_SORTED_BY_DESTINATION) {
 					cooSortByDestination(srcT->nvertices, srcT->nvertices, srcT->nedges,
@@ -1586,7 +1586,7 @@ namespace nvgraph
 												srcT->source_indices, srcT->destination_indices,
 												dstEdgeData,
 												dstT->source_indices, dstT->destination_indices,
-												CUSPARSE_INDEX_BASE_ZERO,
+												HIPSPARSE_INDEX_BASE_ZERO,
 												dataType);
 				} else {
 					return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1617,38 +1617,38 @@ namespace nvgraph
 			if (descrG->graphStatus != HAS_VALUES) // need a MultiValuedCsrGraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
-			if (descrG->T == CUDA_R_32F)
+			if (descrG->T == HIPBLAS_R_32F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy(MCSRG->get_raw_edge_dim(setnum),
+				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
 								(float*) edgeData,
 								(size_t) ((MCSRG->get_num_edges()) * sizeof(float)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
-			else if (descrG->T == CUDA_R_64F)
+			else if (descrG->T == HIPBLAS_R_64F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy(MCSRG->get_raw_edge_dim(setnum),
+				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
 								(double*) edgeData,
 								(size_t) ((MCSRG->get_num_edges()) * sizeof(double)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
-			else if (descrG->T == CUDA_R_32I)
+			else if (descrG->T == HIPBLAS_R_32I)
 					{
 				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, int>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy(MCSRG->get_raw_edge_dim(setnum),
+				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
 								(int*) edgeData,
 								(size_t) ((MCSRG->get_num_edges()) * sizeof(int)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1676,27 +1676,27 @@ namespace nvgraph
 			if (descrG->graphStatus != HAS_VALUES) // need a MultiValuedCsrGraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
-			if (descrG->T == CUDA_R_32F)
+			if (descrG->T == HIPBLAS_R_32F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy((float*) edgeData,
+				hipMemcpy((float*) edgeData,
 								MCSRG->get_raw_edge_dim(setnum),
 								(size_t) ((MCSRG->get_num_edges()) * sizeof(float)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
-			else if (descrG->T == CUDA_R_64F)
+			else if (descrG->T == HIPBLAS_R_64F)
 					{
 				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				cudaMemcpy((double*) edgeData,
+				hipMemcpy((double*) edgeData,
 								MCSRG->get_raw_edge_dim(setnum),
 								(size_t) ((MCSRG->get_num_edges()) * sizeof(double)),
-								cudaMemcpyDefault);
+								hipMemcpyDefault);
 			}
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1748,14 +1748,14 @@ namespace nvgraph
 
 			if (descrG->TT != NVGRAPH_CSC_32) // supported topologies
 				return NVGRAPH_STATUS_INVALID_VALUE;
-//        cudaError_t cuda_status;
+//        hipError_t cuda_status;
 
 			if (descrG->graphStatus != HAS_VALUES)
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
@@ -1770,7 +1770,7 @@ namespace nvgraph
 					rc = sssp_solver.solve(*source_vert, co, MCSRG->get_vertex_dim(sssp));
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
@@ -1812,7 +1812,7 @@ namespace nvgraph
 			if (descrG->TT != NVGRAPH_CSR_32) // supported topologies
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
-			if (descrG->T != CUDA_R_32I) //results are ints
+			if (descrG->T != HIPBLAS_R_32I) //results are ints
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
 
 			//Results (bfs distances, predecessors..) are written in dimension in mvcsrg
@@ -1914,7 +1914,7 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 			if (descrG->TT != NVGRAPH_2D_32I_32I)
 				return NVGRAPH_STATUS_INVALID_VALUE;
-			if (descrG->T != CUDA_R_32I)
+			if (descrG->T != HIPBLAS_R_32I)
 				return NVGRAPH_STATUS_INVALID_VALUE;
 			nvgraph::Matrix2d<int32_t, int32_t, int32_t>* m = static_cast<nvgraph::Matrix2d<int32_t,
 					int32_t, int32_t>*>(descrG->graph_handle);
@@ -1947,11 +1947,11 @@ namespace nvgraph
 			if (descrG->TT != NVGRAPH_CSC_32) // supported topologies
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
-//        cudaError_t cuda_status;
+//        hipError_t cuda_status;
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
@@ -1967,7 +1967,7 @@ namespace nvgraph
 					rc = widest_path_solver.solve(*source_vert, co, MCSRG->get_vertex_dim(widest_path));
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
@@ -2035,7 +2035,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					float alphaT = *static_cast<const float*>(alpha);
 					if (alphaT <= 0.0f || alphaT >= 1.0f)
@@ -2060,7 +2060,7 @@ namespace nvgraph
 					rc = pagerank_solver.solve(alphaT, guess, MCSRG->get_vertex_dim(rank), tol, max_it);
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					double alphaT = *static_cast<const double*>(alpha);
 					if (alphaT <= 0.0 || alphaT >= 1.0)
@@ -2119,7 +2119,7 @@ namespace nvgraph
 			if (descrG->TT != NVGRAPH_CSC_32) // supported topologies
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
-//        cudaError_t cuda_status;
+//        hipError_t cuda_status;
 			int max_it;
 			int ss_sz;
 			float tol;
@@ -2143,7 +2143,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					float alphaT = *static_cast<const float*>(alpha);
 					if (alphaT <= 0.0f || alphaT >= 1.0f)
@@ -2169,7 +2169,7 @@ namespace nvgraph
 					rc = iram_solver.solve(ss_sz, 1, guess, eigVals, MCSRG->get_vertex_dim(rank));
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					// curently iram solver accept float for alpha
 					double alphaTemp = *static_cast<const double*>(alpha);
@@ -2248,7 +2248,7 @@ namespace nvgraph
 					break;
 
 				case HAS_VALUES: //MultiValuedCsrGraph
-					if (descrG->T == CUDA_R_32F)
+					if (descrG->T == HIPBLAS_R_32F)
 							{
 						nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 								static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
@@ -2262,7 +2262,7 @@ namespace nvgraph
 						subdescrG->graph_handle = subgraph;
 						subdescrG->graphStatus = HAS_VALUES;
 					}
-					else if (descrG->T == CUDA_R_64F)
+					else if (descrG->T == HIPBLAS_R_64F)
 							{
 						nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 								static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
@@ -2331,7 +2331,7 @@ namespace nvgraph
 					break;
 
 				case HAS_VALUES: //MultiValuedCsrGraph
-					if (descrG->T == CUDA_R_32F)
+					if (descrG->T == HIPBLAS_R_32F)
 							{
 						nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 								static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
@@ -2342,7 +2342,7 @@ namespace nvgraph
 						subdescrG->graph_handle = subgraph;
 						subdescrG->graphStatus = HAS_VALUES;
 					}
-					else if (descrG->T == CUDA_R_64F)
+					else if (descrG->T == HIPBLAS_R_64F)
 							{
 						nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 								static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
@@ -2434,7 +2434,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
@@ -2486,24 +2486,24 @@ namespace nvgraph
 					// give a copy of results to the user
 					if (rc == NVGRAPH_OK)
 							{
-						CHECK_CUDA(cudaMemcpy((int* )clustering,
+						CHECK_CUDA(hipMemcpy((int* )clustering,
 														clust.raw(),
 														(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-														cudaMemcpyDefault));
-						CHECK_CUDA(cudaMemcpy((float* )eig_vals,
+														hipMemcpyDefault));
+						CHECK_CUDA(hipMemcpy((float* )eig_vals,
 														eigVals.raw(),
 														(size_t )(n_eig_vects * sizeof(float)),
-														cudaMemcpyDefault));
-						CHECK_CUDA(cudaMemcpy((float* )eig_vects,
+														hipMemcpyDefault));
+						CHECK_CUDA(hipMemcpy((float* )eig_vects,
 														eigVecs.raw(),
 														(size_t )(n_eig_vects * MCSRG->get_num_vertices()
 																* sizeof(float)),
-														cudaMemcpyDefault));
+														hipMemcpyDefault));
 					}
 
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
@@ -2554,19 +2554,19 @@ namespace nvgraph
 					// give a copy of results to the user
 					if (rc == NVGRAPH_OK)
 							{
-						CHECK_CUDA(cudaMemcpy((int* )clustering,
+						CHECK_CUDA(hipMemcpy((int* )clustering,
 														clust.raw(),
 														(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-														cudaMemcpyDefault));
-						CHECK_CUDA(cudaMemcpy((double* )eig_vals,
+														hipMemcpyDefault));
+						CHECK_CUDA(hipMemcpy((double* )eig_vals,
 														eigVals.raw(),
 														(size_t )(n_eig_vects * sizeof(double)),
-														cudaMemcpyDefault));
-						CHECK_CUDA(cudaMemcpy((double* )eig_vects,
+														hipMemcpyDefault));
+						CHECK_CUDA(hipMemcpy((double* )eig_vects,
 														eigVecs.raw(),
 														(size_t )(n_eig_vects * MCSRG->get_num_vertices()
 																* sizeof(double)),
-														cudaMemcpyDefault));
+														hipMemcpyDefault));
 					}
 					break;
 				}
@@ -2606,7 +2606,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					float edge_cut, ratio_cut;
 					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
@@ -2617,10 +2617,10 @@ namespace nvgraph
 					nvgraph::ValuedCsrGraph<int, float> network =
 							*MCSRG->get_valued_csr_graph(weight_index);
 					Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
-					CHECK_CUDA(cudaMemcpy(clust.raw(),
+					CHECK_CUDA(hipMemcpy(clust.raw(),
 													(int* )clustering,
 													(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 					rc = analyzePartition<int, float>(network,
 																	n_clusters,
 																	clust.raw(),
@@ -2630,7 +2630,7 @@ namespace nvgraph
 					*ratioCut = ratio_cut;
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					double edge_cut, ratio_cut;
 					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
@@ -2641,10 +2641,10 @@ namespace nvgraph
 					nvgraph::ValuedCsrGraph<int, double> network =
 							*MCSRG->get_valued_csr_graph(weight_index);
 					Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
-					CHECK_CUDA(cudaMemcpy(clust.raw(),
+					CHECK_CUDA(hipMemcpy(clust.raw(),
 													(int* )clustering,
 													(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 					rc = analyzePartition<int, double>(network,
 																	n_clusters,
 																	clust.raw(),
@@ -2706,7 +2706,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
@@ -2719,13 +2719,13 @@ namespace nvgraph
 					nvgraph::Size2Selector<int, float> one_phase_hand_checking(sim_metric);
 					rc = one_phase_hand_checking.setAggregates(network, agg, num_agg);
 					*num_aggregates = static_cast<size_t>(num_agg);
-					CHECK_CUDA(cudaMemcpy((int* )aggregates,
+					CHECK_CUDA(hipMemcpy((int* )aggregates,
 													agg.raw(),
 													(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
@@ -2739,10 +2739,10 @@ namespace nvgraph
 					nvgraph::Size2Selector<int, double> one_phase_hand_checking(sim_metric);
 					rc = one_phase_hand_checking.setAggregates(network, agg, num_agg);
 					*num_aggregates = static_cast<size_t>(num_agg);
-					CHECK_CUDA(cudaMemcpy((int* )aggregates,
+					CHECK_CUDA(hipMemcpy((int* )aggregates,
 													agg.raw(),
 													(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 					break;
 				}
 				default:
@@ -2818,7 +2818,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
@@ -2848,24 +2848,24 @@ namespace nvgraph
 					// give a copy of results to the user
 					if (rc == NVGRAPH_OK)
 							{
-						CHECK_CUDA(cudaMemcpy((int* )clustering,
+						CHECK_CUDA(hipMemcpy((int* )clustering,
 														clust.raw(),
 														(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-														cudaMemcpyDefault));
-						CHECK_CUDA(cudaMemcpy((float* )eig_vals,
+														hipMemcpyDefault));
+						CHECK_CUDA(hipMemcpy((float* )eig_vals,
 														eigVals.raw(),
 														(size_t )(n_eig_vects * sizeof(float)),
-														cudaMemcpyDefault));
-						CHECK_CUDA(cudaMemcpy((float* )eig_vects,
+														hipMemcpyDefault));
+						CHECK_CUDA(hipMemcpy((float* )eig_vects,
 														eigVecs.raw(),
 														(size_t )(n_eig_vects * MCSRG->get_num_vertices()
 																* sizeof(float)),
-														cudaMemcpyDefault));
+														hipMemcpyDefault));
 					}
 
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 							static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
@@ -2894,19 +2894,19 @@ namespace nvgraph
 					// give a copy of results to the user
 					if (rc == NVGRAPH_OK)
 							{
-						CHECK_CUDA(cudaMemcpy((int* )clustering,
+						CHECK_CUDA(hipMemcpy((int* )clustering,
 														clust.raw(),
 														(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-														cudaMemcpyDefault));
-						CHECK_CUDA(cudaMemcpy((double* )eig_vals,
+														hipMemcpyDefault));
+						CHECK_CUDA(hipMemcpy((double* )eig_vals,
 														eigVals.raw(),
 														(size_t )(n_eig_vects * sizeof(double)),
-														cudaMemcpyDefault));
-						CHECK_CUDA(cudaMemcpy((double* )eig_vects,
+														hipMemcpyDefault));
+						CHECK_CUDA(hipMemcpy((double* )eig_vects,
 														eigVecs.raw(),
 														(size_t )(n_eig_vects * MCSRG->get_num_vertices()
 																* sizeof(double)),
-														cudaMemcpyDefault));
+														hipMemcpyDefault));
 					}
 					break;
 				}
@@ -2945,7 +2945,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-				case CUDA_R_32F:
+				case HIPBLAS_R_32F:
 					{
 					float mod;
 					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
@@ -2956,10 +2956,10 @@ namespace nvgraph
 					nvgraph::ValuedCsrGraph<int, float> network =
 							*MCSRG->get_valued_csr_graph(weight_index);
 					Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
-					CHECK_CUDA(cudaMemcpy(clust.raw(),
+					CHECK_CUDA(hipMemcpy(clust.raw(),
 													(int* )clustering,
 													(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 					rc = analyzeModularity<int, float>(network,
 																	n_clusters,
 																	clust.raw(),
@@ -2967,7 +2967,7 @@ namespace nvgraph
 					*modularity = mod;
 					break;
 				}
-				case CUDA_R_64F:
+				case HIPBLAS_R_64F:
 					{
 					double mod;
 					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
@@ -2976,10 +2976,10 @@ namespace nvgraph
 							|| n_clusters > static_cast<int>(MCSRG->get_num_vertices())) // base index is 0
 						return NVGRAPH_STATUS_INVALID_VALUE;
 					Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
-					CHECK_CUDA(cudaMemcpy(clust.raw(),
+					CHECK_CUDA(hipMemcpy(clust.raw(),
 													(int* )clustering,
 													(size_t )(MCSRG->get_num_vertices() * sizeof(int)),
-													cudaMemcpyDefault));
+													hipMemcpyDefault));
 					nvgraph::ValuedCsrGraph<int, double> network =
 							*MCSRG->get_valued_csr_graph(weight_index);
 					rc = analyzeModularity<int, double>(network,
@@ -3082,7 +3082,7 @@ namespace nvgraph
 					break;
 
 				case HAS_VALUES: //MultiValuedCsrGraph
-					if (descrG->T == CUDA_R_32F)
+					if (descrG->T == HIPBLAS_R_32F)
 							{
 						nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
 								static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(descrG->graph_handle);
@@ -3135,7 +3135,7 @@ namespace nvgraph
 						contrdescrG->graph_handle = contracted_graph;
 						contrdescrG->graphStatus = HAS_VALUES;
 					}
-					else if (descrG->T == CUDA_R_64F)
+					else if (descrG->T == HIPBLAS_R_64F)
 							{
 						nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
 								static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(descrG->graph_handle);
@@ -3385,7 +3385,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphDestroyGraphDescr(nvgraphHandle_t handle,
 	return nvgraph::nvgraphDestroyGraphDescr_impl(handle, descrG);
 }
 
-nvgraphStatus_t NVGRAPH_API nvgraphSetStream(nvgraphHandle_t handle, cudaStream_t stream)
+nvgraphStatus_t NVGRAPH_API nvgraphSetStream(nvgraphHandle_t handle, hipStream_t stream)
 															{
 	return nvgraph::nvgraphSetStream_impl(handle, stream);
 }
@@ -3407,7 +3407,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphGetGraphStructure(nvgraphHandle_t handle,
 nvgraphStatus_t NVGRAPH_API nvgraphAllocateVertexData(nvgraphHandle_t handle,
 																		nvgraphGraphDescr_t descrG,
 																		size_t numsets,
-																		cudaDataType_t *settypes)
+																		hipblasDatatype_t *settypes)
 																		{
 	return nvgraph::nvgraphAllocateVertexData_impl(handle, descrG, numsets, settypes);
 }
@@ -3415,7 +3415,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphAllocateVertexData(nvgraphHandle_t handle,
 nvgraphStatus_t NVGRAPH_API nvgraphAllocateEdgeData(nvgraphHandle_t handle,
 																		nvgraphGraphDescr_t descrG,
 																		size_t numsets,
-																		cudaDataType_t *settypes)
+																		hipblasDatatype_t *settypes)
 																		{
 	return nvgraph::nvgraphAllocateEdgeData_impl(handle, descrG, numsets, settypes);
 }
@@ -3462,7 +3462,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphConvertTopology(nvgraphHandle_t handle,
 																	nvgraphTopologyType_t srcTType,
 																	void *srcTopology,
 																	void *srcEdgeData,
-																	cudaDataType_t *dataType,
+																	hipblasDatatype_t *dataType,
 																	nvgraphTopologyType_t dstTType,
 																	void *dstTopology,
 																	void *dstEdgeData) {
@@ -3906,7 +3906,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTriangleCount(nvgraphHandle_t handle,
 }
 
 
-nvgraphStatus_t NVGRAPH_API nvgraphLouvain (cudaDataType_t index_type, cudaDataType_t val_type, const size_t num_vertex, const size_t num_edges, 
+nvgraphStatus_t NVGRAPH_API nvgraphLouvain (hipblasDatatype_t index_type, hipblasDatatype_t val_type, const size_t num_vertex, const size_t num_edges, 
                             void* csr_ptr, void* csr_ind, void* csr_val, int weighted, int has_init_cluster, void* init_cluster, 
                             void* final_modularity, void* best_cluster_vec, void* num_level)
 {
@@ -3918,7 +3918,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphLouvain (cudaDataType_t index_type, cudaDataT
     std::ostream log(0);
     bool weighted_b = weighted;
     bool has_init_cluster_b = has_init_cluster;
-    if (val_type == CUDA_R_32F)
+    if (val_type == HIPBLAS_R_32F)
         status = nvlouvain::louvain ((int*)csr_ptr, (int*)csr_ind, (float*)csr_val, num_vertex, num_edges, 
                weighted_b, has_init_cluster_b, (int*)init_cluster, *((float*)final_modularity), 
               (int*)best_cluster_vec,*((int*)num_level), log);
@@ -3933,7 +3933,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphLouvain (cudaDataType_t index_type, cudaDataT
     return NVGRAPH_STATUS_SUCCESS; 
 }
 
-nvgraphStatus_t NVGRAPH_API nvgraphJaccard (cudaDataType_t index_type, cudaDataType_t val_type, const size_t n, 
+nvgraphStatus_t NVGRAPH_API nvgraphJaccard (hipblasDatatype_t index_type, hipblasDatatype_t val_type, const size_t n, 
                             const size_t e, void* csr_ptr, void* csr_ind, void* csr_val, int weighted, void* v, void* gamma, void* weight_j)
 {
     int status = 0;
@@ -3943,47 +3943,47 @@ nvgraphStatus_t NVGRAPH_API nvgraphJaccard (cudaDataType_t index_type, cudaDataT
 
     bool weighted_b = weighted;
 
-    if (val_type == CUDA_R_32F)
+    if (val_type == HIPBLAS_R_32F)
     {
         float* weight_i = NULL, *weight_s = NULL, *work = NULL;    
-        NVG_CUDA_TRY(cudaMalloc ((void**)&weight_i, sizeof(float) * e));
-        NVG_CUDA_TRY(cudaMalloc ((void**)&weight_s, sizeof(float) * e)); 
+        NVG_CUDA_TRY(hipMalloc ((void**)&weight_i, sizeof(float) * e));
+        NVG_CUDA_TRY(hipMalloc ((void**)&weight_s, sizeof(float) * e)); 
         if (weighted_b == true)
         {
-            NVG_CUDA_TRY(cudaMalloc ((void**)&work, sizeof(float) * n));
+            NVG_CUDA_TRY(hipMalloc ((void**)&work, sizeof(float) * n));
             status = nvlouvain::jaccard <true> (n, e, (int*) csr_ptr, (int*) csr_ind, (float*) csr_val, (float*) v, work, *((float*) gamma), weight_i, weight_s, (float*)weight_j);
-            NVG_CUDA_TRY(cudaFree (work));
+            NVG_CUDA_TRY(hipFree (work));
         }
         else
         {
-            NVG_CUDA_TRY(cudaMalloc ((void**)&work, sizeof(float) * n));
+            NVG_CUDA_TRY(hipMalloc ((void**)&work, sizeof(float) * n));
             nvlouvain::fill(e, (float*)weight_j, (float)1.0);
             status = nvlouvain::jaccard <false> (n, e, (int*) csr_ptr, (int*) csr_ind, (float*) csr_val, (float*) v, work, *((float*) gamma), weight_i, weight_s, (float*)weight_j);
-            NVG_CUDA_TRY(cudaFree (work));
+            NVG_CUDA_TRY(hipFree (work));
         }
-        NVG_CUDA_TRY(cudaFree (weight_s));
-        NVG_CUDA_TRY(cudaFree (weight_i));
+        NVG_CUDA_TRY(hipFree (weight_s));
+        NVG_CUDA_TRY(hipFree (weight_i));
     }
     else
     {
         double* weight_i = NULL, *weight_s = NULL, *work = NULL;    
-        NVG_CUDA_TRY(cudaMalloc ((void**)&weight_i, sizeof(double) * e));
-        NVG_CUDA_TRY(cudaMalloc ((void**)&weight_s, sizeof(double) * e));
+        NVG_CUDA_TRY(hipMalloc ((void**)&weight_i, sizeof(double) * e));
+        NVG_CUDA_TRY(hipMalloc ((void**)&weight_s, sizeof(double) * e));
         if (weighted_b == true)
         {
-            NVG_CUDA_TRY(cudaMalloc ((void**)&work, sizeof(double) * n));
+            NVG_CUDA_TRY(hipMalloc ((void**)&work, sizeof(double) * n));
             status = nvlouvain::jaccard <true> (n, e, (int*) csr_ptr, (int*) csr_ind, (double*) csr_val, (double*) v, work, *((double*) gamma), weight_i, weight_s, (double*)weight_j);
-            NVG_CUDA_TRY(cudaFree (work));
+            NVG_CUDA_TRY(hipFree (work));
         }
         else
         {
-            NVG_CUDA_TRY(cudaMalloc ((void**)&work, sizeof(double) * n));
+            NVG_CUDA_TRY(hipMalloc ((void**)&work, sizeof(double) * n));
             nvlouvain::fill(e, (double*)weight_j, (double)1.0);
             status = nvlouvain::jaccard <false> (n, e, (int*) csr_ptr, (int*) csr_ind, (double*) csr_val, (double*) v, work, *((double*) gamma), weight_i, weight_s, (double*)weight_j);
-            NVG_CUDA_TRY(cudaFree (work));
+            NVG_CUDA_TRY(hipFree (work));
         }
-        NVG_CUDA_TRY(cudaFree (weight_s));
-        NVG_CUDA_TRY(cudaFree (weight_i));
+        NVG_CUDA_TRY(hipFree (weight_s));
+        NVG_CUDA_TRY(hipFree (weight_i));
     }
 
     if (status != 0)
@@ -4003,7 +4003,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphAttachGraphStructure(nvgraphHandle_t handle,
 nvgraphStatus_t NVGRAPH_API nvgraphAttachVertexData(nvgraphHandle_t handle,
 													 nvgraphGraphDescr_t descrG,
 													 size_t setnum,
-													 cudaDataType_t settype,
+													 hipblasDatatype_t settype,
 													 void *vertexData) {
 	return nvgraph::nvgraphAttachVertexData_impl( handle, descrG, setnum, settype, vertexData);
 }
@@ -4011,7 +4011,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphAttachVertexData(nvgraphHandle_t handle,
 nvgraphStatus_t NVGRAPH_API nvgraphAttachEdgeData(nvgraphHandle_t handle,
 											      nvgraphGraphDescr_t descrG,
 											      size_t setnum,
-											      cudaDataType_t settype,
+											      hipblasDatatype_t settype,
 											      void *edgeData) {
 	return nvgraph::nvgraphAttachEdgeData_impl( handle, descrG, setnum, settype, edgeData);
 }

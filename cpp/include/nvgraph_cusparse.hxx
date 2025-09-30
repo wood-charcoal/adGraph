@@ -16,7 +16,7 @@
  
 #pragma once
 
-#include <cusparse_v2.h>
+#include <hipsparse.h>
 #include <cusparse_internal.h>
 #include "valued_csr_graph.hxx"
 #include "nvgraph_vector.hxx"
@@ -30,7 +30,7 @@ class Cusparse
 {
 private:
   // global CUSPARSE handle for nvgraph
-  static cusparseHandle_t m_handle; // Constructor.
+  static hipsparseHandle_t m_handle; // Constructor.
   Cusparse();
   // Destructor.
   ~Cusparse();
@@ -38,23 +38,23 @@ private:
 public:
 
   // Get the handle.
-  static cusparseHandle_t get_handle()
+  static hipsparseHandle_t get_handle()
   {
       if (m_handle == 0)
-          CHECK_CUSPARSE(cusparseCreate(&m_handle));
+          CHECK_CUSPARSE(hipsparseCreate(&m_handle));
       return m_handle;
   }
   // Destroy handle
   static void destroy_handle()
   {
     if (m_handle != 0)
-      CHECK_CUSPARSE( cusparseDestroy(m_handle) );
+      CHECK_CUSPARSE( hipsparseDestroy(m_handle) );
     m_handle = 0;
   }
-  static void setStream(cudaStream_t stream) 
+  static void setStream(hipStream_t stream) 
   {   
-      cusparseHandle_t handle = Cusparse::get_handle();
-      CHECK_CUSPARSE(cusparseSetStream(handle, stream));
+      hipsparseHandle_t handle = Cusparse::get_handle();
+      CHECK_CUSPARSE(hipsparseSetStream(handle, stream));
   }
   // Set pointer mode
   static void set_pointer_mode_device();

@@ -61,7 +61,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<int>
 { 
-    static const cudaDataType_t Type = CUDA_R_32I;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32I;
     static const int inf;
 };
 const int nvgraph_Const<int>::inf = INT_MAX;
@@ -75,7 +75,7 @@ static int STRESS_MULTIPLIER = 10;
 bool enough_device_memory(int n, int nnz, size_t add)
 {
     size_t mtotal, mfree;
-    cudaMemGetInfo(&mfree, &mtotal);
+    hipMemGetInfo(&mfree, &mtotal);
     if (mfree > add + sizeof(int)*(4*n)) //graph + pred + distances + 2n (working data) 
         return true;
     return false;
@@ -230,8 +230,8 @@ class NVGraphCAPITests_Traversal : public ::testing::TestWithParam<Traversal_Use
         std::vector<int> calculated_distances_res(n);
         std::vector<int> calculated_predecessors_res(n);
         //void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        cudaDataType_t type_v[2] = {nvgraph_Const<int>::Type, nvgraph_Const<int>::Type};
-       	cudaDataType_t type_e[1] = {nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<int>::Type, nvgraph_Const<int>::Type};
+       	hipblasDatatype_t type_e[1] = {nvgraph_Const<int>::Type};
  
         status = nvgraphAllocateVertexData(handle, g1, numsets_v, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -259,7 +259,7 @@ class NVGraphCAPITests_Traversal : public ::testing::TestWithParam<Traversal_Use
 	
         status = nvgraphTraversal(handle, g1, NVGRAPH_TRAVERSAL_BFS, &source_vert, traversal_param);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
     
         if (PERF && n > PERF_ROWS_LIMIT)
         {
@@ -271,7 +271,7 @@ class NVGraphCAPITests_Traversal : public ::testing::TestWithParam<Traversal_Use
                 status = nvgraphTraversal(handle, g1, NVGRAPH_TRAVERSAL_BFS, &source_vert, traversal_param);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0*(stop-start)/repeat);
         }
@@ -357,7 +357,7 @@ class NVGraphCAPITests_Traversal_Sanity : public ::testing::Test {
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void*)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDataType_t type_v[1] = {nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<int>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
@@ -481,7 +481,7 @@ class NVGraphCAPITests_Traversal_CornerCases : public ::testing::Test {
 	status = nvgraphTraversal(handle, g1, NVGRAPH_TRAVERSAL_BFS, &source_vert, traversal_param);
         ASSERT_NE(NVGRAPH_STATUS_SUCCESS, status);
 
-        cudaDataType_t type_v[1] = {nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<int>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
@@ -575,9 +575,9 @@ class NVGraphCAPITests_Traversal_Stress : public ::testing::TestWithParam<Traver
         std::vector<int> calculated_res(n);
         // set up graph data
         //size_t numsets = 1;
-        //cudaDataType_t type_v[1] = {nvgraph_Const<int>::Type};
+        //hipblasDatatype_t type_v[1] = {nvgraph_Const<int>::Type};
         size_t numsets = 2;
-        cudaDataType_t type_v[2] = {nvgraph_Const<int>::Type, nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<int>::Type, nvgraph_Const<int>::Type};
         
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -627,13 +627,13 @@ class NVGraphCAPITests_Traversal_Stress : public ::testing::TestWithParam<Traver
 
             if (i == std::min(50, (int)(repeat/2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat-1)
             {
                 status = nvgraphGetVertexData(handle, g1, (void *)&calculated_res_last[0], traversal_distances_index);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
         }
 

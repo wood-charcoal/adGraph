@@ -60,7 +60,7 @@ public:
      *  \param num_entries Number of nonzero graph entries.
      *  \param num_dimensions Number of dimensions (ie. number of values arrays).
      */
-    MultiValuedCsrGraph(size_t num_rows, size_t num_entries, cudaStream_t stream)
+    MultiValuedCsrGraph(size_t num_rows, size_t num_entries, hipStream_t stream)
     : Parent(num_rows, num_entries, stream) { }
 
     /*! Construct a \p MultiValuedCsrGraph from another graph.*/
@@ -74,28 +74,28 @@ public:
     :   Parent(gr)
     {}
 
-    inline void allocateVertexData(size_t v_dim, cudaStream_t stream) 
+    inline void allocateVertexData(size_t v_dim, hipStream_t stream) 
     {
         vertex_dim.resize(v_dim);
         for (size_t i = 0; i < vertex_dim.size(); ++i)
           vertex_dim[i] = SHARED_PREFIX::shared_ptr<nvgraph::Vector<ValueType> >(new Vector<ValueType>(this->num_vertices, stream)); 
     }
 
-    inline void allocateEdgeData(size_t edges_dim, cudaStream_t stream) 
+    inline void allocateEdgeData(size_t edges_dim, hipStream_t stream) 
     {
         values_dim.resize(edges_dim);
          for (size_t i = 0; i < values_dim.size(); ++i)
            values_dim[i] = SHARED_PREFIX::shared_ptr<nvgraph::Vector<ValueType> >(new Vector<ValueType>(this->num_edges, stream)); 
     }
 
-    inline void attachVertexData(size_t i, ValueType* data, cudaStream_t stream) 
+    inline void attachVertexData(size_t i, ValueType* data, hipStream_t stream) 
     {
         if (vertex_dim.size() <= i)
             vertex_dim.resize(i+1);
          vertex_dim[i] = SHARED_PREFIX::shared_ptr<nvgraph::Vector<ValueType> >(new Vector<ValueType>(this->num_vertices, data, stream)); 
     }
 
-    inline void attachEdgeData(size_t i, ValueType* data, cudaStream_t stream) 
+    inline void attachEdgeData(size_t i, ValueType* data, hipStream_t stream) 
     {
          if (values_dim.size() <= i)
             values_dim.resize(i+1);
@@ -145,9 +145,9 @@ public:
 
     // SET 
     //Set should be done in a safe way in the API 
-    // it is possible to use a cudaMemcpy like : cudaMemcpy(G.get_raw_vertex_dim(1), v_h,           
+    // it is possible to use a hipMemcpy like : hipMemcpy(G.get_raw_vertex_dim(1), v_h,           
     //                                           (size_t)(n*sizeof(v_h[0])),           
-    //                                            cudaMemcpyHostToDevice);
+    //                                            hipMemcpyHostToDevice);
     
     //Accept method injection
     DEFINE_VISITABLE(IndexType_)

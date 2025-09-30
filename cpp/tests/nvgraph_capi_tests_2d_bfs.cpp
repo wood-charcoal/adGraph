@@ -63,7 +63,7 @@ struct nvgraph_Const;
 template<>
 struct nvgraph_Const<int>
 {
-	static const cudaDataType_t Type = CUDA_R_32I;
+	static const hipblasDatatype_t Type = HIPBLAS_R_32I;
 	static const int inf;
 };
 const int nvgraph_Const<int>::inf = INT_MAX;
@@ -87,7 +87,7 @@ void offsetsToIndices(std::vector<int>& offsets, std::vector<int>& indices) {
 bool enough_device_memory(int n, int nnz, size_t add)
 									{
 	size_t mtotal, mfree;
-	cudaMemGetInfo(&mfree, &mtotal);
+	hipMemGetInfo(&mfree, &mtotal);
 	if (mfree > add + sizeof(int) * (4 * n)) //graph + pred + distances + 2n (working data)
 		return true;
 	return false;
@@ -275,7 +275,7 @@ public:
 
 		// set up graph
 		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, &row_ind[0], &read_col_ind[0], CUDA_R_32I,
+		nvgraph2dCOOTopology32I_st topology = { n, nnz, &row_ind[0], &read_col_ind[0], HIPBLAS_R_32I,
 		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
 		status = nvgraphSetGraphStructure(handle, g1, (void*) &topology, topo);
 
@@ -305,7 +305,7 @@ public:
 										&calculated_distances_res[0],
 										&calculated_predecessors_res[0]);
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		if (PERF && n > PERF_ROWS_LIMIT)
 		{
@@ -321,7 +321,7 @@ public:
 												&calculated_predecessors_res[0]);
 				ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			}
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 			stop = second();
 			printf("&&&& PERF Time_%s %10.8f -ms\n",
 						test_id.c_str(),
@@ -478,7 +478,7 @@ public:
 			expected_res[i] = i;
 		}
 		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, &offsets[0], &neighborhood[0], CUDA_R_32I,
+		nvgraph2dCOOTopology32I_st topology = { n, nnz, &offsets[0], &neighborhood[0], HIPBLAS_R_32I,
 		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
 
 		prepare_and_run<EdgeT>(topology, &expected_res[0]);
@@ -502,7 +502,7 @@ public:
 			expected_res[i] = i;
 		}
 		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, &offsets[0], &neighborhood[0], CUDA_R_32I,
+		nvgraph2dCOOTopology32I_st topology = { n, nnz, &offsets[0], &neighborhood[0], HIPBLAS_R_32I,
 		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
 
 		prepare_and_run<EdgeT>(topology, &expected_res[0]);
@@ -517,7 +517,7 @@ public:
 		int columnIndices[4] = { 1, 5, 6, 3 };
 		int expected[10] = { 0, 1, -1, 4, -1, 2, 3, -1, -1, -1 };
 		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, rowIndices, columnIndices, CUDA_R_32I,
+		nvgraph2dCOOTopology32I_st topology = { n, nnz, rowIndices, columnIndices, HIPBLAS_R_32I,
 		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
 		prepare_and_run<EdgeT>(topology, expected);
 		free(devices);
@@ -531,7 +531,7 @@ public:
 		int columnIndices[6] = { 1, 5, 6, 6, 9, 9 };
 		int expected[10] = { 0, 1, -1, -1, -1, 1, 2, -1, -1, 2 };
 		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, rowIndices, columnIndices, CUDA_R_32I,
+		nvgraph2dCOOTopology32I_st topology = { n, nnz, rowIndices, columnIndices, HIPBLAS_R_32I,
 		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
 		prepare_and_run<EdgeT>(topology, expected);
 		free(devices);
@@ -609,7 +609,7 @@ TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath) {
 //			int* devices = (int*)malloc(sizeof(int) * 2);
 //			devices[0] = 0;
 //			devices[1] = 1;
-//			nvgraph2dCOOTopology32I_st topology = {n, nnz, &read_row_ptr[0], &read_col_ind[0], CUDA_R_32I, NULL, 2, devices, 2, NVGRAPH_DEFAULT};
+//			nvgraph2dCOOTopology32I_st topology = {n, nnz, &read_row_ptr[0], &read_col_ind[0], HIPBLAS_R_32I, NULL, 2, devices, 2, NVGRAPH_DEFAULT};
 //			status = nvgraphSetGraphStructure(handle, g1, (void*) &topology, topo);
 //			free(devices);
 //
@@ -667,7 +667,7 @@ TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath) {
 //
 //				if (i == std::min(50, (int) (repeat / 2)))
 //				{
-//					cudaMemGetInfo(&free_mid, &total);
+//					hipMemGetInfo(&free_mid, &total);
 //				}
 //				if (i == repeat - 1)
 //				{
@@ -676,7 +676,7 @@ TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath) {
 //							(void *) &calculated_res_last[0],
 //							traversal_distances_index);
 //					ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-//					cudaMemGetInfo(&free_last, &total);
+//					hipMemGetInfo(&free_last, &total);
 //				}
 //			}
 //

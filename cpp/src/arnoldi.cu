@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <utility>
-#include <curand.h>
+#include <hiprand.h>
 
 #include "valued_csr_graph.hxx"
 #include "nvgraph_vector.hxx"
@@ -46,8 +46,8 @@ ImplicitArnoldi<IndexType_, ValueType_>::ImplicitArnoldi(const ValuedCsrGraph <I
     :m_A(A), m_markov(false), m_laplacian(false), m_tolerance(1.0E-12), m_iterations(0), m_dirty_bit(false), m_max_iter(500), has_init_guess(false)
 {
 //     initialize cuda libs outside of the solve (this is slow)
-//    cusparseHandle_t t1 = Cusparse::get_handle();
-//    cublasHandle_t t2 = Cublas::get_handle();
+//    hipsparseHandle_t t1 = Cusparse::get_handle();
+//    hipblasHandle_t t2 = Cublas::get_handle();
 
 //  compiler is complainig, unused variables
     Cusparse::get_handle();
@@ -59,8 +59,8 @@ ImplicitArnoldi<IndexType_, ValueType_>::ImplicitArnoldi(const ValuedCsrGraph <I
     :m_A(A), m_parts(parts), m_laplacian(true), m_markov(false), m_tolerance(1.0E-9), m_iterations(0), m_dirty_bit(false), m_max_iter(500), has_init_guess(false)
 {
 //     initialize cuda libs outside of the solve (this is slow)
-//    cusparseHandle_t t1 = Cusparse::get_handle();
-//    cublasHandle_t t2 = Cublas::get_handle();
+//    hipsparseHandle_t t1 = Cusparse::get_handle();
+//    hipblasHandle_t t2 = Cublas::get_handle();
 
 //  compiler is complainig, unused variables
     Cusparse::get_handle();
@@ -72,8 +72,8 @@ ImplicitArnoldi<IndexType_, ValueType_>::ImplicitArnoldi(const ValuedCsrGraph <I
     :m_A(A),  m_a(dangling_nodes), m_damping(alpha), m_markov(true), m_laplacian(false), m_tolerance(tolerance), m_iterations(0), m_dirty_bit(false), m_max_iter(max_iter), has_init_guess(false)
 {
 //     initialize cuda libs outside of the solve (this is slow)
-//    cusparseHandle_t t1 = Cusparse::get_handle();
-//    cublasHandle_t t2 = Cublas::get_handle();
+//    hipsparseHandle_t t1 = Cusparse::get_handle();
+//    hipblasHandle_t t2 = Cublas::get_handle();
 
 //  compiler is complainig, unused variables
     Cusparse::get_handle();
@@ -156,7 +156,7 @@ NVGRAPH_ERROR ImplicitArnoldi<IndexType_, ValueType_>::solve(const int restart_i
         }
      }
     compute_eigenvectors();
-    cudaMemcpyAsync(eigVals.raw(), &m_ritz_eigenvalues[0], (size_t)(m_nr_eigenvalues*sizeof(m_ritz_eigenvalues[0])), cudaMemcpyHostToDevice);
+    hipMemcpyAsync(eigVals.raw(), &m_ritz_eigenvalues[0], (size_t)(m_nr_eigenvalues*sizeof(m_ritz_eigenvalues[0])), hipMemcpyHostToDevice);
     cudaCheckError();
     #ifdef IRAM_VERBOSE
         COUT() <<" --------------------------------------------"<< std::endl;
@@ -279,10 +279,10 @@ void ImplicitArnoldi<IndexType_, ValueType_>::setup(Vector<ValueType>& initial_g
     {
       const ValueType_ one  = 1;
       const ValueType_ zero = 0;
-      curandGenerator_t randGen;
+      hiprandGenerator_t randGen;
       // Initialize random number generator
-      CHECK_CURAND(curandCreateGenerator(&randGen,CURAND_RNG_PSEUDO_PHILOX4_32_10));
-      CHECK_CURAND(curandSetPseudoRandomGeneratorSeed(randGen, 123456/*time(NULL)*/));
+      CHECK_CURAND(hiprandCreateGenerator(&randGen,HIPRAND_RNG_PSEUDO_PHILOX4_32_10));
+      CHECK_CURAND(hiprandSetPseudoRandomGeneratorSeed(randGen, 123456/*time(NULL)*/));
       // Initialize initial  vector
       CHECK_CURAND(curandGenerateNormalX(randGen, m_V.raw(), n, zero, one));
       ValueType_ normQ1 = Cublas::nrm2(n, m_V.raw(), 1);
@@ -1061,8 +1061,8 @@ void ImplicitArnoldi<IndexType_, ValueType_>::refine_basis()
     m_Q_d.fill(0);
 
     ValueType_ *fptr = m_V_tmp.raw()+n*nev; // = Vi[nev]
-    cudaMemcpyAsync(m_Q_d.raw(), &m_Q[0], (size_t)(m_select*m_select*sizeof(m_Q[0])), cudaMemcpyHostToDevice); cudaCheckError();
-    cudaMemcpyAsync(fptr, m_Vi[nk], (size_t)(n*sizeof(ValueType_)), cudaMemcpyDeviceToDevice); cudaCheckError();
+    hipMemcpyAsync(m_Q_d.raw(), &m_Q[0], (size_t)(m_select*m_select*sizeof(m_Q[0])), hipMemcpyHostToDevice); cudaCheckError();
+    hipMemcpyAsync(fptr, m_Vi[nk], (size_t)(n*sizeof(ValueType_)), hipMemcpyDeviceToDevice); cudaCheckError();
 
     alpha = m_Q[(nev-1) * nk + nk - 1];
     beta = 1.0;
@@ -1091,7 +1091,7 @@ void ImplicitArnoldi<IndexType_, ValueType_>::refine_basis()
 
     // debug cleaning
     //m_Q_d.fill(0);
-    //cudaMemcpyAsync(m_Q_d.raw(), &m_Q[0], (size_t)(nev*m_select*sizeof(m_Q[0])), cudaMemcpyHostToDevice);
+    //hipMemcpyAsync(m_Q_d.raw(), &m_Q[0], (size_t)(nev*m_select*sizeof(m_Q[0])), hipMemcpyHostToDevice);
     //fill_raw_vec (m_V_tmp.raw(), n*(nev+1), beta);
     //fill_raw_vec (m_V.raw()+n*nk, n, beta);
     
@@ -1110,7 +1110,7 @@ void ImplicitArnoldi<IndexType_, ValueType_>::refine_basis()
     ////m_V.dump(4*n,n);
     //COUT() <<std::endl;   
 
-    //cudaDeviceSynchronize();
+    //hipDeviceSynchronize();
 
     Cublas::gemm(false, false, n, nev, nk, &alpha, m_V.raw(), n, m_Q_d.raw(), nk, 
                                            &beta, m_V_tmp.raw(), n);
@@ -1136,7 +1136,7 @@ void ImplicitArnoldi<IndexType_, ValueType_>::compute_eigenvectors()
         nev = m_nr_eigenvalues,
         nk = m_select;
     ValueType_ alpha=1.0, beta = 0.0;
-    cudaMemcpyAsync(m_ritz_eigenvectors_d.raw(), &m_ritz_eigenvectors[0], (size_t)(m_select*m_select*sizeof(m_ritz_eigenvectors[0])), cudaMemcpyHostToDevice);
+    hipMemcpyAsync(m_ritz_eigenvectors_d.raw(), &m_ritz_eigenvectors[0], (size_t)(m_select*m_select*sizeof(m_ritz_eigenvectors[0])), hipMemcpyHostToDevice);
     cudaCheckError();
     Cublas::gemm(false, false, n, nev, nk, &alpha, m_V.raw(), n, 
                  m_ritz_eigenvectors_d.raw(), nk, 
@@ -1215,7 +1215,7 @@ template <typename IndexType_, typename ValueType_>
 std::vector<ValueType_> ImplicitArnoldi<IndexType_, ValueType_>::get_f_copy()
 {
     std::vector<ValueType> tmp(m_A.get_num_vertices());
-    cudaMemcpyAsync(&tmp[0],m_Vi[m_krylov_size], (size_t)(m_A.get_num_vertices()*sizeof(ValueType_)), cudaMemcpyDeviceToHost);
+    hipMemcpyAsync(&tmp[0],m_Vi[m_krylov_size], (size_t)(m_A.get_num_vertices()*sizeof(ValueType_)), hipMemcpyDeviceToHost);
     cudaCheckError();
     return tmp;
 }
@@ -1224,7 +1224,7 @@ template <typename IndexType_, typename ValueType_>
 std::vector<ValueType_> ImplicitArnoldi<IndexType_, ValueType_>::get_fp_copy()
 {
     std::vector<ValueType> tmp(m_A.get_num_vertices());
-    cudaMemcpyAsync(&tmp[0],m_Vi[m_n_eigenvalues], (size_t)(m_A.get_num_vertices()*sizeof(ValueType_)), cudaMemcpyDeviceToHost);
+    hipMemcpyAsync(&tmp[0],m_Vi[m_n_eigenvalues], (size_t)(m_A.get_num_vertices()*sizeof(ValueType_)), hipMemcpyDeviceToHost);
     cudaCheckError();
     return tmp;
 }
@@ -1233,7 +1233,7 @@ template <typename IndexType_, typename ValueType_>
 std::vector<ValueType_> ImplicitArnoldi<IndexType_, ValueType_>::get_V_copy()
 {
     std::vector<ValueType> tmp(m_A.get_num_vertices()*(m_krylov_size+1));
-    cudaMemcpyAsync(&tmp[0],m_V.raw(), (size_t)(m_A.get_num_vertices()*(m_krylov_size+1)*sizeof(ValueType_)), cudaMemcpyDeviceToHost);
+    hipMemcpyAsync(&tmp[0],m_V.raw(), (size_t)(m_A.get_num_vertices()*(m_krylov_size+1)*sizeof(ValueType_)), hipMemcpyDeviceToHost);
     cudaCheckError();
     return tmp;
 }

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
@@ -17,7 +18,7 @@
 #include <iostream>
 
 #include <sm_utils.h>
-#include <cub/cub.cuh>
+#include <hipcub/hipcub.hpp>
 #include <nvgraph_error.hxx>
 
 #define MAXBLOCKS 65535
@@ -197,7 +198,7 @@ namespace bfs_kernels {
 																IndexType n,
 																IndexType *unvisited,
 																IndexType *unvisited_cnt) {
-		typedef cub::BlockScan<int, FILL_UNVISITED_QUEUE_DIMX> BlockScan;
+		typedef hipcub::BlockScan<int, FILL_UNVISITED_QUEUE_DIMX> BlockScan;
 		__shared__ typename BlockScan::TempStorage scan_temp_storage;
 
 		//When filling the "unvisited" queue, we use "unvisited_cnt" to know where to write in the queue (equivalent of int off = atomicAddd(unvisited_cnt, 1) )
@@ -306,7 +307,7 @@ namespace bfs_kernels {
 										IndexType n,
 										IndexType *unvisited,
 										IndexType *unvisited_cnt,
-										cudaStream_t m_stream,
+										hipStream_t m_stream,
 										bool deterministic) {
 		dim3 grid, block;
 		block.x = FILL_UNVISITED_QUEUE_DIMX;
@@ -337,7 +338,7 @@ namespace bfs_kernels {
 																const int *visited_bmap,
 																IndexType *degree_vertices,
 																IndexType *mu) {
-		typedef cub::BlockReduce<IndexType, COUNT_UNVISITED_EDGES_DIMX> BlockReduce;
+		typedef hipcub::BlockReduce<IndexType, COUNT_UNVISITED_EDGES_DIMX> BlockReduce;
 		__shared__ typename BlockReduce::TempStorage reduce_temp_storage;
 
 		//number of undiscovered edges counted by this thread
@@ -374,7 +375,7 @@ namespace bfs_kernels {
 										const int *visited_bmap,
 										IndexType *node_degree,
 										IndexType *mu,
-										cudaStream_t m_stream) {
+										hipStream_t m_stream) {
 		dim3 grid, block;
 		block.x = COUNT_UNVISITED_EDGES_DIMX;
 		grid.x = min((IndexType) MAXBLOCKS, (potentially_unvisited_size + block.x - 1) / block.x);
@@ -415,9 +416,9 @@ namespace bfs_kernels {
 														IndexType *distances,
 														IndexType *predecessors,
 														int *edge_mask) {
-		typedef cub::BlockDiscontinuity<IndexType, MAIN_BOTTOMUP_DIMX> BlockDiscontinuity;
-		typedef cub::WarpReduce<int> WarpReduce;
-		typedef cub::BlockScan<int, MAIN_BOTTOMUP_DIMX> BlockScan;
+		typedef hipcub::BlockDiscontinuity<IndexType, MAIN_BOTTOMUP_DIMX> BlockDiscontinuity;
+		typedef hipcub::WarpReduce<int> WarpReduce;
+		typedef hipcub::BlockScan<int, MAIN_BOTTOMUP_DIMX> BlockScan;
 
 		__shared__ typename BlockDiscontinuity::TempStorage discontinuity_temp_storage;
 		__shared__ typename WarpReduce::TempStorage reduce_temp_storage;
@@ -539,7 +540,7 @@ namespace bfs_kernels {
 			int is_head_a[1]; //CUB need an array
 			BlockDiscontinuity(discontinuity_temp_storage).FlagHeads(is_head_a,
 																						visited_bmap_index,
-																						cub::Inequality());
+																						hipcub::Inequality());
 			int is_head = is_head_a[0];
 
 			// Computing the warp reduce within group
@@ -665,7 +666,7 @@ namespace bfs_kernels {
 								IndexType *distances,
 								IndexType *predecessors,
 								int *edge_mask,
-								cudaStream_t m_stream,
+								hipStream_t m_stream,
 								bool deterministic) {
 		dim3 grid, block;
 		block.x = MAIN_BOTTOMUP_DIMX;
@@ -785,7 +786,7 @@ namespace bfs_kernels {
 								IndexType *distances,
 								IndexType *predecessors,
 								int *edge_mask,
-								cudaStream_t m_stream,
+								hipStream_t m_stream,
 								bool deterministic) {
 		dim3 grid, block;
 		block.x = LARGE_BOTTOMUP_DIMX;
@@ -845,7 +846,7 @@ namespace bfs_kernels {
 											IndexType *bucket_offsets,
 											IndexType frontier_size,
 											IndexType total_degree,
-											cudaStream_t m_stream) {
+											hipStream_t m_stream) {
 		dim3 grid, block;
 		block.x = COMPUTE_BUCKET_OFFSETS_DIMX;
 
@@ -904,7 +905,7 @@ namespace bfs_kernels {
 														const int *isolated_bmap,
 														bool directed) {
 		//BlockScan
-		typedef cub::BlockScan<IndexType, TOP_DOWN_EXPAND_DIMX> BlockScan;
+		typedef hipcub::BlockScan<IndexType, TOP_DOWN_EXPAND_DIMX> BlockScan;
 		__shared__ typename BlockScan::TempStorage scan_storage;
 
 		// We will do a scan to know where to write in frontier
@@ -1308,7 +1309,7 @@ namespace bfs_kernels {
 								const int *edge_mask,
 								const int *isolated_bmap,
 								bool directed,
-								cudaStream_t m_stream,
+								hipStream_t m_stream,
 								bool deterministic) {
 		if (!totaldegree)
 			return;
@@ -1351,12 +1352,12 @@ namespace bfs_kernels {
 																	const IndexType *row_ptr,
 																	IndexType *degrees,
 																	IndexType *nisolated) {
-		typedef cub::BlockLoad<IndexType, FLAG_ISOLATED_VERTICES_DIMX,
-				FLAG_ISOLATED_VERTICES_VERTICES_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
-		typedef cub::BlockStore<IndexType, FLAG_ISOLATED_VERTICES_DIMX,
-				FLAG_ISOLATED_VERTICES_VERTICES_PER_THREAD, cub::BLOCK_STORE_WARP_TRANSPOSE> BlockStore;
-		typedef cub::BlockReduce<IndexType, FLAG_ISOLATED_VERTICES_DIMX> BlockReduce;
-		typedef cub::WarpReduce<int, FLAG_ISOLATED_VERTICES_THREADS_PER_INT> WarpReduce;
+		typedef hipcub::BlockLoad<IndexType, FLAG_ISOLATED_VERTICES_DIMX,
+				FLAG_ISOLATED_VERTICES_VERTICES_PER_THREAD, hipcub::BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+		typedef hipcub::BlockStore<IndexType, FLAG_ISOLATED_VERTICES_DIMX,
+				FLAG_ISOLATED_VERTICES_VERTICES_PER_THREAD, hipcub::BLOCK_STORE_WARP_TRANSPOSE> BlockStore;
+		typedef hipcub::BlockReduce<IndexType, FLAG_ISOLATED_VERTICES_DIMX> BlockReduce;
+		typedef hipcub::WarpReduce<int, FLAG_ISOLATED_VERTICES_THREADS_PER_INT> WarpReduce;
 
 		__shared__ typename BlockLoad::TempStorage load_temp_storage;
 		__shared__ typename BlockStore::TempStorage store_temp_storage;
@@ -1457,7 +1458,7 @@ namespace bfs_kernels {
 											const IndexType *row_ptr,
 											IndexType *degrees,
 											IndexType *nisolated,
-											cudaStream_t m_stream) {
+											hipStream_t m_stream) {
 		dim3 grid, block;
 		block.x = FLAG_ISOLATED_VERTICES_DIMX;
 
@@ -1487,9 +1488,9 @@ namespace bfs_kernels {
 		d_temp_storage = NULL;
 		temp_storage_bytes = 0;
 		IndexType *d_in = NULL, *d_out = NULL;
-		cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, n);
+		hipcub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, n);
 		// Allocate temporary storage for exclusive prefix scan
-		cudaMalloc(&d_temp_storage, temp_storage_bytes);
+		hipMalloc(&d_temp_storage, temp_storage_bytes);
 	}
 
 	template<typename IndexType>
@@ -1502,7 +1503,7 @@ namespace bfs_kernels {
 	}
 
 	template<typename IndexType>
-	void fill(IndexType *vec, IndexType n, IndexType val, cudaStream_t m_stream) {
+	void fill(IndexType *vec, IndexType n, IndexType val, hipStream_t m_stream) {
 		dim3 grid, block;
 		block.x = 256;
 		grid.x = min((n + block.x - 1) / block.x, (IndexType) MAXBLOCKS);
@@ -1529,7 +1530,7 @@ namespace bfs_kernels {
 										IndexType *frontier,
 										const IndexType *degree,
 										IndexType n,
-										cudaStream_t m_stream) {
+										hipStream_t m_stream) {
 		dim3 grid, block;
 		block.x = 256;
 		grid.x = min((n + block.x - 1) / block.x, (IndexType) MAXBLOCKS);
@@ -1547,10 +1548,10 @@ namespace bfs_kernels {
 								IndexType *d_in,
 								IndexType *d_out,
 								IndexType num_items,
-								cudaStream_t m_stream) {
+								hipStream_t m_stream) {
 		if (num_items <= 1)
 			return; //DeviceScan fails if n==1
-		cub::DeviceScan::ExclusiveSum(d_temp_storage,
+		hipcub::DeviceScan::ExclusiveSum(d_temp_storage,
 												temp_storage_bytes,
 												d_in,
 												d_out,
@@ -1567,7 +1568,7 @@ namespace bfs_kernels {
 	}
 
 	template<typename T>
-	void fill_vec(T *vec, T n, T val, cudaStream_t stream) {
+	void fill_vec(T *vec, T n, T val, hipStream_t stream) {
 		dim3 grid, block;
 		block.x = 256;
 		grid.x = (n + block.x - 1) / block.x;

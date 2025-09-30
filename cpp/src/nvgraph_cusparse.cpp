@@ -18,14 +18,14 @@
 
 namespace nvgraph
 {
-cusparseHandle_t Cusparse::m_handle = 0;
+hipsparseHandle_t Cusparse::m_handle = 0;
 
 namespace
 {
-  cusparseStatus_t cusparse_csrmv( cusparseHandle_t handle, cusparseOperation_t trans,
+  hipsparseStatus_t cusparse_csrmv( hipsparseHandle_t handle, hipsparseOperation_t trans,
                               int m, int n, int nnz, 
                               const float *alpha, 
-                              const cusparseMatDescr_t descr,
+                              const hipsparseMatDescr_t descr,
                               const float *csrVal, 
                               const int *csrRowPtr, 
                               const int *csrColInd,
@@ -33,13 +33,13 @@ namespace
                               const float *beta, 
                               float *y)
   {
-      return cusparseScsrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y);
+      return hipsparseScsrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y);
   }
 
-  cusparseStatus_t cusparse_csrmv( cusparseHandle_t handle, cusparseOperation_t trans,
+  hipsparseStatus_t cusparse_csrmv( hipsparseHandle_t handle, hipsparseOperation_t trans,
                               int m, int n, int nnz, 
                               const double *alpha, 
-                              const cusparseMatDescr_t descr,
+                              const hipsparseMatDescr_t descr,
                               const double *csrVal, 
                               const int *csrRowPtr, 
                               const int *csrColInd,
@@ -47,13 +47,13 @@ namespace
                               const double *beta, 
                               double *y)
   {
-    return cusparseDcsrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y);
+    return hipsparseDcsrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y);
   }
 
-  cusparseStatus_t cusparse_csrmm(cusparseHandle_t handle, cusparseOperation_t trans,
+  hipsparseStatus_t cusparse_csrmm(hipsparseHandle_t handle, hipsparseOperation_t trans,
                                   int m, int n, int k, int nnz, 
                                   const float *alpha, 
-                                  const cusparseMatDescr_t descr,
+                                  const hipsparseMatDescr_t descr,
                                   const float *csrVal, 
                                   const int *csrRowPtr, 
                                   const int *csrColInd,
@@ -63,13 +63,13 @@ namespace
                                   float *y,
                                   const int ldy)
   {
-      return cusparseScsrmm(handle, trans, m, n, k, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, ldx, beta, y, ldy);
+      return hipsparseScsrmm(handle, trans, m, n, k, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, ldx, beta, y, ldy);
   }
 
-  cusparseStatus_t cusparse_csrmm( cusparseHandle_t handle, cusparseOperation_t trans,
+  hipsparseStatus_t cusparse_csrmm( hipsparseHandle_t handle, hipsparseOperation_t trans,
                                    int m, int n, int k, int nnz, 
                                    const double *alpha, 
-                                   const cusparseMatDescr_t descr,
+                                   const hipsparseMatDescr_t descr,
                                    const double *csrVal, 
                                    const int *csrRowPtr, 
                                    const int *csrColInd,
@@ -79,7 +79,7 @@ namespace
                                    double *y,
                                    const int ldy)
   {
-      return cusparseDcsrmm(handle, trans, m, n, k, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, ldx, beta, y, ldy);
+      return hipsparseDcsrmm(handle, trans, m, n, k, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, ldx, beta, y, ldy);
   }
 
 }// end anonymous namespace.
@@ -87,13 +87,13 @@ namespace
 // Set pointer mode
 void Cusparse::set_pointer_mode_device()
 {
-    cusparseHandle_t handle = Cusparse::get_handle();
-    cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_DEVICE);
+    hipsparseHandle_t handle = Cusparse::get_handle();
+    hipsparseSetPointerMode(handle, HIPSPARSE_POINTER_MODE_DEVICE);
 }
 void Cusparse::set_pointer_mode_host()
 {
-    cusparseHandle_t handle = Cusparse::get_handle();
-    cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_HOST);
+    hipsparseHandle_t handle = Cusparse::get_handle();
+    hipsparseSetPointerMode(handle, HIPSPARSE_POINTER_MODE_HOST);
 }
 
 template <typename IndexType_, typename ValueType_>
@@ -108,21 +108,21 @@ void Cusparse::csrmv( const bool transposed,
                              const ValueType_* beta, 
                              ValueType_* y)
 {
-  cusparseHandle_t handle = Cusparse::get_handle();
-  cusparseOperation_t trans = transposed ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE;
-  cusparseMatDescr_t descr=0;
-  CHECK_CUSPARSE(cusparseCreateMatDescr(&descr)); // we should move that somewhere else
+  hipsparseHandle_t handle = Cusparse::get_handle();
+  hipsparseOperation_t trans = transposed ? HIPSPARSE_OPERATION_TRANSPOSE : HIPSPARSE_OPERATION_NON_TRANSPOSE;
+  hipsparseMatDescr_t descr=0;
+  CHECK_CUSPARSE(hipsparseCreateMatDescr(&descr)); // we should move that somewhere else
   if (sym)
   {
-    CHECK_CUSPARSE(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_SYMMETRIC));
+    CHECK_CUSPARSE(hipsparseSetMatType(descr,HIPSPARSE_MATRIX_TYPE_SYMMETRIC));
   }
   else
   {
-    CHECK_CUSPARSE(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL));
+    CHECK_CUSPARSE(hipsparseSetMatType(descr,HIPSPARSE_MATRIX_TYPE_GENERAL));
   }
-  CHECK_CUSPARSE(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
+  CHECK_CUSPARSE(hipsparseSetMatIndexBase(descr,HIPSPARSE_INDEX_BASE_ZERO));
   CHECK_CUSPARSE(cusparse_csrmv(handle, trans , m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y));
-  CHECK_CUSPARSE(cusparseDestroyMatDescr(descr)); // we should move that somewhere else
+  CHECK_CUSPARSE(hipsparseDestroyMatDescr(descr)); // we should move that somewhere else
 }
 
 template <typename IndexType_, typename ValueType_>
@@ -135,23 +135,23 @@ void Cusparse::csrmv( const bool transposed,
                      Vector<ValueType_>& y
                      )
 {
-  cusparseHandle_t handle = Cusparse::get_handle();
-  cusparseOperation_t trans = transposed ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE;
-  cusparseMatDescr_t descr=0;
-  CHECK_CUSPARSE(cusparseCreateMatDescr(&descr)); // we should move that somewhere else
+  hipsparseHandle_t handle = Cusparse::get_handle();
+  hipsparseOperation_t trans = transposed ? HIPSPARSE_OPERATION_TRANSPOSE : HIPSPARSE_OPERATION_NON_TRANSPOSE;
+  hipsparseMatDescr_t descr=0;
+  CHECK_CUSPARSE(hipsparseCreateMatDescr(&descr)); // we should move that somewhere else
   if (sym)
   {
-    CHECK_CUSPARSE(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_SYMMETRIC));
+    CHECK_CUSPARSE(hipsparseSetMatType(descr,HIPSPARSE_MATRIX_TYPE_SYMMETRIC));
   }
   else
   {
-    CHECK_CUSPARSE(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL));
+    CHECK_CUSPARSE(hipsparseSetMatType(descr,HIPSPARSE_MATRIX_TYPE_GENERAL));
   }
   int n = G.get_num_vertices();
   int nnz = G.get_num_edges();
-  CHECK_CUSPARSE(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
+  CHECK_CUSPARSE(hipsparseSetMatIndexBase(descr,HIPSPARSE_INDEX_BASE_ZERO));
   CHECK_CUSPARSE(cusparse_csrmv(handle, trans , n, n, nnz, alpha, descr, (ValueType_*)G.get_raw_values(), (IndexType_*)G.get_raw_row_offsets(),(IndexType_*)G.get_raw_column_indices(), (ValueType_*)x.raw(), beta,  (ValueType_*)y.raw()));
-  CHECK_CUSPARSE(cusparseDestroyMatDescr(descr)); // we should move that somewhere else
+  CHECK_CUSPARSE(hipsparseDestroyMatDescr(descr)); // we should move that somewhere else
 }
 
 template void Cusparse::csrmv( const bool transposed,
@@ -214,21 +214,21 @@ void Cusparse::csrmm(const bool transposed,
                      const int ldy)
 {
 
-  cusparseHandle_t handle = Cusparse::get_handle();
-  cusparseOperation_t trans = transposed ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE;
-  cusparseMatDescr_t descr=0;
-  CHECK_CUSPARSE(cusparseCreateMatDescr(&descr)); // we should move that somewhere else
+  hipsparseHandle_t handle = Cusparse::get_handle();
+  hipsparseOperation_t trans = transposed ? HIPSPARSE_OPERATION_TRANSPOSE : HIPSPARSE_OPERATION_NON_TRANSPOSE;
+  hipsparseMatDescr_t descr=0;
+  CHECK_CUSPARSE(hipsparseCreateMatDescr(&descr)); // we should move that somewhere else
   if (sym)
   {
-    CHECK_CUSPARSE(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_SYMMETRIC));
+    CHECK_CUSPARSE(hipsparseSetMatType(descr,HIPSPARSE_MATRIX_TYPE_SYMMETRIC));
   }
   else
   {
-    CHECK_CUSPARSE(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL));
+    CHECK_CUSPARSE(hipsparseSetMatType(descr,HIPSPARSE_MATRIX_TYPE_GENERAL));
   }
-  CHECK_CUSPARSE(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
+  CHECK_CUSPARSE(hipsparseSetMatIndexBase(descr,HIPSPARSE_INDEX_BASE_ZERO));
   CHECK_CUSPARSE(cusparse_csrmm(handle, trans, m, n, k, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, ldx, beta, y, ldy));
-  CHECK_CUSPARSE(cusparseDestroyMatDescr(descr)); // we should move that somewhere else
+  CHECK_CUSPARSE(hipsparseDestroyMatDescr(descr)); // we should move that somewhere else
 }
 
 template void Cusparse::csrmm(const bool transposed,
@@ -269,9 +269,9 @@ template void Cusparse::csrmm(const bool transposed,
                                               const int *csrRowPtr,
                                               int *cooRowInd)
  {
-   cusparseHandle_t handle = Cusparse::get_handle();
-   cusparseIndexBase_t idxBase = CUSPARSE_INDEX_BASE_ZERO ;
-   CHECK_CUSPARSE(cusparseXcsr2coo(handle, csrRowPtr, nnz, n, cooRowInd, idxBase));
+   hipsparseHandle_t handle = Cusparse::get_handle();
+   hipsparseIndexBase_t idxBase = HIPSPARSE_INDEX_BASE_ZERO ;
+   CHECK_CUSPARSE(hipsparseXcsr2coo(handle, csrRowPtr, nnz, n, cooRowInd, idxBase));
 
  }
 

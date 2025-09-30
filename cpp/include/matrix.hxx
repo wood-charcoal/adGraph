@@ -15,11 +15,11 @@
  */
 #pragma once
 
-#include <cuda.h>
-#include <cublas_v2.h>
-#include <curand.h>
+#include <hip/hip_runtime.h>
+#include <hipblas.h>
+#include <hiprand.h>
 #include <cusolverDn.h>
-#include <cusparse.h>
+#include <hipsparse.h>
 
 #include "nvgraph_vector.hxx"
 #include "valued_csr_graph.hxx"
@@ -37,7 +37,7 @@ namespace nvgraph {
     /// Number of columns
     const IndexType_ n;
     /// CUDA stream
-    cudaStream_t s;  
+    hipStream_t s;  
 
     /// Constructor
     /** @param _m Number of rows.
@@ -50,8 +50,8 @@ namespace nvgraph {
 
 
     /// Get and Set CUDA stream  
-    virtual void setCUDAStream(cudaStream_t _s) = 0;  
-    virtual void getCUDAStream(cudaStream_t *_s) = 0;    
+    virtual void setCUDAStream(hipStream_t _s) = 0;  
+    virtual void getCUDAStream(hipStream_t *_s) = 0;    
 
     /// Matrix-vector product
     /** y is overwritten with alpha*A*x+beta*y.
@@ -102,8 +102,8 @@ namespace nvgraph {
     virtual ~DenseMatrix();
 
     /// Get and Set CUDA stream  
-    virtual void setCUDAStream(cudaStream_t _s);  
-    virtual void getCUDAStream(cudaStream_t *_s);     
+    virtual void setCUDAStream(hipStream_t _s);  
+    virtual void getCUDAStream(hipStream_t *_s);     
 
     /// Matrix-vector product
     virtual void mv(ValueType_ alpha, const ValueType_ * __restrict__ x,
@@ -135,7 +135,7 @@ namespace nvgraph {
     /// Number of non-zero entries
     const IndexType_ nnz;
     /// Matrix properties
-    const cusparseMatDescr_t descrA;
+    const hipsparseMatDescr_t descrA;
     /// Matrix entry values (device memory)
     /*const*/ ValueType_ * csrValA;
     /// Pointer to first entry in each row (device memory)
@@ -153,20 +153,20 @@ namespace nvgraph {
     /// Constructor
     CsrMatrix(bool _trans, bool _sym,
 	      IndexType_ _m, IndexType_ _n, IndexType_ _nnz,
-        const cusparseMatDescr_t _descrA,
+        const hipsparseMatDescr_t _descrA,
 	      /*const*/ ValueType_ * _csrValA,
 	      const IndexType_ * _csrRowPtrA,
 	      const IndexType_ * _csrColIndA);
 
     /// Constructor
-    CsrMatrix( ValuedCsrGraph<IndexType_,ValueType_> & G, const cusparseMatDescr_t _descrA =0);
+    CsrMatrix( ValuedCsrGraph<IndexType_,ValueType_> & G, const hipsparseMatDescr_t _descrA =0);
 
     /// Destructor
     virtual ~CsrMatrix();
 
     /// Get and Set CUDA stream    
-    virtual void setCUDAStream(cudaStream_t _s);  
-    virtual void getCUDAStream(cudaStream_t *_s);  
+    virtual void setCUDAStream(hipStream_t _s);  
+    virtual void getCUDAStream(hipStream_t *_s);  
 
 
     /// Matrix-vector product
@@ -208,8 +208,8 @@ namespace nvgraph {
     virtual ~LaplacianMatrix();
 
     /// Get and Set CUDA stream    
-    virtual void setCUDAStream(cudaStream_t _s);  
-    virtual void getCUDAStream(cudaStream_t *_s);   
+    virtual void setCUDAStream(hipStream_t _s);  
+    virtual void getCUDAStream(hipStream_t *_s);   
 
     /// Matrix-vector product
     virtual void mv(ValueType_ alpha, const ValueType_ * __restrict__ x,
@@ -256,8 +256,8 @@ namespace nvgraph {
     virtual ~ModularityMatrix();
 
     /// Get and Set CUDA stream    
-    virtual void setCUDAStream(cudaStream_t _s);  
-    virtual void getCUDAStream(cudaStream_t *_s);   
+    virtual void setCUDAStream(hipStream_t _s);  
+    virtual void getCUDAStream(hipStream_t *_s);   
 
     /// Matrix-vector product
     virtual void mv(ValueType_ alpha, const ValueType_ * __restrict__ x,
@@ -282,255 +282,255 @@ namespace nvgraph {
 
 // cublasIxamax
 inline
-cublasStatus_t cublasIxamax(cublasHandle_t handle, int n,
+hipblasStatus_t cublasIxamax(hipblasHandle_t handle, int n,
           const float *x, int incx, int *result) {
-  return cublasIsamax(handle, n, x, incx, result);
+  return hipblasIsamax(handle, n, x, incx, result);
 }
 inline
-cublasStatus_t cublasIxamax(cublasHandle_t handle, int n,
+hipblasStatus_t cublasIxamax(hipblasHandle_t handle, int n,
           const double *x, int incx, int *result) {
-  return cublasIdamax(handle, n, x, incx, result);
+  return hipblasIdamax(handle, n, x, incx, result);
 }
 
 // cublasIxamin
 inline
-cublasStatus_t cublasIxamin(cublasHandle_t handle, int n,
+hipblasStatus_t cublasIxamin(hipblasHandle_t handle, int n,
           const float *x, int incx, int *result) {
-  return cublasIsamin(handle, n, x, incx, result);
+  return hipblasIsamin(handle, n, x, incx, result);
 }
 inline
-cublasStatus_t cublasIxamin(cublasHandle_t handle, int n,
+hipblasStatus_t cublasIxamin(hipblasHandle_t handle, int n,
           const double *x, int incx, int *result) {
-  return cublasIdamin(handle, n, x, incx, result);
+  return hipblasIdamin(handle, n, x, incx, result);
 }
 
 // cublasXasum
 inline
-cublasStatus_t cublasXasum(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXasum(hipblasHandle_t handle, int n,
          const float *x, int incx,
          float  *result) {
-  return cublasSasum(handle, n, x, incx, result);
+  return hipblasSasum(handle, n, x, incx, result);
 }
 inline
-cublasStatus_t cublasXasum(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXasum(hipblasHandle_t handle, int n,
          const double *x, int incx,
          double  *result) {
-  return cublasDasum(handle, n, x, incx, result);
+  return hipblasDasum(handle, n, x, incx, result);
 }
 
 // cublasXaxpy
 inline
-cublasStatus_t cublasXaxpy(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXaxpy(hipblasHandle_t handle, int n,
                            const float * alpha,
                            const float * x, int incx,
                            float * y, int incy) {
-  return cublasSaxpy(handle, n, alpha, x, incx, y, incy);
+  return hipblasSaxpy(handle, n, alpha, x, incx, y, incy);
 }
 inline
-cublasStatus_t cublasXaxpy(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXaxpy(hipblasHandle_t handle, int n,
                            const double *alpha,
                            const double *x, int incx,
                            double *y, int incy) {
-  return cublasDaxpy(handle, n, alpha, x, incx, y, incy);
+  return hipblasDaxpy(handle, n, alpha, x, incx, y, incy);
 }
 
 // cublasXcopy
 inline
-cublasStatus_t cublasXcopy(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXcopy(hipblasHandle_t handle, int n,
                            const float *x, int incx,
                            float *y, int incy) {
-  return cublasScopy(handle, n, x, incx, y, incy);
+  return hipblasScopy(handle, n, x, incx, y, incy);
 }
 inline
-cublasStatus_t cublasXcopy(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXcopy(hipblasHandle_t handle, int n,
                            const double *x, int incx,
                            double *y, int incy) {
-  return cublasDcopy(handle, n, x, incx, y, incy);
+  return hipblasDcopy(handle, n, x, incx, y, incy);
 }
 
 // cublasXdot
 inline
-cublasStatus_t cublasXdot(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXdot(hipblasHandle_t handle, int n,
         const float *x, int incx,
         const float *y, int incy,
         float *result) {
-  return cublasSdot(handle, n, x, incx, y, incy, result);
+  return hipblasSdot(handle, n, x, incx, y, incy, result);
 }
 inline
-cublasStatus_t cublasXdot(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXdot(hipblasHandle_t handle, int n,
         const double *x, int incx,
         const double *y, int incy,
         double *result) {
-  return cublasDdot(handle, n, x, incx, y, incy, result);
+  return hipblasDdot(handle, n, x, incx, y, incy, result);
 }
 
 // cublasXnrm2
 inline
-cublasStatus_t cublasXnrm2(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXnrm2(hipblasHandle_t handle, int n,
          const float *x, int incx,
          float  *result) {
-  return cublasSnrm2(handle, n, x, incx, result);
+  return hipblasSnrm2(handle, n, x, incx, result);
 }
 inline
-cublasStatus_t cublasXnrm2(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXnrm2(hipblasHandle_t handle, int n,
          const double *x, int incx,
          double  *result) {
-  return cublasDnrm2(handle, n, x, incx, result);
+  return hipblasDnrm2(handle, n, x, incx, result);
 }
 
 // cublasXscal
 inline
-cublasStatus_t cublasXscal(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXscal(hipblasHandle_t handle, int n,
          const float *alpha,
          float *x, int incx) {
-  return cublasSscal(handle, n, alpha, x, incx);
+  return hipblasSscal(handle, n, alpha, x, incx);
 }
 inline
-cublasStatus_t cublasXscal(cublasHandle_t handle, int n,
+hipblasStatus_t cublasXscal(hipblasHandle_t handle, int n,
          const double *alpha,
          double *x, int incx) {
-  return cublasDscal(handle, n, alpha, x, incx);
+  return hipblasDscal(handle, n, alpha, x, incx);
 }
 
 // cublasXgemv
 inline
-cublasStatus_t cublasXgemv(cublasHandle_t handle,
-         cublasOperation_t trans,
+hipblasStatus_t cublasXgemv(hipblasHandle_t handle,
+         hipblasOperation_t trans,
                            int m, int n,
                            const float *alpha,
                            const float *A, int lda,
                            const float *x, int incx,
                            const float *beta,
                            float *y, int incy) {
-  return cublasSgemv(handle, trans, m, n, alpha, A, lda, x, incx,
+  return hipblasSgemv(handle, trans, m, n, alpha, A, lda, x, incx,
          beta, y, incy);
 }
 inline
-cublasStatus_t cublasXgemv(cublasHandle_t handle,
-         cublasOperation_t trans,
+hipblasStatus_t cublasXgemv(hipblasHandle_t handle,
+         hipblasOperation_t trans,
                            int m, int n,
                            const double *alpha,
                            const double *A, int lda,
                            const double *x, int incx,
                            const double *beta,
                            double *y, int incy) {
-  return cublasDgemv(handle, trans, m, n, alpha, A, lda, x, incx,
+  return hipblasDgemv(handle, trans, m, n, alpha, A, lda, x, incx,
          beta, y, incy);
 }
 
 // cublasXger
 inline
-cublasStatus_t cublasXger(cublasHandle_t handle, int m, int n,
+hipblasStatus_t cublasXger(hipblasHandle_t handle, int m, int n,
         const float *alpha,
         const float *x, int incx,
         const float *y, int incy,
         float *A, int lda) {
-  return cublasSger(handle, m, n, alpha, x, incx, y, incy, A, lda);
+  return hipblasSger(handle, m, n, alpha, x, incx, y, incy, A, lda);
 }
 inline
-cublasStatus_t cublasXger(cublasHandle_t handle, int m, int n,
+hipblasStatus_t cublasXger(hipblasHandle_t handle, int m, int n,
         const double *alpha,
         const double *x, int incx,
         const double *y, int incy,
         double *A, int lda) {
-  return cublasDger(handle, m, n, alpha, x, incx, y, incy, A, lda);
+  return hipblasDger(handle, m, n, alpha, x, incx, y, incy, A, lda);
 }
 
 // cublasXgemm
 inline
-cublasStatus_t cublasXgemm(cublasHandle_t handle,
-         cublasOperation_t transa,
-         cublasOperation_t transb,
+hipblasStatus_t cublasXgemm(hipblasHandle_t handle,
+         hipblasOperation_t transa,
+         hipblasOperation_t transb,
          int m, int n, int k,
          const float *alpha,
          const float *A, int lda,
          const float *B, int ldb,
          const float *beta,
          float *C, int ldc) {
-  return cublasSgemm(handle, transa, transb, m, n, k,
+  return hipblasSgemm(handle, transa, transb, m, n, k,
          alpha, A, lda, B, ldb, beta, C, ldc);
 }
 inline
-cublasStatus_t cublasXgemm(cublasHandle_t handle,
-         cublasOperation_t transa,
-         cublasOperation_t transb,
+hipblasStatus_t cublasXgemm(hipblasHandle_t handle,
+         hipblasOperation_t transa,
+         hipblasOperation_t transb,
          int m, int n, int k,
          const double *alpha,
          const double *A, int lda,
          const double *B, int ldb,
          const double *beta,
          double *C, int ldc) {
-  return cublasDgemm(handle, transa, transb, m, n, k,
+  return hipblasDgemm(handle, transa, transb, m, n, k,
          alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
 // cublasXgeam
 inline
-cublasStatus_t cublasXgeam(cublasHandle_t handle,
-         cublasOperation_t transa,
-         cublasOperation_t transb,
+hipblasStatus_t cublasXgeam(hipblasHandle_t handle,
+         hipblasOperation_t transa,
+         hipblasOperation_t transb,
          int m, int n,
          const float *alpha,
          const float *A, int lda,
          const float *beta,
          const float *B, int ldb,
          float *C, int ldc) {
-  return cublasSgeam(handle, transa, transb, m, n,
+  return hipblasSgeam(handle, transa, transb, m, n,
          alpha, A, lda, beta, B, ldb, C, ldc);
 }
 inline
-cublasStatus_t cublasXgeam(cublasHandle_t handle,
-         cublasOperation_t transa,
-         cublasOperation_t transb,
+hipblasStatus_t cublasXgeam(hipblasHandle_t handle,
+         hipblasOperation_t transa,
+         hipblasOperation_t transb,
          int m, int n,
          const double *alpha,
          const double *A, int lda,
          const double *beta,
          const double *B, int ldb,
          double *C, int ldc) {
-  return cublasDgeam(handle, transa, transb, m, n,
+  return hipblasDgeam(handle, transa, transb, m, n,
          alpha, A, lda, beta, B, ldb, C, ldc);
 }
 
 // cublasXtrsm
-inline cublasStatus_t cublasXtrsm(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const float *alpha, const float *A, int lda, float *B, int ldb) {
-    return cublasStrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb); 
+inline hipblasStatus_t cublasXtrsm(hipblasHandle_t handle, hipblasSideMode_t side, hipblasFillMode_t uplo, hipblasOperation_t trans, hipblasDiagType_t diag, int m, int n, const float *alpha, const float *A, int lda, float *B, int ldb) {
+    return hipblasStrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb); 
 }
-inline cublasStatus_t cublasXtrsm(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const double *alpha, const double *A, int lda, double *B, int ldb) {
-    return cublasDtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb); 
+inline hipblasStatus_t cublasXtrsm(hipblasHandle_t handle, hipblasSideMode_t side, hipblasFillMode_t uplo, hipblasOperation_t trans, hipblasDiagType_t diag, int m, int n, const double *alpha, const double *A, int lda, double *B, int ldb) {
+    return hipblasDtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb); 
 }
 
 // curandGeneratorNormalX
 inline 
-curandStatus_t
-curandGenerateNormalX(curandGenerator_t generator,
+hiprandStatus_t
+curandGenerateNormalX(hiprandGenerator_t generator,
           float * outputPtr, size_t n,
           float mean, float stddev) {
-  return curandGenerateNormal(generator, outputPtr, n, mean, stddev);
+  return hiprandGenerateNormal(generator, outputPtr, n, mean, stddev);
 }
 inline
-curandStatus_t
-curandGenerateNormalX(curandGenerator_t generator,
+hiprandStatus_t
+curandGenerateNormalX(hiprandGenerator_t generator,
           double * outputPtr, size_t n,
           double mean, double stddev) {
-  return curandGenerateNormalDouble(generator, outputPtr,
+  return hiprandGenerateNormalDouble(generator, outputPtr,
             n, mean, stddev);
 }
 
 // cusolverXpotrf_bufferSize
 inline cusolverStatus_t cusolverXpotrf_bufferSize(cusolverDnHandle_t handle, int n, float *A, int lda, int *Lwork){
-    return cusolverDnSpotrf_bufferSize(handle,CUBLAS_FILL_MODE_LOWER,n,A,lda,Lwork);
+    return cusolverDnSpotrf_bufferSize(handle,HIPBLAS_FILL_MODE_LOWER,n,A,lda,Lwork);
 }
 inline cusolverStatus_t cusolverXpotrf_bufferSize(cusolverDnHandle_t handle, int n, double *A, int lda, int *Lwork){
-    return cusolverDnDpotrf_bufferSize(handle,CUBLAS_FILL_MODE_LOWER,n,A,lda,Lwork);
+    return cusolverDnDpotrf_bufferSize(handle,HIPBLAS_FILL_MODE_LOWER,n,A,lda,Lwork);
 }
 
 // cusolverXpotrf
 inline cusolverStatus_t cusolverXpotrf(cusolverDnHandle_t handle, int n, float *A, int lda, float *Workspace, int Lwork, int *devInfo){
-    return cusolverDnSpotrf(handle,CUBLAS_FILL_MODE_LOWER,n,A,lda,Workspace,Lwork,devInfo);
+    return cusolverDnSpotrf(handle,HIPBLAS_FILL_MODE_LOWER,n,A,lda,Workspace,Lwork,devInfo);
 }
 inline cusolverStatus_t cusolverXpotrf(cusolverDnHandle_t handle, int n, double *A, int lda, double *Workspace, int Lwork, int *devInfo){
-    return cusolverDnDpotrf(handle,CUBLAS_FILL_MODE_LOWER,n,A,lda,Workspace,Lwork,devInfo);
+    return cusolverDnDpotrf(handle,HIPBLAS_FILL_MODE_LOWER,n,A,lda,Workspace,Lwork,devInfo);
 }
 
 // cusolverXgesvd_bufferSize
@@ -599,11 +599,11 @@ inline cusolverStatus_t cusolverXgesvd_cond(cusolverDnHandle_t handle, int m, in
 
 // cusparseXcsrmv
 inline
-cusparseStatus_t cusparseXcsrmv(cusparseHandle_t handle,
-        cusparseOperation_t transA, 
+hipsparseStatus_t cusparseXcsrmv(hipsparseHandle_t handle,
+        hipsparseOperation_t transA, 
         int m, int n, int nnz,
         const float * alpha, 
-        const cusparseMatDescr_t descrA, 
+        const hipsparseMatDescr_t descrA, 
         const float * csrValA, 
         const int * csrRowPtrA,
         const int * csrColIndA,
@@ -615,11 +615,11 @@ cusparseStatus_t cusparseXcsrmv(cusparseHandle_t handle,
       x, beta, y);
 }
 inline
-cusparseStatus_t cusparseXcsrmv(cusparseHandle_t handle,
-        cusparseOperation_t transA, 
+hipsparseStatus_t cusparseXcsrmv(hipsparseHandle_t handle,
+        hipsparseOperation_t transA, 
         int m, int n, int nnz,
         const double * alpha, 
-        const cusparseMatDescr_t descrA, 
+        const hipsparseMatDescr_t descrA, 
         const double * csrValA, 
         const int * csrRowPtrA,
         const int * csrColIndA,
@@ -633,35 +633,35 @@ cusparseStatus_t cusparseXcsrmv(cusparseHandle_t handle,
 
 // cusparseXcsrmm
 inline
-cusparseStatus_t cusparseXcsrmm(cusparseHandle_t handle, 
-        cusparseOperation_t transA, 
+hipsparseStatus_t cusparseXcsrmm(hipsparseHandle_t handle, 
+        hipsparseOperation_t transA, 
         int m, int n, int k, int nnz, 
         const float *alpha, 
-        const cusparseMatDescr_t descrA, 
+        const hipsparseMatDescr_t descrA, 
         const float *csrValA, 
         const int *csrRowPtrA, 
         const int *csrColIndA,
         const float *B, int ldb,
         const float *beta, 
         float *C, int ldc) {
-  return cusparseScsrmm(handle, transA, m, n, k, nnz,
+  return hipsparseScsrmm(handle, transA, m, n, k, nnz,
       alpha, descrA, csrValA,
       csrRowPtrA, csrColIndA,
       B, ldb, beta, C, ldc);
 }
 inline
-cusparseStatus_t cusparseXcsrmm(cusparseHandle_t handle, 
-        cusparseOperation_t transA, 
+hipsparseStatus_t cusparseXcsrmm(hipsparseHandle_t handle, 
+        hipsparseOperation_t transA, 
         int m, int n, int k, int nnz, 
         const double *alpha, 
-        const cusparseMatDescr_t descrA, 
+        const hipsparseMatDescr_t descrA, 
         const double *csrValA, 
         const int *csrRowPtrA, 
         const int *csrColIndA,
         const double *B, int ldb,
         const double *beta, 
         double *C, int ldc) {
-  return cusparseDcsrmm(handle, transA, m, n, k, nnz,
+  return hipsparseDcsrmm(handle, transA, m, n, k, nnz,
       alpha, descrA, csrValA,
       csrRowPtrA, csrColIndA,
       B, ldb, beta, C, ldc);
@@ -669,53 +669,53 @@ cusparseStatus_t cusparseXcsrmm(cusparseHandle_t handle,
 
 // cusparseXcsrgeam
 inline
-cusparseStatus_t cusparseXcsrgeam(cusparseHandle_t handle, 
+hipsparseStatus_t cusparseXcsrgeam(hipsparseHandle_t handle, 
           int m, int n,
           const float *alpha,
-          const cusparseMatDescr_t descrA, 
+          const hipsparseMatDescr_t descrA, 
           int nnzA, const float *csrValA, 
           const int *csrRowPtrA, 
           const int *csrColIndA,
           const float *beta,
-          const cusparseMatDescr_t descrB, 
+          const hipsparseMatDescr_t descrB, 
           int nnzB, const float *csrValB, 
           const int *csrRowPtrB,
           const int *csrColIndB,
-          const cusparseMatDescr_t descrC,
+          const hipsparseMatDescr_t descrC,
           float *csrValC, 
           int *csrRowPtrC, int *csrColIndC) {
-  return cusparseScsrgeam(handle,m,n,
+  return hipsparseScsrgeam(handle,m,n,
         alpha,descrA,nnzA,csrValA,csrRowPtrA,csrColIndA,
         beta,descrB,nnzB,csrValB,csrRowPtrB,csrColIndB,
         descrC,csrValC,csrRowPtrC,csrColIndC);
 }
 inline
-cusparseStatus_t cusparseXcsrgeam(cusparseHandle_t handle, 
+hipsparseStatus_t cusparseXcsrgeam(hipsparseHandle_t handle, 
           int m, int n,
           const double *alpha,
-          const cusparseMatDescr_t descrA, 
+          const hipsparseMatDescr_t descrA, 
           int nnzA, const double *csrValA, 
           const int *csrRowPtrA, 
           const int *csrColIndA,
           const double *beta,
-          const cusparseMatDescr_t descrB, 
+          const hipsparseMatDescr_t descrB, 
           int nnzB, const double *csrValB, 
           const int *csrRowPtrB,
           const int *csrColIndB,
-          const cusparseMatDescr_t descrC,
+          const hipsparseMatDescr_t descrC,
           double *csrValC, 
           int *csrRowPtrC, int *csrColIndC) {
-  return cusparseDcsrgeam(handle,m,n,
+  return hipsparseDcsrgeam(handle,m,n,
         alpha,descrA,nnzA,csrValA,csrRowPtrA,csrColIndA,
         beta,descrB,nnzB,csrValB,csrRowPtrB,csrColIndB,
         descrC,csrValC,csrRowPtrC,csrColIndC);
 }
 
 //ILU0, incomplete-LU with 0 threshhold (CUSPARSE)
-inline cusparseStatus_t cusparseXcsrilu0(cusparseHandle_t handle, 
-                                         cusparseOperation_t trans, 
+inline hipsparseStatus_t cusparseXcsrilu0(hipsparseHandle_t handle, 
+                                         hipsparseOperation_t trans, 
                                          int m, 
-                                         const cusparseMatDescr_t descrA, 
+                                         const hipsparseMatDescr_t descrA, 
                                          float *csrValM,
                                          const int *csrRowPtrA, 
                                          const int *csrColIndA,
@@ -723,10 +723,10 @@ inline cusparseStatus_t cusparseXcsrilu0(cusparseHandle_t handle,
     return cusparseScsrilu0(handle,trans,m,descrA,csrValM,csrRowPtrA,csrColIndA,info);
 }
 
-inline cusparseStatus_t cusparseXcsrilu0(cusparseHandle_t handle, 
-                                         cusparseOperation_t trans, 
+inline hipsparseStatus_t cusparseXcsrilu0(hipsparseHandle_t handle, 
+                                         hipsparseOperation_t trans, 
                                          int m, 
-                                         const cusparseMatDescr_t descrA, 
+                                         const hipsparseMatDescr_t descrA, 
                                          double *csrValM, 
                                          const int *csrRowPtrA, 
                                          const int *csrColIndA, 
@@ -735,20 +735,20 @@ inline cusparseStatus_t cusparseXcsrilu0(cusparseHandle_t handle,
 }
 
 //IC0, incomplete-Cholesky with 0 threshhold (CUSPARSE)
-inline cusparseStatus_t cusparseXcsric0(cusparseHandle_t handle, 
-                                        cusparseOperation_t trans, 
+inline hipsparseStatus_t cusparseXcsric0(hipsparseHandle_t handle, 
+                                        hipsparseOperation_t trans, 
                                         int m, 
-                                        const cusparseMatDescr_t descrA, 
+                                        const hipsparseMatDescr_t descrA, 
                                         float *csrValM,
                                         const int *csrRowPtrA, 
                                         const int *csrColIndA,
                                         cusparseSolveAnalysisInfo_t info){
     return cusparseScsric0(handle,trans,m,descrA,csrValM,csrRowPtrA,csrColIndA,info);
 }
-inline cusparseStatus_t cusparseXcsric0(cusparseHandle_t handle, 
-                                        cusparseOperation_t trans, 
+inline hipsparseStatus_t cusparseXcsric0(hipsparseHandle_t handle, 
+                                        hipsparseOperation_t trans, 
                                         int m, 
-                                        const cusparseMatDescr_t descrA, 
+                                        const hipsparseMatDescr_t descrA, 
                                         double *csrValM, 
                                         const int *csrRowPtrA, 
                                         const int *csrColIndA, 
@@ -758,29 +758,29 @@ inline cusparseStatus_t cusparseXcsric0(cusparseHandle_t handle,
 
 //sparse triangular solve (CUSPARSE)
 //analysis phase
-inline cusparseStatus_t cusparseXcsrsm_analysis (cusparseHandle_t handle, cusparseOperation_t transa, int m, int nnz, const cusparseMatDescr_t descra, 
+inline hipsparseStatus_t cusparseXcsrsm_analysis (hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int nnz, const hipsparseMatDescr_t descra, 
                                                    const float *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info){
     return cusparseScsrsm_analysis(handle,transa,m,nnz,descra,a,ia,ja,info);
 }   
-inline cusparseStatus_t cusparseXcsrsm_analysis (cusparseHandle_t handle, cusparseOperation_t transa, int m, int nnz, const cusparseMatDescr_t descra, 
+inline hipsparseStatus_t cusparseXcsrsm_analysis (hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int nnz, const hipsparseMatDescr_t descra, 
                                                    const double *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info){
     return cusparseDcsrsm_analysis(handle,transa,m,nnz,descra,a,ia,ja,info);
 } 
 //solve phase
-inline cusparseStatus_t cusparseXcsrsm_solve (cusparseHandle_t handle, cusparseOperation_t transa, int m, int k, float alpha, const cusparseMatDescr_t descra, 
+inline hipsparseStatus_t cusparseXcsrsm_solve (hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int k, float alpha, const hipsparseMatDescr_t descra, 
                                               const float *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info, const float *x, int ldx, float *y, int ldy){
     return cusparseScsrsm_solve(handle,transa,m,k,&alpha,descra,a,ia,ja,info,x,ldx,y,ldy);
 }   
-inline cusparseStatus_t cusparseXcsrsm_solve (cusparseHandle_t handle, cusparseOperation_t transa, int m, int k, double alpha, const cusparseMatDescr_t descra, 
+inline hipsparseStatus_t cusparseXcsrsm_solve (hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int k, double alpha, const hipsparseMatDescr_t descra, 
                                               const double *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info, const double *x, int ldx, double *y, int ldy){
     return cusparseDcsrsm_solve(handle,transa,m,k,&alpha,descra,a,ia,ja,info,x,ldx,y,ldy);
 } 
 
 
-inline cusparseStatus_t cusparseXcsrcolor(cusparseHandle_t handle, int m, int nnz, const cusparseMatDescr_t descrA, const float *csrValA, const int *csrRowPtrA, const int *csrColIndA, const float *fractionToColor, int *ncolors, int *coloring, int *reordering,cusparseColorInfo_t info) {
+inline hipsparseStatus_t cusparseXcsrcolor(hipsparseHandle_t handle, int m, int nnz, const hipsparseMatDescr_t descrA, const float *csrValA, const int *csrRowPtrA, const int *csrColIndA, const float *fractionToColor, int *ncolors, int *coloring, int *reordering,cusparseColorInfo_t info) {
     return cusparseScsrcolor(handle,m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,fractionToColor,ncolors,coloring,reordering,info);
 }
-inline cusparseStatus_t cusparseXcsrcolor(cusparseHandle_t handle, int m, int nnz, const cusparseMatDescr_t descrA, const double *csrValA, const int *csrRowPtrA, const int *csrColIndA, const double *fractionToColor, int *ncolors, int *coloring, int *reordering,cusparseColorInfo_t info) {
+inline hipsparseStatus_t cusparseXcsrcolor(hipsparseHandle_t handle, int m, int nnz, const hipsparseMatDescr_t descrA, const double *csrValA, const int *csrRowPtrA, const int *csrColIndA, const double *fractionToColor, int *ncolors, int *coloring, int *reordering,cusparseColorInfo_t info) {
     return cusparseDcsrcolor(handle,m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,fractionToColor,ncolors,coloring,reordering,info);
 }
 

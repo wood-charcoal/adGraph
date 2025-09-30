@@ -21,7 +21,7 @@
 #include <thrust/sort.h> //sort
 #include <thrust/binary_search.h> //lower_bound
 #include <thrust/unique.h> //unique
-#include <cusparse.h>
+#include <hipsparse.h>
 #include "async_event.cuh"
 #include "graph_utils.cuh"
 #include "common_selector.cuh"
@@ -57,7 +57,7 @@ class Size2Selector
 
     Size2Selector();
 
-    Size2Selector(Matching_t similarity_metric,  int deterministic = 1, int max_iterations = 15 , ValueType numUnassigned_tol = 0.05 ,bool two_phase = false, bool merge_singletons = true, cudaStream_t stream = 0) 
+    Size2Selector(Matching_t similarity_metric,  int deterministic = 1, int max_iterations = 15 , ValueType numUnassigned_tol = 0.05 ,bool two_phase = false, bool merge_singletons = true, hipStream_t stream = 0) 
        :m_similarity_metric(similarity_metric), m_deterministic(deterministic), m_max_iterations(max_iterations), m_numUnassigned_tol(numUnassigned_tol), m_two_phase(two_phase), m_merge_singletons(merge_singletons), m_stream(stream)
     {
         m_aggregation_edge_weight_component = 0;
@@ -65,12 +65,12 @@ class Size2Selector
     }
 
 //    NVGRAPH_ERROR setAggregates(const CsrGraph<IndexType, ValueType> &A, Vector<IndexType> &aggregates, int &num_aggregates);
-    NVGRAPH_ERROR setAggregates(cusparseHandle_t, const IndexType n_vertex, const IndexType n_edges, IndexType* csr_ptr, IndexType* csr_ind, ValueType* csr_val, Vector<IndexType> &aggregates, int &num_aggregates);
+    NVGRAPH_ERROR setAggregates(hipsparseHandle_t, const IndexType n_vertex, const IndexType n_edges, IndexType* csr_ptr, IndexType* csr_ind, ValueType* csr_val, Vector<IndexType> &aggregates, int &num_aggregates);
 
 
   protected:
 //    NVGRAPH_ERROR setAggregates_common_sqblocks(const CsrGraph<IndexType, ValueType> &A, Vector<IndexType> &aggregates, int &num_aggregates);
-    NVGRAPH_ERROR setAggregates_common_sqblocks(cusparseHandle_t, const IndexType n_vertex, const IndexType n_edges, IndexType* csr_ptr, IndexType* csr_ind, ValueType* csr_val, Vector<IndexType> &aggregates, int &num_aggregates);
+    NVGRAPH_ERROR setAggregates_common_sqblocks(hipsparseHandle_t, const IndexType n_vertex, const IndexType n_edges, IndexType* csr_ptr, IndexType* csr_ind, ValueType* csr_val, Vector<IndexType> &aggregates, int &num_aggregates);
  
     Matching_t m_similarity_metric;
     int m_deterministic;
@@ -78,7 +78,7 @@ class Size2Selector
     ValueType m_numUnassigned_tol;
     bool m_two_phase;
     bool m_merge_singletons;
-    cudaStream_t m_stream;    
+    hipStream_t m_stream;    
     int m_aggregation_edge_weight_component;
     int m_weight_formula;
 };
@@ -109,7 +109,7 @@ void renumberAndCountAggregates(Vector<IndexType> &aggregates, const IndexType n
                thrust::make_permutation_iterator(scratch_thrust_dev_ptr, aggregates_thrust_dev_ptr + n),
                aggregates_thrust_dev_ptr);
   cudaCheckError();
-  cudaMemcpy(&num_aggregates, &scratch.raw()[scratch.get_size()-1], sizeof(int), cudaMemcpyDefault); //num_aggregates = scratch.raw()[scratch.get_size()-1];
+  hipMemcpy(&num_aggregates, &scratch.raw()[scratch.get_size()-1], sizeof(int), hipMemcpyDefault); //num_aggregates = scratch.raw()[scratch.get_size()-1];
   cudaCheckError();
 
 }
@@ -140,7 +140,7 @@ Size2Selector<IndexType, ValueType>::Size2Selector()
 // setAggregates for block_dia_csr_matrix_d format
 template <typename IndexType, typename ValueType>
 NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks(
-cusparseHandle_t cusp_handle,
+hipsparseHandle_t cusp_handle,
 const IndexType n_vertex,
 const IndexType n_edges, 
 IndexType *csr_ptr,
@@ -158,12 +158,12 @@ Vector<IndexType> &aggregates, int &num_aggregates)
   Vector<IndexType> row_indices(nnz);
   IndexType* row_indices_raw_ptr = row_indices.raw();
 //  Cusparse::csr2coo( n, nnz, A_row_offsets_ptr, row_indices.raw()); // note : amgx uses cusp for that
-  //cusparseHandle_t cusp_handle;
-  //cusparseCreate(&cusp_handle);
+  //hipsparseHandle_t cusp_handle;
+  //hipsparseCreate(&cusp_handle);
 
-  cusparseXcsr2coo(cusp_handle, A_row_offsets_ptr,
+  hipsparseXcsr2coo(cusp_handle, A_row_offsets_ptr,
                  nnz, n, row_indices_raw_ptr, 
-                 CUSPARSE_INDEX_BASE_ZERO);  
+                 HIPSPARSE_INDEX_BASE_ZERO);  
 
   const IndexType *A_row_indices_ptr = row_indices.raw();
   
@@ -213,7 +213,7 @@ Vector<IndexType> &aggregates, int &num_aggregates)
         ones.fill(1.0);
         ValueType alpha = 1.0, beta =0.0;
         Cusparse::csrmv(false, false, n, n, nnz,&alpha,A_nonzero_values_ptr, A_row_offsets_ptr, A_column_indices_ptr, ones.raw(),&beta, row_sum.raw());
-        cudaFuncSetCacheConfig(computeEdgeWeightsBlockDiaCsr_V2<IndexType,ValueType,float>,cudaFuncCachePreferL1);
+        hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType),ValueType,float>,hipFuncCachePreferL1);
         computeEdgeWeights_simple<<<num_blocks_V2,threads_per_block,0,this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_row_sum_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, this->m_weight_formula);
         cudaCheckError();  
         break; 
@@ -229,7 +229,7 @@ Vector<IndexType> &aggregates, int &num_aggregates)
        computeDiagonalKernelCSR<<<num_blocks,threads_per_block,0,this->m_stream>>>(n, csr_ptr, csr_ind, diag_idx.raw());
        cudaCheckError();
 
-       cudaFuncSetCacheConfig(computeEdgeWeightsBlockDiaCsr_V2<IndexType,ValueType,float>,cudaFuncCachePreferL1);
+       hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType),ValueType,float>,hipFuncCachePreferL1);
        computeEdgeWeightsBlockDiaCsr_V2<<<num_blocks_V2,threads_per_block,0,this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_dia_idx_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, bsize,this->m_aggregation_edge_weight_component, this->m_weight_formula);
        cudaCheckError();  
        break; 
@@ -282,11 +282,11 @@ Vector<IndexType> &aggregates, int &num_aggregates)
       if( s == 0 ) 
       {
         // count unaggregated vertices
-        cudaMemsetAsync(d_unaggregated, 0, sizeof(int), this->m_stream);
+        hipMemsetAsync(d_unaggregated, 0, sizeof(int), this->m_stream);
         countAggregates<IndexType,threads_per_block><<<num_blocks,threads_per_block,0,this->m_stream>>>(n, aggregates_ptr, d_unaggregated);
         cudaCheckError();
 
-        cudaMemcpyAsync(unaggregated, d_unaggregated, sizeof(int), cudaMemcpyDeviceToHost, this->m_stream);
+        hipMemcpyAsync(unaggregated, d_unaggregated, sizeof(int), hipMemcpyDeviceToHost, this->m_stream);
         throttle_event->record(this->m_stream);
         cudaCheckError();
       }
@@ -298,7 +298,7 @@ Vector<IndexType> &aggregates, int &num_aggregates)
         numUnassigned = *unaggregated;
       }
 #else
-      cudaStreamSynchronize(this->m_stream);
+      hipStreamSynchronize(this->m_stream);
       numUnassigned_previous = numUnassigned;
       numUnassigned = (int)thrust::count(aggregates_thrust_dev_ptr, aggregates_thrust_dev_ptr+n,-1);
       cudaCheckError();
@@ -369,7 +369,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates(const CsrGraph<
 
 template <typename IndexType, typename ValueType>
 NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates(
-cusparseHandle_t cusp_handle,
+hipsparseHandle_t cusp_handle,
 const IndexType n_vertex,
 const IndexType n_edges, 
 IndexType *csr_ptr,

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -18,10 +19,10 @@
 
 #pragma once
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime.h>
 //#include <library_types.h>
-//#include <cuda_fp16.h>
+//#include <hip/hip_fp16.h>
 
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
@@ -49,9 +50,9 @@ namespace nvlouvain
 #ifdef DEBUG
   #define WHERE " at: " << __FILE__ << ':' << __LINE__
   #define cudaCheckError() {                                              \
-    cudaError_t e=cudaGetLastError();                                     \
-    if(e!=cudaSuccess) {                                                  \
-      std::cerr << "Cuda failure: "  << cudaGetErrorString(e) << WHERE << std::endl;        \
+    hipError_t e=hipGetLastError();                                     \
+    if(e!=hipSuccess) {                                                  \
+      std::cerr << "Cuda failure: "  << hipGetErrorString(e) << WHERE << std::endl;        \
     }                                                                     \
   }
 #else 

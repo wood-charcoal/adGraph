@@ -21,13 +21,13 @@
 
  namespace nvgraph{
     void csr2coo( const int *csrSortedRowPtr,
-                  int nnz, int m, int *cooRowInd, cusparseIndexBase_t idxBase){
-      CHECK_CUSPARSE( cusparseXcsr2coo(  Cusparse::get_handle(),
+                  int nnz, int m, int *cooRowInd, hipsparseIndexBase_t idxBase){
+      CHECK_CUSPARSE( hipsparseXcsr2coo(  Cusparse::get_handle(),
                                          csrSortedRowPtr, nnz, m, cooRowInd, idxBase ));
     }
     void coo2csr( const int *cooRowInd,
-                  int nnz, int m, int *csrSortedRowPtr, cusparseIndexBase_t idxBase){
-      CHECK_CUSPARSE( cusparseXcoo2csr( Cusparse::get_handle(),
+                  int nnz, int m, int *csrSortedRowPtr, hipsparseIndexBase_t idxBase){
+      CHECK_CUSPARSE( hipsparseXcoo2csr( Cusparse::get_handle(),
                                         cooRowInd, nnz, m, csrSortedRowPtr, idxBase ));
     }
 
@@ -35,8 +35,8 @@
     void csr2csc( int m, int n, int nnz,
                   const void *csrVal, const int *csrRowPtr, const int *csrColInd,
                   void *cscVal, int *cscRowInd, int *cscColPtr,
-                  cusparseAction_t copyValues, cusparseIndexBase_t idxBase,
-                  cudaDataType_t *dataType){
+                  hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
+                  hipblasDatatype_t *dataType){
       CHECK_CUSPARSE( cusparseCsr2cscEx( Cusparse::get_handle(),
                                          m, n, nnz,
                                          csrVal, *dataType, csrRowPtr, csrColInd,
@@ -46,8 +46,8 @@
     void csc2csr( int m, int n, int nnz,
                   const void *cscVal, const int *cscRowInd, const int *cscColPtr,
                   void *csrVal, int *csrRowPtr, int *csrColInd,
-                  cusparseAction_t copyValues, cusparseIndexBase_t idxBase,
-                  cudaDataType_t *dataType){
+                  hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
+                  hipblasDatatype_t *dataType){
       CHECK_CUSPARSE( cusparseCsr2cscEx( Cusparse::get_handle(),
                                          m, n, nnz,
                                          cscVal, *dataType, cscColPtr, cscRowInd,
@@ -58,16 +58,16 @@
     void cooSortByDestination(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowInd, int *dstColInd,
-                cusparseIndexBase_t idxBase, cudaDataType_t *dataType){
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
       size_t pBufferSizeInBytes = 0;
       SHARED_PREFIX::shared_ptr<char> pBuffer;
       SHARED_PREFIX::shared_ptr<int> P; // permutation array
 
       // step 0: copy src to dst
       if(dstRowInd!=srcRowInd)
-        CHECK_CUDA( cudaMemcpy(dstRowInd, srcRowInd, nnz*sizeof(int), cudaMemcpyDefault) );
+        CHECK_CUDA( hipMemcpy(dstRowInd, srcRowInd, nnz*sizeof(int), hipMemcpyDefault) );
       if(dstColInd!=srcColInd)
-        CHECK_CUDA( cudaMemcpy(dstColInd, srcColInd, nnz*sizeof(int), cudaMemcpyDefault) );
+        CHECK_CUDA( hipMemcpy(dstColInd, srcColInd, nnz*sizeof(int), hipMemcpyDefault) );
       // step 1: allocate buffer (needed for cooSortByRow)
       cooSortBufferSize(m, n, nnz, dstRowInd, dstColInd, &pBufferSizeInBytes);
       pBuffer = allocateDevice<char>(pBufferSizeInBytes, NULL);
@@ -82,14 +82,14 @@
     void cooSortBySource(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowInd, int *dstColInd,
-                cusparseIndexBase_t idxBase, cudaDataType_t *dataType){
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
       size_t pBufferSizeInBytes = 0;
       SHARED_PREFIX::shared_ptr<char> pBuffer;
       SHARED_PREFIX::shared_ptr<int> P; // permutation array
 
       // step 0: copy src to dst
-      CHECK_CUDA( cudaMemcpy(dstRowInd, srcRowInd, nnz*sizeof(int), cudaMemcpyDefault) );
-      CHECK_CUDA( cudaMemcpy(dstColInd, srcColInd, nnz*sizeof(int), cudaMemcpyDefault) );
+      CHECK_CUDA( hipMemcpy(dstRowInd, srcRowInd, nnz*sizeof(int), hipMemcpyDefault) );
+      CHECK_CUDA( hipMemcpy(dstColInd, srcColInd, nnz*sizeof(int), hipMemcpyDefault) );
       // step 1: allocate buffer (needed for cooSortByRow)
       cooSortBufferSize(m, n, nnz, dstRowInd, dstColInd, &pBufferSizeInBytes);
       pBuffer = allocateDevice<char>(pBufferSizeInBytes, NULL);
@@ -105,7 +105,7 @@
     void coos2csc(int m, int n, int nnz,
               const void *srcVal, const int *srcRowInd, const int *srcColInd,
               void *dstVal, int *dstRowInd, int *dstColPtr,
-              cusparseIndexBase_t idxBase, cudaDataType_t *dataType){
+              hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
       // coos -> cood -> csc
       SHARED_PREFIX::shared_ptr<int> tmp = allocateDevice<int>(nnz, NULL);
       cooSortByDestination(m, n, nnz, srcVal, srcRowInd, srcColInd, dstVal, dstRowInd, tmp.get(), idxBase, dataType);
@@ -114,7 +114,7 @@
     void cood2csr(int m, int n, int nnz,
               const void *srcVal, const int *srcRowInd, const int *srcColInd,
               void *dstVal, int *dstRowPtr, int *dstColInd,
-              cusparseIndexBase_t idxBase, cudaDataType_t *dataType){
+              hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
       // cood -> coos -> csr
       SHARED_PREFIX::shared_ptr<int> tmp = allocateDevice<int>(nnz, NULL);
       cooSortBySource(m, n, nnz, srcVal, srcRowInd, srcColInd, dstVal, tmp.get(), dstColInd, idxBase, dataType);
@@ -123,7 +123,7 @@
     void coou2csr(int m, int n, int nnz,
               const void *srcVal, const int *srcRowInd, const int *srcColInd,
               void *dstVal, int *dstRowPtr, int *dstColInd,
-              cusparseIndexBase_t idxBase, cudaDataType_t *dataType){
+              hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
       cood2csr(m, n, nnz,
               srcVal, srcRowInd, srcColInd,
               dstVal, dstRowPtr, dstColInd,
@@ -132,7 +132,7 @@
     void coou2csc(int m, int n, int nnz,
               const void *srcVal, const int *srcRowInd, const int *srcColInd,
               void *dstVal, int *dstRowInd, int *dstColPtr,
-              cusparseIndexBase_t idxBase, cudaDataType_t *dataType){
+              hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
       coos2csc(m, n, nnz,
               srcVal, srcRowInd, srcColInd,
               dstVal, dstRowInd, dstColPtr,
@@ -141,31 +141,31 @@
 
     ////////////////////////// Utility functions //////////////////////////
     void createIdentityPermutation(int n, int *p){
-        CHECK_CUSPARSE( cusparseCreateIdentityPermutation(Cusparse::get_handle(), n, p) );
+        CHECK_CUSPARSE( hipsparseCreateIdentityPermutation(Cusparse::get_handle(), n, p) );
     }
 
     void gthrX( int nnz, const void *y, void *xVal, const int *xInd,
-                cusparseIndexBase_t idxBase, cudaDataType_t *dataType){
-      if(*dataType==CUDA_R_32F){
-        CHECK_CUSPARSE( cusparseSgthr(Cusparse::get_handle(), nnz, (float*)y, (float*)xVal, xInd, idxBase ));
-      } else if(*dataType==CUDA_R_64F) {
-        CHECK_CUSPARSE( cusparseDgthr(Cusparse::get_handle(), nnz, (double*)y, (double*)xVal, xInd, idxBase ));
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
+      if(*dataType==HIPBLAS_R_32F){
+        CHECK_CUSPARSE( hipsparseSgthr(Cusparse::get_handle(), nnz, (float*)y, (float*)xVal, xInd, idxBase ));
+      } else if(*dataType==HIPBLAS_R_64F) {
+        CHECK_CUSPARSE( hipsparseDgthr(Cusparse::get_handle(), nnz, (double*)y, (double*)xVal, xInd, idxBase ));
       }
     }
 
 
     void cooSortBufferSize(int m, int n, int nnz, const int *cooRows, const int *cooCols, size_t *pBufferSizeInBytes) {
-        CHECK_CUSPARSE( cusparseXcoosort_bufferSizeExt( Cusparse::get_handle(),
+        CHECK_CUSPARSE( hipsparseXcoosort_bufferSizeExt( Cusparse::get_handle(),
                                                         m, n, nnz,
                                                         cooRows, cooCols, pBufferSizeInBytes ));
     }
     void cooGetSourcePermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer) {
-        CHECK_CUSPARSE( cusparseXcoosortByRow( Cusparse::get_handle(),
+        CHECK_CUSPARSE( hipsparseXcoosortByRow( Cusparse::get_handle(),
                                                 m, n, nnz,
                                                 cooRows, cooCols, p, pBuffer ));
     }
     void cooGetDestinationPermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer) {
-        CHECK_CUSPARSE( cusparseXcoosortByColumn( Cusparse::get_handle(),
+        CHECK_CUSPARSE( hipsparseXcoosortByColumn( Cusparse::get_handle(),
                                                   m, n, nnz,
                                                   cooRows, cooCols, p, pBuffer ));
     }

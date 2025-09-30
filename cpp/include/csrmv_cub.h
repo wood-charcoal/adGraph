@@ -38,7 +38,7 @@ public:
         I              num_rows,
         I              num_cols,
         I              num_nonzeros,
-        cudaStream_t   stream);
+        hipStream_t   stream);
 
     static NVGRAPH_ERROR InitAndLaunch(
             const nvgraph::MultiValuedCsrGraph<I, V> &graph,
@@ -48,7 +48,7 @@ public:
             const void *p_beta,
             const size_t y_index,
             const nvgraphSemiring_t SR,
-            cudaStream_t stream
+            hipStream_t stream
         );
 };
 

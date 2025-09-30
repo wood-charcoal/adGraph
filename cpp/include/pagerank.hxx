@@ -34,7 +34,7 @@ private:
 	ValueType m_damping_factor;
 	ValueType m_residual;
 	ValueType m_tolerance;
-	cudaStream_t m_stream;
+	hipStream_t m_stream;
 	int m_iterations;
 	int m_max_it;
 	bool m_is_setup;
@@ -52,7 +52,7 @@ public:
 
 	// Create a Pagerank Solver attached to a the transposed of a transition matrix
 	// *** network is the transposed of a transition matrix***
-	Pagerank(const ValuedCsrGraph <IndexType, ValueType>& network, Vector<ValueType>& dangling_nodes, cudaStream_t stream = 0);
+	Pagerank(const ValuedCsrGraph <IndexType, ValueType>& network, Vector<ValueType>& dangling_nodes, hipStream_t stream = 0);
 	
 	// dangling_nodes is a vector of size n where dangling_nodes[i] = 1.0 if vertex i is a dangling node and 0.0 otherwise
     // pagerank_vector is the output

@@ -36,15 +36,15 @@ NVGRAPH_ERROR SemiringDispatch<I, V>::Dispatch(
         I              num_rows,
         I              num_cols,
         I              num_nonzeros,
-        cudaStream_t   stream)
+        hipStream_t   stream)
 {
     // std::static_assert(std::is_same<typename std::remove_cv<T>::type, int>::value, "current CUB implementation supports int only for indices");
     size_t temp_buf_size = 0;
-    cudaError_t err = cub_semiring::cub::DeviceSpmv::CsrMV<V, SR>( NULL, temp_buf_size, d_values, d_row_offsets, d_column_indices, d_vector_x, 
+    hipError_t err = cub_semiring::hipcub::DeviceSpmv::CsrMV<V, SR>( NULL, temp_buf_size, d_values, d_row_offsets, d_column_indices, d_vector_x, 
         d_vector_y, alpha, beta, num_rows, num_cols, num_nonzeros, stream);
     CHECK_CUDA(err);
     Vector<char> tmp_buf(std::max(temp_buf_size, size_t(1)), stream);
-    err = cub_semiring::cub::DeviceSpmv::CsrMV<V, SR>( tmp_buf.raw(), temp_buf_size, d_values, d_row_offsets, d_column_indices, d_vector_x, 
+    err = cub_semiring::hipcub::DeviceSpmv::CsrMV<V, SR>( tmp_buf.raw(), temp_buf_size, d_values, d_row_offsets, d_column_indices, d_vector_x, 
         d_vector_y, alpha, beta, num_rows, num_cols, num_nonzeros, stream);
     CHECK_CUDA(err);
     return NVGRAPH_OK;
@@ -60,7 +60,7 @@ NVGRAPH_ERROR SemiringDispatch<I, V>::InitAndLaunch(
             const void *p_beta,
             const size_t y_index,
             const nvgraphSemiring_t SR,
-            cudaStream_t stream
+            hipStream_t stream
         )
 {
     if (weight_index >= graph.get_num_edge_dim() || x_index >= graph.get_num_vertex_dim() || y_index >= graph.get_num_vertex_dim()) // base index is 0
@@ -80,16 +80,16 @@ NVGRAPH_ERROR SemiringDispatch<I, V>::InitAndLaunch(
     switch (SR)
     {
         case NVGRAPH_PLUS_TIMES_SR: 
-            err = Dispatch< cub_semiring::cub::PlusTimesSemiring<V> >(vals, row_ptr, col_ind, x, y, alpha, beta, n, n, nnz, stream);
+            err = Dispatch< cub_semiring::hipcub::PlusTimesSemiring<V> >(vals, row_ptr, col_ind, x, y, alpha, beta, n, n, nnz, stream);
             break;
         case NVGRAPH_MIN_PLUS_SR: 
-            err = Dispatch< cub_semiring::cub::MinPlusSemiring<V> >(vals, row_ptr, col_ind, x, y, alpha, beta, n, n, nnz, stream);
+            err = Dispatch< cub_semiring::hipcub::MinPlusSemiring<V> >(vals, row_ptr, col_ind, x, y, alpha, beta, n, n, nnz, stream);
             break;
         case NVGRAPH_MAX_MIN_SR: 
-            err = Dispatch< cub_semiring::cub::MaxMinSemiring<V> >(vals, row_ptr, col_ind, x, y, alpha, beta, n, n, nnz, stream);
+            err = Dispatch< cub_semiring::hipcub::MaxMinSemiring<V> >(vals, row_ptr, col_ind, x, y, alpha, beta, n, n, nnz, stream);
             break;
         case NVGRAPH_OR_AND_SR:
-            err = Dispatch< cub_semiring::cub::OrAndBoolSemiring<V> >(vals, row_ptr, col_ind, x, y, alpha, beta, n, n, nnz, stream);
+            err = Dispatch< cub_semiring::hipcub::OrAndBoolSemiring<V> >(vals, row_ptr, col_ind, x, y, alpha, beta, n, n, nnz, stream);
             break;
         default:
             break;
@@ -115,20 +115,20 @@ NVGRAPH_ERROR SemiringAPILauncher(nvgraphHandle_t handle,
     if (descrG->TT != NVGRAPH_CSR_32) // supported topologies
         return NVGRAPH_ERR_BAD_PARAMETERS;
 
-    cudaStream_t stream = handle->stream;
+    hipStream_t stream = handle->stream;
 
     NVGRAPH_ERROR err = NVGRAPH_ERR_NOT_IMPLEMENTED; 
 
     switch(descrG->T)
         {
-            case CUDA_R_32F :
+            case HIPBLAS_R_32F :
             {
                 const nvgraph::MultiValuedCsrGraph<I, float> *mcsrg = static_cast<const nvgraph::MultiValuedCsrGraph<I, float>*> (descrG->graph_handle);
                 err = SemiringDispatch<I, float>::InitAndLaunch( *mcsrg, weight_index, static_cast<const float*>(alpha), x, 
                     static_cast<const float*>(beta), y, sr, stream);
                 break;
             }
-            case CUDA_R_64F :
+            case HIPBLAS_R_64F :
             {
                 const nvgraph::MultiValuedCsrGraph<I, double> *mcsrg = static_cast<const nvgraph::MultiValuedCsrGraph<I, double>*> (descrG->graph_handle);
                 err = SemiringDispatch<I, double>::InitAndLaunch( *mcsrg, weight_index, static_cast<const double*>(alpha), x, 

@@ -869,7 +869,7 @@ namespace{ //unnamed..
     //
     GraphContractionVisitor(CsrGraph<IndexType_>& graph,    
                             const VectorI& aggregates, /*const */
-                            cudaStream_t stream,
+                            hipStream_t stream,
                             VertexCombineFctr& v_combine,
                             VertexReduceFctr&  v_reduce,
                             EdgeCombineFctr&   e_combine,
@@ -1199,7 +1199,7 @@ namespace{ //unnamed..
     VectorI m_g_row_ptr_;
     VectorI m_g_col_ind_;
     CFunctor contractor_;
-    cudaStream_t stream_;
+    hipStream_t stream_;
     CsrGraph<IndexType_>* contracted_graph_; // to be constructed
   };
 
@@ -1240,7 +1240,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     if( i4 == n )//reached both ceiling of Level recursion and bottom of n value recursion
     {
@@ -1300,7 +1300,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     if( i4 == 0 )
     {
@@ -1360,7 +1360,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     if( i3 == n )
     {
@@ -1395,7 +1395,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     if( i3 == 0 )
     {
@@ -1432,7 +1432,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     if( i2 == n )
     {
@@ -1467,7 +1467,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     if( i2 == 0 )
     {
@@ -1504,7 +1504,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     if( i1 == n )
     {
@@ -1539,7 +1539,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     if( i1 == 0 )
     {
@@ -1578,7 +1578,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     return NestedTypedIfThenElser<VectorI, VectorV, Unused, Unused, Unused, 0, N-1, N>::iffer(i1, i2, i3, i4, 
                                                 graph, 
@@ -1602,7 +1602,7 @@ namespace{ //unnamed..
   static CsrGraph<IndexT>* iffer(size_t i1, size_t i2, size_t i3, size_t i4, 
                    CsrGraph<IndexT>& graph,
                    VectorI& aggregates,
-                   cudaStream_t stream)
+                   hipStream_t stream)
   {
     return NestedTypedIfThenElser<VectorI, VectorV, T1, Unused, Unused, 1, N-1, N>::iffer(i1, i2, i3, i4, 
                                                 graph, 
@@ -1618,7 +1618,7 @@ namespace{ //unnamed..
   CsrGraph<IndexT>* contract_from_aggregates(CsrGraph<IndexT>& graph, 
                                              IndexT* p_aggregates,
                                              size_t n,
-                                             cudaStream_t stream,
+                                             hipStream_t stream,
                                              const SemiRingFunctorTypes& vCombine,
                                              const SemiRingFunctorTypes& vReduce,
                                              const SemiRingFunctorTypes& eCombine,
@@ -1658,7 +1658,7 @@ namespace{ //unnamed..
   CsrGraph<IndexT>* contract_from_aggregates_t(CsrGraph<IndexT>& graph, 
                                              IndexT* p_aggregates,
                                              size_t n,
-                                             cudaStream_t stream,
+                                             hipStream_t stream,
                                              const SemiRingFunctorTypes& vCombine,
                                              const SemiRingFunctorTypes& vReduce,
                                              const SemiRingFunctorTypes& eCombine,

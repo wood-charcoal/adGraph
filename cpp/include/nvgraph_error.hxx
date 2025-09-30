@@ -119,18 +119,18 @@ int NVGRAPH_GetErrorString( NVGRAPH_ERROR error, char* buffer, int buf_len);
 #undef cudaCheckError
 #if defined(DEBUG) || defined(VERBOSE_DIAG)
 #define cudaCheckError() {                                              \
-  cudaError_t e=cudaGetLastError();                                     \
-  if(e!=cudaSuccess) {                                                  \
+  hipError_t e=hipGetLastError();                                     \
+  if(e!=hipSuccess) {                                                  \
     std::stringstream _error;                                           \
-    _error << "Cuda failure: '" << cudaGetErrorString(e) << "'";        \
+    _error << "Cuda failure: '" << hipGetErrorString(e) << "'";        \
     FatalError(_error.str(), NVGRAPH_ERR_CUDA_FAILURE);                 \
   }                                                                     \
 }
 #else // NO DEBUG
 #define cudaCheckError()                                                      \
     {                                                                         \
-        cudaError_t __e = cudaGetLastError();                                 \
-        if (__e != cudaSuccess) {                                             \
+        hipError_t __e = hipGetLastError();                                 \
+        if (__e != hipSuccess) {                                             \
             FatalError("", NVGRAPH_ERR_CUDA_FAILURE);                         \
         }                                                                     \
     }
@@ -138,8 +138,8 @@ int NVGRAPH_GetErrorString( NVGRAPH_ERROR error, char* buffer, int buf_len);
 
 #define CHECK_CUDA(call)                                                      \
     {                                                                         \
-        cudaError_t _e = (call);                                              \
-        if (_e != cudaSuccess)                                                \
+        hipError_t _e = (call);                                              \
+        if (_e != hipSuccess)                                                \
         {                                                                     \
             std::stringstream _error;                                         \
             _error << "CUDA Runtime failure: '#" << _e << "'";                \
@@ -149,8 +149,8 @@ int NVGRAPH_GetErrorString( NVGRAPH_ERROR error, char* buffer, int buf_len);
 
 #define CHECK_CURAND(call)                                                    \
     {                                                                         \
-        curandStatus_t _e = (call);                                           \
-        if (_e != CURAND_STATUS_SUCCESS)                                      \
+        hiprandStatus_t _e = (call);                                           \
+        if (_e != HIPRAND_STATUS_SUCCESS)                                      \
         {                                                                     \
             std::stringstream _error;                                         \
             _error << "CURAND failure: '#" << _e << "'";                      \
@@ -160,8 +160,8 @@ int NVGRAPH_GetErrorString( NVGRAPH_ERROR error, char* buffer, int buf_len);
 
 #define CHECK_CUBLAS(call)                                                    \
     {                                                                         \
-        cublasStatus_t _e = (call);                                           \
-        if (_e != CUBLAS_STATUS_SUCCESS)                                      \
+        hipblasStatus_t _e = (call);                                           \
+        if (_e != HIPBLAS_STATUS_SUCCESS)                                      \
         {                                                                     \
             std::stringstream _error;                                         \
             _error << "CUBLAS failure: '#" << _e << "'";                      \
@@ -171,8 +171,8 @@ int NVGRAPH_GetErrorString( NVGRAPH_ERROR error, char* buffer, int buf_len);
 
 #define CHECK_CUSPARSE(call)                                                  \
     {                                                                         \
-        cusparseStatus_t _e = (call);                                         \
-        if (_e != CUSPARSE_STATUS_SUCCESS)                                    \
+        hipsparseStatus_t _e = (call);                                         \
+        if (_e != HIPSPARSE_STATUS_SUCCESS)                                    \
         {                                                                     \
             std::stringstream _error;                                         \
             _error << "CURAND failure: '#" << _e << "'";                      \

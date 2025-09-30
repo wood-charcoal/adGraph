@@ -26,7 +26,7 @@ namespace nvgraph {
    *
    *  CNMEM must be initialized before calling this function.
    *
-   *  @param cublasHandle_t cuBLAS handle.
+   *  @param hipblasHandle_t cuBLAS handle.
    *  @param n Number of observation vectors.
    *  @param d Dimension of observation vectors.
    *  @param k Number of clusters.

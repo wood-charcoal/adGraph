@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -23,7 +24,7 @@
 #include <time.h>
 #include <math.h>
 
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
 #include <thrust/binary_search.h>
@@ -374,9 +375,9 @@ namespace {
        device_pointer_cast(dists+n),
        device_pointer_cast(distsCumSum));
     cudaCheckError();
-    CHECK_CUDA(cudaMemcpy(&distsSum, distsCumSum+n-1,
+    CHECK_CUDA(hipMemcpy(&distsSum, distsCumSum+n-1,
         sizeof(ValueType_),
-        cudaMemcpyDeviceToHost));
+        hipMemcpyDeviceToHost));
   
     // Randomly choose observation vector
     //   Probabilities are proportional to square of distance to closest
@@ -390,9 +391,9 @@ namespace {
     obsIndex = min(obsIndex, n-1);
 
     // Record new centroid position
-    CHECK_CUDA(cudaMemcpyAsync(centroid, obs+IDX(0,obsIndex,d),
+    CHECK_CUDA(hipMemcpyAsync(centroid, obs+IDX(0,obsIndex,d),
              d*sizeof(ValueType_),
-             cudaMemcpyDeviceToDevice));
+             hipMemcpyDeviceToDevice));
 
     return 0;
 
@@ -458,7 +459,7 @@ namespace {
     gridDim_block.z = 1;
 
     // Assign observation vectors to code 0
-    CHECK_CUDA(cudaMemsetAsync(codes, 0, n*sizeof(IndexType_)));
+    CHECK_CUDA(hipMemsetAsync(codes, 0, n*sizeof(IndexType_)));
 
     // Choose first centroid
     thrust::fill(thrust::device_pointer_cast(dists),
@@ -468,7 +469,7 @@ namespace {
       WARNING("error in k-means++ (could not pick centroid)");
 
     // Compute distances from first centroid
-    CHECK_CUDA(cudaMemsetAsync(dists, 0, n*sizeof(ValueType_)));
+    CHECK_CUDA(hipMemsetAsync(dists, 0, n*sizeof(ValueType_)));
     computeDistances <<< gridDim_warp, blockDim_warp >>>
       (n, d, 1, obs, centroids, dists);
     cudaCheckError()
@@ -481,7 +482,7 @@ namespace {
         WARNING("error in k-means++ (could not pick centroid)");
 
       // Compute distances from ith centroid
-      CHECK_CUDA(cudaMemsetAsync(dists+n, 0, n*sizeof(ValueType_)));
+      CHECK_CUDA(hipMemsetAsync(dists+n, 0, n*sizeof(ValueType_)));
       computeDistances <<< gridDim_warp, blockDim_warp >>>
         (n, d, 1, obs, centroids+IDX(0,i,d), dists+n);
       cudaCheckError();
@@ -494,7 +495,7 @@ namespace {
     }
 
     // Compute cluster sizes
-    CHECK_CUDA(cudaMemsetAsync(clusterSizes, 0, k*sizeof(IndexType_)));
+    CHECK_CUDA(hipMemsetAsync(clusterSizes, 0, k*sizeof(IndexType_)));
     computeClusterSizes <<< gridDim_block, BLOCK_SIZE >>>
       (n, k, codes, clusterSizes);
     cudaCheckError();
@@ -539,7 +540,7 @@ namespace {
     dim3 blockDim, gridDim;
 
     // Compute distance between centroids and observation vectors
-    CHECK_CUDA(cudaMemsetAsync(dists, 0, n*k*sizeof(ValueType_)));
+    CHECK_CUDA(hipMemsetAsync(dists, 0, n*k*sizeof(ValueType_)));
     blockDim.x = WARP_SIZE;
     blockDim.y = 1;
     blockDim.z = BLOCK_SIZE/WARP_SIZE;
@@ -552,7 +553,7 @@ namespace {
     cudaCheckError();
 
     // Find centroid closest to each observation vector
-    CHECK_CUDA(cudaMemsetAsync(clusterSizes,0,k*sizeof(IndexType_)));
+    CHECK_CUDA(hipMemsetAsync(clusterSizes,0,k*sizeof(IndexType_)));
     blockDim.x = BLOCK_SIZE;
     blockDim.y = 1;
     blockDim.z = 1;
@@ -759,9 +760,9 @@ namespace nvgraph {
 
     // Trivial cases
     if(k == 1) {
-      CHECK_CUDA(cudaMemsetAsync(codes, 0, n*sizeof(IndexType_)));
-      CHECK_CUDA(cudaMemcpyAsync(clusterSizes, &n, sizeof(IndexType_),
-         cudaMemcpyHostToDevice));
+      CHECK_CUDA(hipMemsetAsync(codes, 0, n*sizeof(IndexType_)));
+      CHECK_CUDA(hipMemcpyAsync(clusterSizes, &n, sizeof(IndexType_),
+         hipMemcpyHostToDevice));
       if(updateCentroids(n, d, k, obs, codes,
            clusterSizes, centroids,
            work, work_int)) 
@@ -773,7 +774,7 @@ namespace nvgraph {
       gridDim.x = min((d+WARP_SIZE-1)/WARP_SIZE, 65535);
       gridDim.y = 1;
       gridDim.z = min((n+BLOCK_SIZE/WARP_SIZE-1)/(BLOCK_SIZE/WARP_SIZE), 65535);
-      CHECK_CUDA(cudaMemsetAsync(work, 0, n*k*sizeof(ValueType_)));
+      CHECK_CUDA(hipMemsetAsync(work, 0, n*k*sizeof(ValueType_)));
       computeDistances <<< gridDim, blockDim >>> (n, d, 1,
               obs,
               centroids,
@@ -792,9 +793,9 @@ namespace nvgraph {
       cudaCheckError();
 
       if(n < k)
-        CHECK_CUDA(cudaMemsetAsync(clusterSizes+n, 0, (k-n)*sizeof(IndexType_)));
-      CHECK_CUDA(cudaMemcpyAsync(centroids, obs, d*n*sizeof(ValueType_),
-        cudaMemcpyDeviceToDevice));
+        CHECK_CUDA(hipMemsetAsync(clusterSizes+n, 0, (k-n)*sizeof(IndexType_)));
+      CHECK_CUDA(hipMemcpyAsync(centroids, obs, d*n*sizeof(ValueType_),
+        hipMemcpyDeviceToDevice));
       *residual_host = 0;
       return NVGRAPH_OK;
     }
@@ -910,7 +911,7 @@ namespace nvgraph {
 
     // Allocate memory
     // TODO: handle non-zero CUDA streams
-    cudaStream_t stream = 0;
+    hipStream_t stream = 0;
     Vector<IndexType_> clusterSizes(k, stream);
     Vector<ValueType_> centroids(d*k, stream);
     Vector<ValueType_> work(n*max(k,d), stream);

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -29,7 +30,7 @@ void check_size(size_t sz)
 	if (sz>INT_MAX) FatalError("Vector larger than INT_MAX", NVGRAPH_ERR_BAD_PARAMETERS);
 }
 template <typename ValueType_>
-void nrm1_raw_vec (ValueType_* vec, size_t n, ValueType_* res, cudaStream_t stream)
+void nrm1_raw_vec (ValueType_* vec, size_t n, ValueType_* res, hipStream_t stream)
 {
     thrust::device_ptr<ValueType_> dev_ptr(vec);
     *res = thrust::reduce(dev_ptr, dev_ptr+n);
@@ -37,7 +38,7 @@ void nrm1_raw_vec (ValueType_* vec, size_t n, ValueType_* res, cudaStream_t stre
 }
 
 template <typename ValueType_>
-void fill_raw_vec (ValueType_* vec, size_t n , ValueType_ value, cudaStream_t stream)
+void fill_raw_vec (ValueType_* vec, size_t n , ValueType_ value, hipStream_t stream)
 {
     thrust::device_ptr<ValueType_> dev_ptr(vec);
     thrust::fill(dev_ptr, dev_ptr + n, value);
@@ -45,7 +46,7 @@ void fill_raw_vec (ValueType_* vec, size_t n , ValueType_ value, cudaStream_t st
 }
 
 template <typename ValueType_>
-void dump_raw_vec (ValueType_* vec, size_t n, int offset, cudaStream_t stream)
+void dump_raw_vec (ValueType_* vec, size_t n, int offset, hipStream_t stream)
 {
 #ifdef DEBUG
     thrust::device_ptr<ValueType_> dev_ptr(vec);
@@ -86,7 +87,7 @@ template <typename ValueType_>
         y[i] += D[i]*x[i];
 }
 template<typename ValueType_>
-void copy_vec(ValueType_ *vec1, size_t n, ValueType_ *res, cudaStream_t stream)
+void copy_vec(ValueType_ *vec1, size_t n, ValueType_ *res, hipStream_t stream)
 {
     thrust::device_ptr<ValueType_> dev_ptr(vec1);
     thrust::device_ptr<ValueType_> res_ptr(res);
@@ -99,7 +100,7 @@ void copy_vec(ValueType_ *vec1, size_t n, ValueType_ *res, cudaStream_t stream)
 }
 
 template <typename ValueType_>
-void flag_zeros_raw_vec(size_t num_vertices, ValueType_* vec, int* flags, cudaStream_t stream)
+void flag_zeros_raw_vec(size_t num_vertices, ValueType_* vec, int* flags, hipStream_t stream)
 {
     int items_per_thread = 4;
     int num_threads = 128;
@@ -112,7 +113,7 @@ void flag_zeros_raw_vec(size_t num_vertices, ValueType_* vec, int* flags, cudaSt
 }
 
 template <typename ValueType_>
-void dmv (size_t num_vertices, ValueType_ alpha, ValueType_* D, ValueType_* x, ValueType_ beta, ValueType_* y, cudaStream_t stream)
+void dmv (size_t num_vertices, ValueType_ alpha, ValueType_* D, ValueType_* x, ValueType_ beta, ValueType_* y, hipStream_t stream)
 {
     int items_per_thread = 4;
     int num_threads = 128;
@@ -131,38 +132,38 @@ void dmv (size_t num_vertices, ValueType_ alpha, ValueType_* D, ValueType_* x, V
 }
 
 template <typename IndexType_, typename ValueType_>
-void set_connectivity( size_t n, IndexType_ root, ValueType_ self_loop_val, ValueType_ unreachable_val, ValueType_* res, cudaStream_t stream)
+void set_connectivity( size_t n, IndexType_ root, ValueType_ self_loop_val, ValueType_ unreachable_val, ValueType_* res, hipStream_t stream)
 {
     fill_raw_vec(res, n, unreachable_val);
-    cudaMemcpy(&res[root], &self_loop_val, sizeof(self_loop_val), cudaMemcpyHostToDevice);
+    hipMemcpy(&res[root], &self_loop_val, sizeof(self_loop_val), hipMemcpyHostToDevice);
     cudaCheckError();        
 }
 
-template void nrm1_raw_vec <float> (float* vec, size_t n, float* res, cudaStream_t stream);
-template void nrm1_raw_vec <double> (double* vec, size_t n, double* res, cudaStream_t stream);
+template void nrm1_raw_vec <float> (float* vec, size_t n, float* res, hipStream_t stream);
+template void nrm1_raw_vec <double> (double* vec, size_t n, double* res, hipStream_t stream);
 
-template void dmv <float>(size_t num_vertices, float alpha, float* D, float* x, float beta, float* y, cudaStream_t stream);
-template void dmv <double>(size_t num_vertices, double alpha, double* D, double* x, double beta, double* y, cudaStream_t stream);
+template void dmv <float>(size_t num_vertices, float alpha, float* D, float* x, float beta, float* y, hipStream_t stream);
+template void dmv <double>(size_t num_vertices, double alpha, double* D, double* x, double beta, double* y, hipStream_t stream);
 
-template void set_connectivity <int, float> (size_t n, int root, float self_loop_val, float unreachable_val, float* res, cudaStream_t stream);
-template void set_connectivity <int, double>(size_t n, int root, double self_loop_val, double unreachable_val, double* res, cudaStream_t stream);
+template void set_connectivity <int, float> (size_t n, int root, float self_loop_val, float unreachable_val, float* res, hipStream_t stream);
+template void set_connectivity <int, double>(size_t n, int root, double self_loop_val, double unreachable_val, double* res, hipStream_t stream);
 
-template void flag_zeros_raw_vec <float>(size_t num_vertices, float* vec, int* flags, cudaStream_t stream);
-template void flag_zeros_raw_vec <double>(size_t num_vertices, double* vec, int* flags, cudaStream_t stream);
+template void flag_zeros_raw_vec <float>(size_t num_vertices, float* vec, int* flags, hipStream_t stream);
+template void flag_zeros_raw_vec <double>(size_t num_vertices, double* vec, int* flags, hipStream_t stream);
 
-template void fill_raw_vec<float> (float* vec, size_t n, float value, cudaStream_t stream);
-template void fill_raw_vec<double> (double* vec, size_t n, double value, cudaStream_t stream);
-template void fill_raw_vec<int> (int* vec, size_t n, int value, cudaStream_t stream);
-template void fill_raw_vec<char> (char* vec, size_t n, char value, cudaStream_t stream);
+template void fill_raw_vec<float> (float* vec, size_t n, float value, hipStream_t stream);
+template void fill_raw_vec<double> (double* vec, size_t n, double value, hipStream_t stream);
+template void fill_raw_vec<int> (int* vec, size_t n, int value, hipStream_t stream);
+template void fill_raw_vec<char> (char* vec, size_t n, char value, hipStream_t stream);
 
-template void copy_vec<float>(float * vec1, size_t n, float *res, cudaStream_t stream);
-template void copy_vec<double>(double * vec1, size_t n, double *res, cudaStream_t stream);
-template void copy_vec<int>(int * vec1, size_t n, int *res, cudaStream_t stream);
-template void copy_vec<char>(char * vec1, size_t n, char *res, cudaStream_t stream);
+template void copy_vec<float>(float * vec1, size_t n, float *res, hipStream_t stream);
+template void copy_vec<double>(double * vec1, size_t n, double *res, hipStream_t stream);
+template void copy_vec<int>(int * vec1, size_t n, int *res, hipStream_t stream);
+template void copy_vec<char>(char * vec1, size_t n, char *res, hipStream_t stream);
 
-template void dump_raw_vec<float> (float* vec, size_t n, int off, cudaStream_t stream);
-template void dump_raw_vec<double> (double* vec, size_t n, int off, cudaStream_t stream);
-template void dump_raw_vec<int> (int* vec, size_t n, int off, cudaStream_t stream);
-template void dump_raw_vec<char> (char* vec, size_t n, int off, cudaStream_t stream);
+template void dump_raw_vec<float> (float* vec, size_t n, int off, hipStream_t stream);
+template void dump_raw_vec<double> (double* vec, size_t n, int off, hipStream_t stream);
+template void dump_raw_vec<int> (int* vec, size_t n, int off, hipStream_t stream);
+template void dump_raw_vec<char> (char* vec, size_t n, int off, hipStream_t stream);
 } // end namespace nvgraph
 

@@ -109,11 +109,11 @@ namespace nvgraph {
 		const MatrixDecompositionDescription<GlobalType, LocalType>& description =
 				M->getMatrixDecompositionDescription();
 		const std::vector<int32_t>& deviceAssignments = description.getDeviceAssignments();
-		const std::vector<cudaStream_t>& blockStreams = description.getBlockStreams();
+		const std::vector<hipStream_t>& blockStreams = description.getBlockStreams();
 		int32_t numBlocks = description.getNumBlocks();
 		LocalType offset = description.getOffset();
 		int32_t current_device;
-		cudaGetDevice(&current_device);
+		hipGetDevice(&current_device);
 
 		// Initialize the frontier bitmap with the source vertex set
 		frontier_bmap->fillElements(0);
@@ -124,7 +124,7 @@ namespace nvgraph {
 		int32_t bmapElement = 1 << bitOffset;
 		int32_t bId = description.getBlockId(blockRow, blockRow);
 		int32_t* copyTo = frontier_bmap->getCurrent(bId) + intId;
-		cudaMemcpy(copyTo, &bmapElement, sizeof(int32_t), cudaMemcpyDefault);
+		hipMemcpy(copyTo, &bmapElement, sizeof(int32_t), hipMemcpyDefault);
 		frontier_bmap->rowScatter();
 
 		// Initialize frontierSizes to zero
@@ -144,19 +144,19 @@ namespace nvgraph {
 
 		// Setup initial frontier from bitmap frontier
 		for (int i = 0; i < numBlocks; i++) {
-			cudaStream_t stream = blockStreams[i];
+			hipStream_t stream = blockStreams[i];
 			int32_t device = deviceAssignments[i];
-			cudaSetDevice(device);
+			hipSetDevice(device);
 			convert_bitmap_to_queue(frontier_bmap->getCurrent(i),
 											frontier_bmap->getN(),
 											offset,
 											frontier->get(i),
 											frontierSize->get(i),
 											stream);
-			cudaMemcpyAsync(&frontierSize_h[i],
+			hipMemcpyAsync(&frontierSize_h[i],
 									frontierSize->get(i),
 									sizeof(LocalType),
-									cudaMemcpyDefault,
+									hipMemcpyDefault,
 									stream);
 		}
 		description.syncAllStreams();
@@ -174,8 +174,8 @@ namespace nvgraph {
 				if (frontierSize_h[i] > 0) {
 					// Write out the degree of each frontier node into exSumDegree
 					degreeIterator<LocalType> degreeIt(M->getBlockMatrix(i)->get_raw_row_offsets());
-					cudaStream_t stream = blockStreams[i];
-					cudaSetDevice(deviceAssignments[i]);
+					hipStream_t stream = blockStreams[i];
+					hipSetDevice(deviceAssignments[i]);
 					set_degree_flags(	degreeFlags->get(i),
 											frontier->get(i),
 											degreeIt,
@@ -187,15 +187,15 @@ namespace nvgraph {
 //												frontierSize_h[i],
 //												stream);
 //
-//					cudaStreamSynchronize(stream);
+//					hipStreamSynchronize(stream);
 //					std::cout << "Block " << i << " before compaction.\n";
 //					debug::printDeviceVector(frontier->get(i), frontierSize_h[i], "Frontier");
 //					debug::printDeviceVector(exSumDegree->get(i), frontierSize_h[i], "Frontier Degree");
 
 					// Use degreeIterator as flags to compact the frontier
-					cudaSetDevice(deviceAssignments[i]);
+					hipSetDevice(deviceAssignments[i]);
 					size_t numBytes = exSumStorage->getN();
-					cub::DeviceSelect::Flagged(exSumStorage->get(i),
+					hipcub::DeviceSelect::Flagged(exSumStorage->get(i),
 														numBytes,
 														frontier->get(i),
 														degreeFlags->get(i),
@@ -203,10 +203,10 @@ namespace nvgraph {
 														frontierSize->get(i),
 														frontierSize_h[i],
 														stream);
-					cudaMemcpyAsync(&frontierSize_h[i],
+					hipMemcpyAsync(&frontierSize_h[i],
 											frontierSize->get(i),
 											sizeof(LocalType),
-											cudaMemcpyDefault,
+											hipMemcpyDefault,
 											stream);
 				}
 			}
@@ -218,31 +218,31 @@ namespace nvgraph {
 				if (frontierSize_h[i] > 0) {
 					// Write out the degree of each frontier node into exSumDegree
 					degreeIterator<LocalType> degreeIt(M->getBlockMatrix(i)->get_raw_row_offsets());
-					cudaStream_t stream = blockStreams[i];
-					cudaSetDevice(deviceAssignments[i]);
+					hipStream_t stream = blockStreams[i];
+					hipSetDevice(deviceAssignments[i]);
 					set_frontier_degree(exSumDegree->get(i),
 												trim_frontier->get(i),
 												degreeIt,
 												frontierSize_h[i],
 												stream);
 
-//					cudaStreamSynchronize(stream);
+//					hipStreamSynchronize(stream);
 //					std::cout << "Block " << i << " after compaction.\n";
 //					debug::printDeviceVector(trim_frontier->get(i), frontierSize_h[i], "Frontier");
 //					debug::printDeviceVector(exSumDegree->get(i), frontierSize_h[i], "Frontier Degree");
 
 					// Get the exclusive sum of the frontier degrees, store in exSumDegree
 					size_t numBytes = exSumStorage->getN();
-					cub::DeviceScan::ExclusiveSum(exSumStorage->get(i),
+					hipcub::DeviceScan::ExclusiveSum(exSumStorage->get(i),
 															numBytes,
 															exSumDegree->get(i),
 															exSumDegree->get(i),
 															frontierSize_h[i] + 1,
 															stream);
-					cudaMemcpyAsync(&frontierDegree_h[i],
+					hipMemcpyAsync(&frontierDegree_h[i],
 											exSumDegree->get(i) + frontierSize_h[i],
 											sizeof(LocalType),
-											cudaMemcpyDefault,
+											hipMemcpyDefault,
 											stream);
 				}
 			}
@@ -256,8 +256,8 @@ namespace nvgraph {
 			for (int i = 0; i < numBlocks; i++) {
 				// Checking that there is work to be done for this block:
 				if (frontierSize_h[i] > 0) {
-					cudaStream_t stream = blockStreams[i];
-					cudaSetDevice(deviceAssignments[i]);
+					hipStream_t stream = blockStreams[i];
+					hipSetDevice(deviceAssignments[i]);
 					compute_bucket_offsets(exSumDegree->get(i),
 													bucketOffsets->get(i),
 													frontierSize_h[i],
@@ -272,7 +272,7 @@ namespace nvgraph {
 			for (int i = 0; i < numBlocks; i++) {
 				// Checking that there is work to be done for this block:
 				if (frontierDegree_h[i] > 0) {
-					cudaSetDevice(deviceAssignments[i]);
+					hipSetDevice(deviceAssignments[i]);
 					frontier_expand(M->getBlockMatrix(i)->get_raw_row_offsets(),
 											M->getBlockMatrix(i)->get_raw_column_indices(),
 											trim_frontier->get(i),
@@ -287,7 +287,7 @@ namespace nvgraph {
 											predecessors->getCurrent(i),
 											blockStreams[i]);
 
-//					cudaStreamSynchronize(blockStreams[i]);
+//					hipStreamSynchronize(blockStreams[i]);
 //					int bitsSet =
 //							thrust::reduce(thrust::device,
 //												thrust::make_transform_iterator(frontier_bmap->getCurrent(i),
@@ -310,19 +310,19 @@ namespace nvgraph {
 			frontierSize->fillElements(0);
 			frontierSize->rowScatter();
 			for (int i = 0; i < numBlocks; i++) {
-				cudaStream_t stream = blockStreams[i];
+				hipStream_t stream = blockStreams[i];
 				int32_t device = deviceAssignments[i];
-				cudaSetDevice(device);
+				hipSetDevice(device);
 				convert_bitmap_to_queue(frontier_bmap->getCurrent(i),
 												frontier_bmap->getN(),
 												offset,
 												frontier->get(i),
 												frontierSize->get(i),
 												stream);
-				cudaMemcpyAsync(&frontierSize_h[i],
+				hipMemcpyAsync(&frontierSize_h[i],
 										frontierSize->get(i),
 										sizeof(LocalType),
-										cudaMemcpyDefault,
+										hipMemcpyDefault,
 										stream);
 			}
 			description.syncAllStreams();
@@ -343,9 +343,9 @@ namespace nvgraph {
 
 		// Globalize the predecessors by row
 		for (int i = 0; i < numBlocks; i++) {
-			cudaStream_t stream = blockStreams[i];
+			hipStream_t stream = blockStreams[i];
 			int32_t device = deviceAssignments[i];
-			cudaSetDevice(device);
+			hipSetDevice(device);
 			int32_t rowId = description.getBlockRow(i);
 			GlobalType globalOffset = rowId * description.getOffset();
 			globalize_ids(predecessors->getCurrent(i),
@@ -368,12 +368,12 @@ namespace nvgraph {
 			// Copy out the data for the block on the diagonal
 			int32_t bId = description.getBlockId(i, i);
 			int32_t n = predecessors->getN();
-			cudaMemcpy(temp, predecessors->getCurrent(bId), n * sizeof(LocalType), cudaMemcpyDefault);
+			hipMemcpy(temp, predecessors->getCurrent(bId), n * sizeof(LocalType), hipMemcpyDefault);
 			for (int j = 0; j < n; j++) {
 				if (writeOffset + j < numRows)
 					predecessors_out[writeOffset + j] = temp[j];
 			}
-			cudaMemcpy(temp, distances->getCurrent(bId), n * sizeof(LocalType), cudaMemcpyDefault);
+			hipMemcpy(temp, distances->getCurrent(bId), n * sizeof(LocalType), hipMemcpyDefault);
 			for (int j = 0; j < n; j++) {
 				if (writeOffset + j < numRows)
 					distances_out[writeOffset + j] = temp[j];

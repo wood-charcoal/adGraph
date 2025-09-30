@@ -41,9 +41,9 @@ namespace nvgraph
 template< typename T >
 class DeviceDeleter 
 {
-    cudaStream_t mStream;
+    hipStream_t mStream;
 public:
-    DeviceDeleter(cudaStream_t stream) : mStream(stream) {}
+    DeviceDeleter(hipStream_t stream) : mStream(stream) {}
     void operator()(T *ptr) 
     {
         cnmemStatus_t status = cnmemFree(ptr, mStream);
@@ -56,7 +56,7 @@ public:
 
 
 template< typename T >
-inline SHARED_PREFIX::shared_ptr<T> allocateDevice(size_t n, cudaStream_t stream) 
+inline SHARED_PREFIX::shared_ptr<T> allocateDevice(size_t n, hipStream_t stream) 
 {
     T *ptr = NULL;
     cnmemStatus_t status = cnmemMalloc((void**) &ptr, n*sizeof(T), stream);
@@ -74,9 +74,9 @@ inline SHARED_PREFIX::shared_ptr<T> allocateDevice(size_t n, cudaStream_t stream
 template< typename T >
 class DeviceReleaser 
 {
-    cudaStream_t mStream;
+    hipStream_t mStream;
 public:
-    DeviceReleaser(cudaStream_t stream) : mStream(stream) {}
+    DeviceReleaser(hipStream_t stream) : mStream(stream) {}
     void operator()(T *ptr) 
     {
 
@@ -84,7 +84,7 @@ public:
 };
 
 template< typename T >
-inline SHARED_PREFIX::shared_ptr<T> attachDevicePtr(T * ptr_in, cudaStream_t stream) 
+inline SHARED_PREFIX::shared_ptr<T> attachDevicePtr(T * ptr_in, hipStream_t stream) 
 {
     T *ptr = ptr_in;
     return SHARED_PREFIX::shared_ptr<T>(ptr, DeviceReleaser<T>(stream));

@@ -63,10 +63,10 @@ typedef enum{
 } cusolverStatus_t;
 
 typedef enum {
-    CUBLAS_OP_N=0,
-    CUBLAS_OP_T=1,
-    CUBLAS_OP_C=2
-} cublasOperation_t;
+    HIPBLAS_OP_N=0,
+    HIPBLAS_OP_T=1,
+    HIPBLAS_OP_C=2
+} hipblasOperation_t;
 
 namespace {
 // XGEMM
@@ -86,8 +86,8 @@ namespace {
 
 
 extern "C" cusolverStatus_t cusolverDnSgemmHost(
-    cublasOperation_t transa,
-    cublasOperation_t transb,
+    hipblasOperation_t transa,
+    hipblasOperation_t transb,
     int m,
     int n,
     int k,
@@ -106,15 +106,15 @@ void lapack_gemm(const char transa, const char transb, int m, int n, int k,
          const float *b, int ldb,
          float beta, float *c, int ldc)
 {
-    cublasOperation_t cublas_transa = (transa == 'N')? CUBLAS_OP_N : CUBLAS_OP_T ;
-    cublasOperation_t cublas_transb = (transb == 'N')? CUBLAS_OP_N : CUBLAS_OP_T ;
+    hipblasOperation_t cublas_transa = (transa == 'N')? HIPBLAS_OP_N : HIPBLAS_OP_T ;
+    hipblasOperation_t cublas_transb = (transb == 'N')? HIPBLAS_OP_N : HIPBLAS_OP_T ;
     cusolverDnSgemmHost(cublas_transa, cublas_transb, m, n, k,
        &alpha, (float*)a, lda, (float*)b, ldb, &beta, c, ldc);
 }
 
 extern "C" cusolverStatus_t cusolverDnDgemmHost(
-    cublasOperation_t transa,
-    cublasOperation_t transb,
+    hipblasOperation_t transa,
+    hipblasOperation_t transb,
     int m,
     int n,
     int k,
@@ -132,8 +132,8 @@ void lapack_gemm(const signed char transa, const signed char transb, int m, int 
          const double *b, int ldb,
          double beta, double *c, int ldc)
 {
-    cublasOperation_t cublas_transa = (transa == 'N')? CUBLAS_OP_N : CUBLAS_OP_T ;
-    cublasOperation_t cublas_transb = (transb == 'N')? CUBLAS_OP_N : CUBLAS_OP_T ;
+    hipblasOperation_t cublas_transa = (transa == 'N')? HIPBLAS_OP_N : HIPBLAS_OP_T ;
+    hipblasOperation_t cublas_transb = (transb == 'N')? HIPBLAS_OP_N : HIPBLAS_OP_T ;
     cusolverDnDgemmHost(cublas_transa, cublas_transb, m, n, k,
        &alpha, (double*)a, lda, (double*)b, ldb, &beta, c, ldc);
 }

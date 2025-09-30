@@ -25,7 +25,7 @@ class NvgraphAPITest : public ::testing::Test {
     }
     nvgraphStatus_t status;
     nvgraphHandle_t handle;
-    cudaStream_t *stream;
+    hipStream_t *stream;
 };
 
 
@@ -609,7 +609,7 @@ TEST_F(NvgraphAPITest,NvgraphGraphDescrSetGetVertexDataSingleFloat)
 
 //        size_t numsets=1;
 
-        cudaDataType_t type_v[1] = {sizeof(T) > 4 ? CUDA_R_64F : CUDA_R_32F};
+        hipblasDatatype_t type_v[1] = {sizeof(T) > 4 ? HIPBLAS_R_64F : HIPBLAS_R_32F};
 
         status = nvgraphAllocateVertexData(handle, descrG, 1, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -656,7 +656,7 @@ TEST_F(NvgraphAPITest,NvgraphSetGetVertexDataSingleDouble)
 
 //        size_t numsets=1;
 
-        cudaDataType_t type_v[1] = {sizeof(T) > 4 ? CUDA_R_64F : CUDA_R_32F};
+        hipblasDatatype_t type_v[1] = {sizeof(T) > 4 ? HIPBLAS_R_64F : HIPBLAS_R_32F};
 
         status = nvgraphAllocateVertexData(handle, descrG, 1, type_v);
 //        nvgraph::Graph<int> *G = static_cast<nvgraph::Graph<int>*> (descrG->graph_handle);
@@ -698,7 +698,7 @@ TEST_F(NvgraphAPITest,NvgraphSetGetVertexData_CornerCases)
 
         size_t numsets=2;
 
-        cudaDataType_t type_v[2] = {CUDA_R_64F, CUDA_R_32F};
+        hipblasDatatype_t type_v[2] = {HIPBLAS_R_64F, HIPBLAS_R_32F};
         status = nvgraphAllocateVertexData(handle, descrG, 1,  type_v);
 
         status = nvgraphSetVertexData(NULL, descrG, (void *)vertexptr[0], 0 );
@@ -719,7 +719,7 @@ TEST_F(NvgraphAPITest,NvgraphSetGetVertexData_CornerCases)
 //            double edge_data0 = 0.;
 //            float edge_data1 =1.;
 //            void* edge_ptr_bad[] = {(void*)&edge_data0, (void*)&edge_data1};
-//            cudaDataType_t type_bad[2] = {CUDA_R_32F, CUDA_R_32F};
+//            hipblasDatatype_t type_bad[2] = {HIPBLAS_R_32F, HIPBLAS_R_32F};
             //status = nvgraphSetEdgeData(handle, descrG, (void **)edge_ptr_bad, numsets );
             ASSERT_NE(NVGRAPH_STATUS_SUCCESS, status);
         }
@@ -752,7 +752,7 @@ TEST_F(NvgraphAPITest,NvgraphSetGetVertexDataMulti)
     ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
 //        size_t numsets=3;
-        cudaDataType_t type_v[3] = {CUDA_R_32F, CUDA_R_64F, CUDA_R_32F};
+        hipblasDatatype_t type_v[3] = {HIPBLAS_R_32F, HIPBLAS_R_64F, HIPBLAS_R_32F};
 
         void **vertexvals;
         vertexvals = (void **)malloc(3*sizeof( void * ));
@@ -836,7 +836,7 @@ TEST_F(NvgraphAPITest,NvgraphSetGetEdgeDataSingleFloat)
 
 //        size_t numsets=1;
 
-        cudaDataType_t type_v[1] = {sizeof(T) > 4 ? CUDA_R_64F : CUDA_R_32F};
+        hipblasDatatype_t type_v[1] = {sizeof(T) > 4 ? HIPBLAS_R_64F : HIPBLAS_R_32F};
 
         status = nvgraphAllocateEdgeData(handle, descrG, 1,  type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -887,7 +887,7 @@ TEST_F(NvgraphAPITest,NvgraphSetGetEdgeDataSingleDouble)
 
 //        size_t numsets=1;
 
-        cudaDataType_t type_v[1] = {sizeof(T) > 4 ? CUDA_R_64F : CUDA_R_32F};
+        hipblasDatatype_t type_v[1] = {sizeof(T) > 4 ? HIPBLAS_R_64F : HIPBLAS_R_32F};
 
         status = nvgraphAllocateEdgeData(handle, descrG, 1, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -930,7 +930,7 @@ TEST_F(NvgraphAPITest,NvgraphSetGetEdgeData_CornerCases)
 
 //        size_t numsets=2;
 
-        cudaDataType_t type_e[2] = {CUDA_R_64F, CUDA_R_32F};
+        hipblasDatatype_t type_e[2] = {HIPBLAS_R_64F, HIPBLAS_R_32F};
   
         status = nvgraphAllocateEdgeData(handle, descrG, 1, type_e);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -949,7 +949,7 @@ TEST_F(NvgraphAPITest,NvgraphSetGetEdgeData_CornerCases)
 //            float vertexvals1[2] = {0.1f, 1e21f};
 //            void* vertexptr_bad[2] = {(void*) vertexvals0, (void*)vertexvals1};
         
-//            cudaDataType_t type_bad[2] = {CUDA_R_32F, CUDA_R_32F};
+//            hipblasDatatype_t type_bad[2] = {HIPBLAS_R_32F, HIPBLAS_R_32F};
             //status = nvgraphSetVertexData(handle, descrG, (void **)vertexptr_bad, numsets, type_bad );
             ASSERT_NE(NVGRAPH_STATUS_SUCCESS, status);
         }

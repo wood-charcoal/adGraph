@@ -19,7 +19,7 @@ TEST(SimpleBFS2D, DummyTest) {
 	topo.nedges = 38;
 	topo.source_indices = rowIds;
 	topo.destination_indices = colIds;
-	topo.valueType = CUDA_R_32I;
+	topo.valueType = HIPBLAS_R_32I;
 	topo.values = NULL;
 	topo.numDevices = 2;
 	topo.devices = devices;

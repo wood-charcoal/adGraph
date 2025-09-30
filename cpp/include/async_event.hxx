@@ -21,20 +21,20 @@ namespace nvgraph {
   class AsyncEvent {
     public:
       AsyncEvent() : async_event(NULL) { }
-      AsyncEvent(int size) : async_event(NULL) { cudaEventCreate(&async_event); }
-      ~AsyncEvent() { if (async_event != NULL) cudaEventDestroy(async_event); }
+      AsyncEvent(int size) : async_event(NULL) { hipEventCreate(&async_event); }
+      ~AsyncEvent() { if (async_event != NULL) hipEventDestroy(async_event); }
 
-      void create() { cudaEventCreate(&async_event); }
-      void record(cudaStream_t s=0) {
+      void create() { hipEventCreate(&async_event); }
+      void record(hipStream_t s=0) {
         if (async_event == NULL)  
-          cudaEventCreate(&async_event); // check if we haven't created the event yet
-        cudaEventRecord(async_event,s);
+          hipEventCreate(&async_event); // check if we haven't created the event yet
+        hipEventRecord(async_event,s);
       }
       void sync() {
-        cudaEventSynchronize(async_event);
+        hipEventSynchronize(async_event);
       }
     private:
-      cudaEvent_t async_event;
+      hipEvent_t async_event;
   };
 
 }

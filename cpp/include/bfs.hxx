@@ -134,7 +134,7 @@ namespace nvgraph
 
 			
 
-				cudaStream_t stream;
+				hipStream_t stream;
 
 				//resets pointers defined by d_counters_pad (see implem)
 
@@ -154,7 +154,7 @@ namespace nvgraph
 
 
 
-				Bfs(IndexType _n, IndexType _nnz, IndexType *_row_offsets, IndexType *_col_indices, bool _directed, IndexType _alpha, IndexType _beta, cudaStream_t _stream = 0) : n(_n), nnz(_nnz), row_offsets(_row_offsets), col_indices(_col_indices), directed(_directed), alpha(_alpha), beta(_beta), stream(_stream) {
+				Bfs(IndexType _n, IndexType _nnz, IndexType *_row_offsets, IndexType *_col_indices, bool _directed, IndexType _alpha, IndexType _beta, hipStream_t _stream = 0) : n(_n), nnz(_nnz), row_offsets(_row_offsets), col_indices(_col_indices), directed(_directed), alpha(_alpha), beta(_beta), stream(_stream) {
 
 					setup();
 

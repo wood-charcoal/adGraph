@@ -39,7 +39,7 @@ class Size2Selector
 
     Size2Selector();
 
-    Size2Selector(Matching_t similarity_metric,  int deterministic = 1, int max_iterations = 15 , ValueType numUnassigned_tol = 0.05 ,bool two_phase = false, bool merge_singletons = true, cudaStream_t stream = 0) 
+    Size2Selector(Matching_t similarity_metric,  int deterministic = 1, int max_iterations = 15 , ValueType numUnassigned_tol = 0.05 ,bool two_phase = false, bool merge_singletons = true, hipStream_t stream = 0) 
        :m_similarity_metric(similarity_metric), m_deterministic(deterministic), m_max_iterations(max_iterations), m_numUnassigned_tol(numUnassigned_tol), m_two_phase(two_phase), m_merge_singletons(merge_singletons), m_stream(stream)
     {
         m_aggregation_edge_weight_component = 0;
@@ -56,7 +56,7 @@ class Size2Selector
     ValueType m_numUnassigned_tol;
     bool m_two_phase;
     bool m_merge_singletons;
-    cudaStream_t m_stream;    
+    hipStream_t m_stream;    
     int m_aggregation_edge_weight_component;
     int m_weight_formula;
 };

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 //#ifdef NVGRAPH_PARTITION
 
 /*
@@ -21,7 +22,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/reduce.h>
@@ -50,7 +51,7 @@
 static double timer (void) {
 #ifdef COLLECT_TIME_STATISTICS
     struct timeval tv;
-    cudaDeviceSynchronize();
+    hipDeviceSynchronize();
     gettimeofday(&tv, NULL);
     return (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
 #else
@@ -101,7 +102,7 @@ namespace nvgraph {
                 WARNING("print_matrix - malloc failed");
                 return -1;
             }
-            cudaMemcpy(h_A, A, lda*n*sizeof(ValueType_), cudaMemcpyDeviceToHost); cudaCheckError()
+            hipMemcpy(h_A, A, lda*n*sizeof(ValueType_), hipMemcpyDeviceToHost); cudaCheckError()
         }
         else {
             h_A = A;
@@ -190,7 +191,7 @@ namespace nvgraph {
     }
 
     template <typename IndexType_, typename ValueType_>
-    cudaError_t scale_obs(IndexType_ m, IndexType_ n, ValueType_ *obs) {
+    hipError_t scale_obs(IndexType_ m, IndexType_ n, ValueType_ *obs) {
         IndexType_ p2m;
         dim3 nthreads, nblocks;
 
@@ -209,7 +210,7 @@ namespace nvgraph {
         scale_obs_kernel<IndexType_,ValueType_><<<nblocks,nthreads>>>(m,n,obs);
         cudaCheckError();
 
-        return cudaSuccess;
+        return hipSuccess;
     }
 
   // =========================================================
@@ -302,7 +303,7 @@ namespace nvgraph {
 
     // CUDA stream
     //   TODO: handle non-zero streams
-    cudaStream_t stream = 0;
+    hipStream_t stream = 0;
 
     // Matrices
     Matrix<IndexType_, ValueType_> * A;  // Adjacency matrix
@@ -371,9 +372,9 @@ namespace nvgraph {
        &one, eigVecs.raw(), n,
        &zero, (ValueType_*) NULL, nEigVecs,
        work.raw(), nEigVecs);
-      CHECK_CUDA(cudaMemcpyAsync(eigVecs.raw(), work.raw(),
+      CHECK_CUDA(hipMemcpyAsync(eigVecs.raw(), work.raw(),
          nEigVecs*n*sizeof(ValueType_),
-         cudaMemcpyDeviceToDevice));
+         hipMemcpyDeviceToDevice));
     }
 
      // Clean up
@@ -489,7 +490,7 @@ namespace nvgraph {
 
     // CUDA stream
     //   TODO: handle non-zero streams
-    cudaStream_t stream = 0;
+    hipStream_t stream = 0;
 
     // Matrices
     Matrix<IndexType_, ValueType_> * A;  // Adjacency matrix
@@ -535,7 +536,7 @@ namespace nvgraph {
     //nEigVecs - nrmR
     //lwork - Workspace max Lwork value (for either potrf or gesvd)
     //2 - devInfo
-    cudaMalloc(&lanczosVecs, (9*nEigVecs*n + 36*nEigVecs*nEigVecs + nEigVecs + lwork+2)*sizeof(ValueType_)); 
+    hipMalloc(&lanczosVecs, (9*nEigVecs*n + 36*nEigVecs*nEigVecs + nEigVecs + lwork+2)*sizeof(ValueType_)); 
     cudaCheckError();
 
     //Setup preconditioner M for Laplacian L
@@ -577,9 +578,9 @@ namespace nvgraph {
        &one, eigVecs.raw(), n,
        &zero, (ValueType_*) NULL, nEigVecs,
        work.raw(), nEigVecs);
-      CHECK_CUDA(cudaMemcpyAsync(eigVecs.raw(), work.raw(),
+      CHECK_CUDA(hipMemcpyAsync(eigVecs.raw(), work.raw(),
          nEigVecs*n*sizeof(ValueType_),
-         cudaMemcpyDeviceToDevice));
+         hipMemcpyDeviceToDevice));
     }
 
     if (scale_eigevec_rows) {
@@ -664,7 +665,7 @@ namespace nvgraph {
 
     // CUDA stream
     //   TODO: handle non-zero streams
-    cudaStream_t stream = 0;
+    hipStream_t stream = 0;
     
     // Device memory
     Vector<ValueType_> part_i(n, stream);

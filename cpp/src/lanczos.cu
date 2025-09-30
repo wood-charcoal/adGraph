@@ -23,12 +23,12 @@
 #include <stdio.h>
 #include <time.h>
 
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 
 #define USE_CURAND 1
 
 #ifdef USE_CURAND
-  #include <curand.h>
+  #include <hiprand.h>
 #endif
 
 #include "nvgraph_error.hxx"
@@ -52,34 +52,34 @@
 //
 //  /// Get message string from cuRAND status code
 //  //static
-//  //const char* curandGetErrorString(curandStatus_t e) {
+//  //const char* curandGetErrorString(hiprandStatus_t e) {
 //  //  switch(e) {
-//  //  case CURAND_STATUS_SUCCESS:
-//  //    return "CURAND_STATUS_SUCCESS";
-//  //  case CURAND_STATUS_VERSION_MISMATCH:
-//  //    return "CURAND_STATUS_VERSION_MISMATCH";
-//  //  case CURAND_STATUS_NOT_INITIALIZED:
-//  //    return "CURAND_STATUS_NOT_INITIALIZED";
-//  //  case CURAND_STATUS_ALLOCATION_FAILED:
-//  //    return "CURAND_STATUS_ALLOCATION_FAILED";
-//  //  case CURAND_STATUS_TYPE_ERROR:
-//  //    return "CURAND_STATUS_TYPE_ERROR";
-//  //  case CURAND_STATUS_OUT_OF_RANGE:
-//  //    return "CURAND_STATUS_OUT_OF_RANGE";
-//  //  case CURAND_STATUS_LENGTH_NOT_MULTIPLE:
-//  //    return "CURAND_STATUS_LENGTH_NOT_MULTIPLE";
-//  //  case CURAND_STATUS_DOUBLE_PRECISION_REQUIRED:
-//  //    return "CURAND_STATUS_DOUBLE_PRECISION_REQUIRED";
-//  //  case CURAND_STATUS_LAUNCH_FAILURE:
-//  //    return "CURAND_STATUS_LAUNCH_FAILURE";
-//  //  case CURAND_STATUS_PREEXISTING_FAILURE:
-//  //    return "CURAND_STATUS_PREEXISTING_FAILURE";
-//  //  case CURAND_STATUS_INITIALIZATION_FAILED:
-//  //    return "CURAND_STATUS_INITIALIZATION_FAILED";
-//  //  case CURAND_STATUS_ARCH_MISMATCH:
-//  //    return "CURAND_STATUS_ARCH_MISMATCH";
-//  //  case CURAND_STATUS_INTERNAL_ERROR:
-//  //    return "CURAND_STATUS_INTERNAL_ERROR";
+//  //  case HIPRAND_STATUS_SUCCESS:
+//  //    return "HIPRAND_STATUS_SUCCESS";
+//  //  case HIPRAND_STATUS_VERSION_MISMATCH:
+//  //    return "HIPRAND_STATUS_VERSION_MISMATCH";
+//  //  case HIPRAND_STATUS_NOT_INITIALIZED:
+//  //    return "HIPRAND_STATUS_NOT_INITIALIZED";
+//  //  case HIPRAND_STATUS_ALLOCATION_FAILED:
+//  //    return "HIPRAND_STATUS_ALLOCATION_FAILED";
+//  //  case HIPRAND_STATUS_TYPE_ERROR:
+//  //    return "HIPRAND_STATUS_TYPE_ERROR";
+//  //  case HIPRAND_STATUS_OUT_OF_RANGE:
+//  //    return "HIPRAND_STATUS_OUT_OF_RANGE";
+//  //  case HIPRAND_STATUS_LENGTH_NOT_MULTIPLE:
+//  //    return "HIPRAND_STATUS_LENGTH_NOT_MULTIPLE";
+//  //  case HIPRAND_STATUS_DOUBLE_PRECISION_REQUIRED:
+//  //    return "HIPRAND_STATUS_DOUBLE_PRECISION_REQUIRED";
+//  //  case HIPRAND_STATUS_LAUNCH_FAILURE:
+//  //    return "HIPRAND_STATUS_LAUNCH_FAILURE";
+//  //  case HIPRAND_STATUS_PREEXISTING_FAILURE:
+//  //    return "HIPRAND_STATUS_PREEXISTING_FAILURE";
+//  //  case HIPRAND_STATUS_INITIALIZATION_FAILED:
+//  //    return "HIPRAND_STATUS_INITIALIZATION_FAILED";
+//  //  case HIPRAND_STATUS_ARCH_MISMATCH:
+//  //    return "HIPRAND_STATUS_ARCH_MISMATCH";
+//  //  case HIPRAND_STATUS_INTERNAL_ERROR:
+//  //    return "HIPRAND_STATUS_INTERNAL_ERROR";
 //  //  default:
 //  //    return "unknown cuRAND error";
 //  //  }
@@ -87,18 +87,18 @@
 //
 //  // curandGeneratorNormalX
 //  inline static 
-//  curandStatus_t
-//  curandGenerateNormalX(curandGenerator_t generator,
+//  hiprandStatus_t
+//  curandGenerateNormalX(hiprandGenerator_t generator,
 //      float * outputPtr, size_t n,
 //      float mean, float stddev) {
-//    return curandGenerateNormal(generator, outputPtr, n, mean, stddev);
+//    return hiprandGenerateNormal(generator, outputPtr, n, mean, stddev);
 //  }
 //  inline static
-//  curandStatus_t
-//  curandGenerateNormalX(curandGenerator_t generator,
+//  hiprandStatus_t
+//  curandGenerateNormalX(hiprandGenerator_t generator,
 //      double * outputPtr, size_t n,
 //      double mean, double stddev) {
-//    return curandGenerateNormalDouble(generator, outputPtr,
+//    return hiprandGenerateNormalDouble(generator, outputPtr,
 //              n, mean, stddev);
 //  }
 //
@@ -170,9 +170,9 @@ namespace nvgraph {
 
   // Apply matrix
   if(shift != 0)
-    CHECK_CUDA(cudaMemcpyAsync(lanczosVecs_dev+n, lanczosVecs_dev,
+    CHECK_CUDA(hipMemcpyAsync(lanczosVecs_dev+n, lanczosVecs_dev,
              n*sizeof(ValueType_),
-             cudaMemcpyDeviceToDevice));
+             hipMemcpyDeviceToDevice));
   A->mv(1, lanczosVecs_dev, shift, lanczosVecs_dev+n);
 
   // Orthogonalize Lanczos vector
@@ -203,10 +203,10 @@ namespace nvgraph {
     
   // Apply matrix
   if(shift != 0)
-    CHECK_CUDA(cudaMemcpyAsync(lanczosVecs_dev+(*iter)*n,
+    CHECK_CUDA(hipMemcpyAsync(lanczosVecs_dev+(*iter)*n,
              lanczosVecs_dev+(*iter-1)*n,
              n*sizeof(ValueType_),
-             cudaMemcpyDeviceToDevice));
+             hipMemcpyDeviceToDevice));
   A->mv(1, lanczosVecs_dev+IDX(0,*iter-1,n),
        shift, lanczosVecs_dev+IDX(0,*iter,n));
 
@@ -220,8 +220,8 @@ namespace nvgraph {
     Cublas::gemv(false, n, *iter,
            &negOne, lanczosVecs_dev, n, work_dev, 1,
            &one, lanczosVecs_dev+IDX(0,*iter,n), 1);
-    CHECK_CUDA(cudaMemcpyAsync(alpha_host+(*iter-1), work_dev+(*iter-1), 
-             sizeof(ValueType_), cudaMemcpyDeviceToHost));
+    CHECK_CUDA(hipMemcpyAsync(alpha_host+(*iter-1), work_dev+(*iter-1), 
+             sizeof(ValueType_), hipMemcpyDeviceToHost));
     Cublas::gemv(true, n, *iter,
            &one, lanczosVecs_dev, n,
            lanczosVecs_dev+IDX(0,*iter,n), 1,
@@ -257,7 +257,7 @@ namespace nvgraph {
 
       }
 
-      CHECK_CUDA(cudaDeviceSynchronize());
+      CHECK_CUDA(hipDeviceSynchronize());
       
       return 0;
 
@@ -629,9 +629,9 @@ namespace nvgraph {
             WARNING("error in implicitly shifted QR algorithm");
 
       // Obtain new residual
-      CHECK_CUDA(cudaMemcpyAsync(V_dev, V_host,
+      CHECK_CUDA(hipMemcpyAsync(V_dev, V_host,
          iter*iter*sizeof(ValueType_),
-         cudaMemcpyHostToDevice));
+         hipMemcpyHostToDevice));
 
           beta_host[iter-1]
               = beta_host[iter-1]*V_host[IDX(iter-1,iter_new-1,iter)];
@@ -644,15 +644,15 @@ namespace nvgraph {
                        &one, lanczosVecs_dev, n, V_dev, iter,
                        &zero, work_dev, n);
       
-      CHECK_CUDA(cudaMemcpyAsync(lanczosVecs_dev, work_dev,
+      CHECK_CUDA(hipMemcpyAsync(lanczosVecs_dev, work_dev,
          n*iter_new*sizeof(ValueType_),
-         cudaMemcpyDeviceToDevice));
+         hipMemcpyDeviceToDevice));
 
       // Normalize residual to obtain new Lanczos vector
-      CHECK_CUDA(cudaMemcpyAsync(lanczosVecs_dev+IDX(0,iter_new,n),
+      CHECK_CUDA(hipMemcpyAsync(lanczosVecs_dev+IDX(0,iter_new,n),
          lanczosVecs_dev+IDX(0,iter,n),
          n*sizeof(ValueType_),
-         cudaMemcpyDeviceToDevice));
+         hipMemcpyDeviceToDevice));
       beta_host[iter_new-1]
   = Cublas::nrm2(n, lanczosVecs_dev+IDX(0,iter_new,n), 1);
       Cublas::scal(n, 1/beta_host[iter_new-1],
@@ -821,11 +821,11 @@ namespace nvgraph {
    
     #ifdef USE_CURAND
       // Random number generator
-      curandGenerator_t randGen;
+      hiprandGenerator_t randGen;
       // Initialize random number generator
-      CHECK_CURAND(curandCreateGenerator(&randGen,
-                 CURAND_RNG_PSEUDO_PHILOX4_32_10));
-      CHECK_CURAND(curandSetPseudoRandomGeneratorSeed(randGen,
+      CHECK_CURAND(hiprandCreateGenerator(&randGen,
+                 HIPRAND_RNG_PSEUDO_PHILOX4_32_10));
+      CHECK_CURAND(hiprandSetPseudoRandomGeneratorSeed(randGen,
                   123456/*time(NULL)*/));
       // Initialize initial Lanczos vector
       CHECK_CURAND(curandGenerateNormalX(randGen, lanczosVecs_dev, n+n%2, zero, one));
@@ -932,16 +932,16 @@ namespace nvgraph {
       work_host[i+2*(*effIter)] = 0;
 
     // Copy results to device memory
-    CHECK_CUDA(cudaMemcpy(eigVals_dev, work_host+2*(*effIter),
+    CHECK_CUDA(hipMemcpy(eigVals_dev, work_host+2*(*effIter),
              nEigVecs*sizeof(ValueType_),
-             cudaMemcpyHostToDevice));
+             hipMemcpyHostToDevice));
     //for (int i = 0; i < nEigVecs; ++i)
     //{
     //  std::cout <<*(work_host+(2*(*effIter)+i))<< std::endl;
     //}
-    CHECK_CUDA(cudaMemcpy(work_dev, Z_host,
+    CHECK_CUDA(hipMemcpy(work_dev, Z_host,
              (*effIter)*nEigVecs*sizeof(ValueType_),
-             cudaMemcpyHostToDevice));
+             hipMemcpyHostToDevice));
 
     // Convert eigenvectors from Lanczos basis to standard basis
     Cublas::gemm(false, false, n, nEigVecs, *effIter,
@@ -952,7 +952,7 @@ namespace nvgraph {
     free(Z_host);
     free(work_host);
     #ifdef USE_CURAND
-      CHECK_CURAND(curandDestroyGenerator(randGen));
+      CHECK_CURAND(hiprandDestroyGenerator(randGen));
     #endif
     return NVGRAPH_OK;
   
@@ -1007,7 +1007,7 @@ namespace nvgraph {
     
     // CUDA stream
     //   TODO: handle non-zero streams
-    cudaStream_t stream = 0;
+    hipStream_t stream = 0;
 
     // Matrix dimension
     IndexType_ n = A.n;
@@ -1213,11 +1213,11 @@ namespace nvgraph {
    
     #ifdef USE_CURAND
       // Random number generator
-      curandGenerator_t randGen;
+      hiprandGenerator_t randGen;
       // Initialize random number generator
-      CHECK_CURAND(curandCreateGenerator(&randGen,
-                 CURAND_RNG_PSEUDO_PHILOX4_32_10));
-      CHECK_CURAND(curandSetPseudoRandomGeneratorSeed(randGen,
+      CHECK_CURAND(hiprandCreateGenerator(&randGen,
+                 HIPRAND_RNG_PSEUDO_PHILOX4_32_10));
+      CHECK_CURAND(hiprandSetPseudoRandomGeneratorSeed(randGen,
                   123456));
        // Initialize initial Lanczos vector
       CHECK_CURAND(curandGenerateNormalX(randGen, lanczosVecs_dev, n+n%2, zero, one));
@@ -1335,14 +1335,14 @@ namespace nvgraph {
 
     // Copy results to device memory
     // skip smallest eigenvalue if needed   
-    CHECK_CUDA(cudaMemcpy(eigVals_dev, work_host+2*(*effIter)+top_eigenparis_idx_offset,
+    CHECK_CUDA(hipMemcpy(eigVals_dev, work_host+2*(*effIter)+top_eigenparis_idx_offset,
              nEigVecs*sizeof(ValueType_),
-             cudaMemcpyHostToDevice));
+             hipMemcpyHostToDevice));
 
     // skip smallest eigenvector if needed   
-    CHECK_CUDA(cudaMemcpy(work_dev, Z_host+(top_eigenparis_idx_offset*(*effIter)),
+    CHECK_CUDA(hipMemcpy(work_dev, Z_host+(top_eigenparis_idx_offset*(*effIter)),
              (*effIter)*nEigVecs*sizeof(ValueType_),
-             cudaMemcpyHostToDevice));
+             hipMemcpyHostToDevice));
 
     // Convert eigenvectors from Lanczos basis to standard basis
     Cublas::gemm(false, false, n, nEigVecs, *effIter,
@@ -1353,7 +1353,7 @@ namespace nvgraph {
     free(Z_host);
     free(work_host);
     #ifdef USE_CURAND
-      CHECK_CURAND(curandDestroyGenerator(randGen));
+      CHECK_CURAND(hiprandDestroyGenerator(randGen));
     #endif
     return NVGRAPH_OK;
   
@@ -1408,7 +1408,7 @@ namespace nvgraph {
     
     // CUDA stream
     //   TODO: handle non-zero streams
-    cudaStream_t stream = 0;
+    hipStream_t stream = 0;
 
     // Matrix dimension
     IndexType_ n = A.n;

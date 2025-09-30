@@ -22,12 +22,12 @@ find_package(CUDA)
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_COMPILER $ENV{CC})
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CUDA_STANDARD 11)
+set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -113,7 +113,6 @@ endif(BUILD_TESTS)
 include_directories(
                     "${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}/thirdparty/cub"
                     "${CMAKE_SOURCE_DIR}/thirdparty/cnmem/include"
                     "${CMAKE_SOURCE_DIR}/../external"
                     "${CMAKE_SOURCE_DIR}/../external/cusp"
@@ -239,5 +238,6 @@ install(FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/include/nvgraph.h
          ${CMAKE_CURRENT_SOURCE_DIR}/include/test_opt_utils.cuh
         DESTINATION include/nvgraph)
+
 
 

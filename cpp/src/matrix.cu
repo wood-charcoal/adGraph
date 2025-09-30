@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -109,16 +110,16 @@ namespace nvgraph {
    /// Get and Set CUDA stream    
   template <typename IndexType_, typename ValueType_>
   void DenseMatrix<IndexType_,ValueType_>
-  ::setCUDAStream(cudaStream_t _s) {
+  ::setCUDAStream(hipStream_t _s) {
       this->s = _s;
       //printf("DenseMatrix setCUDAStream stream=%p\n",this->s);
       Cublas::setStream(_s);
   }  
   template <typename IndexType_, typename ValueType_>
   void DenseMatrix<IndexType_,ValueType_>
-  ::getCUDAStream(cudaStream_t *_s) {
+  ::getCUDAStream(hipStream_t *_s) {
       *_s = this->s;
-      //CHECK_CUBLAS(cublasGetStream(cublasHandle, _s));
+      //CHECK_CUBLAS(hipblasGetStream(cublasHandle, _s));
   }  
 
 
@@ -201,7 +202,7 @@ namespace nvgraph {
   CsrMatrix<IndexType_,ValueType_>
   ::CsrMatrix(bool _trans, bool _sym,
         IndexType_ _m, IndexType_ _n, IndexType_ _nnz,
-        const cusparseMatDescr_t _descrA,
+        const hipsparseMatDescr_t _descrA,
         /*const*/ ValueType_ * _csrValA,
         const IndexType_ * _csrRowPtrA,
         const IndexType_ * _csrColIndA) 
@@ -221,7 +222,7 @@ namespace nvgraph {
    */
   template <typename IndexType_, typename ValueType_>
   CsrMatrix<IndexType_,ValueType_>
-  ::CsrMatrix(  ValuedCsrGraph<IndexType_,ValueType_> & G, const cusparseMatDescr_t _descrA)
+  ::CsrMatrix(  ValuedCsrGraph<IndexType_,ValueType_> & G, const hipsparseMatDescr_t _descrA)
     : Matrix<IndexType_,ValueType_>(G.get_num_vertices(), G.get_num_vertices()),
       trans(false), sym(false),
       nnz(G.get_num_edges()),
@@ -239,16 +240,16 @@ namespace nvgraph {
   /// Get and Set CUDA stream    
   template <typename IndexType_, typename ValueType_>
   void CsrMatrix<IndexType_,ValueType_>
-  ::setCUDAStream(cudaStream_t _s) {
+  ::setCUDAStream(hipStream_t _s) {
       this->s = _s;
       //printf("CsrMatrix setCUDAStream stream=%p\n",this->s);
       Cusparse::setStream(_s);
   }  
   template <typename IndexType_, typename ValueType_>
   void CsrMatrix<IndexType_,ValueType_>
-  ::getCUDAStream(cudaStream_t *_s) {
+  ::getCUDAStream(hipStream_t *_s) {
       *_s = this->s;
-      //CHECK_CUSPARSE(cusparseGetStream(Cusparse::get_handle(), _s));
+      //CHECK_CUSPARSE(hipsparseGetStream(Cusparse::get_handle(), _s));
   }     
    template <typename IndexType_, typename ValueType_>
   void CsrMatrix<IndexType_,ValueType_>
@@ -278,16 +279,16 @@ namespace nvgraph {
       if (!factored) {
           //analyse lower triangular factor
           CHECK_CUSPARSE(cusparseCreateSolveAnalysisInfo(&info_l));
-          CHECK_CUSPARSE(cusparseSetMatFillMode(descrA,CUSPARSE_FILL_MODE_LOWER));
-          CHECK_CUSPARSE(cusparseSetMatDiagType(descrA,CUSPARSE_DIAG_TYPE_UNIT));
-          CHECK_CUSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(),CUSPARSE_OPERATION_NON_TRANSPOSE,this->m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,info_l));
+          CHECK_CUSPARSE(hipsparseSetMatFillMode(descrA,HIPSPARSE_FILL_MODE_LOWER));
+          CHECK_CUSPARSE(hipsparseSetMatDiagType(descrA,HIPSPARSE_DIAG_TYPE_UNIT));
+          CHECK_CUSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,info_l));
           //analyse upper triangular factor
           CHECK_CUSPARSE(cusparseCreateSolveAnalysisInfo(&info_u));
-          CHECK_CUSPARSE(cusparseSetMatFillMode(descrA,CUSPARSE_FILL_MODE_UPPER));
-          CHECK_CUSPARSE(cusparseSetMatDiagType(descrA,CUSPARSE_DIAG_TYPE_NON_UNIT));
-          CHECK_CUSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(),CUSPARSE_OPERATION_NON_TRANSPOSE,this->m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,info_u));
+          CHECK_CUSPARSE(hipsparseSetMatFillMode(descrA,HIPSPARSE_FILL_MODE_UPPER));
+          CHECK_CUSPARSE(hipsparseSetMatDiagType(descrA,HIPSPARSE_DIAG_TYPE_NON_UNIT));
+          CHECK_CUSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,info_u));
           //perform csrilu0 (should be slightly faster than csric0)
-          CHECK_CUSPARSE(cusparseXcsrilu0(Cusparse::get_handle(),CUSPARSE_OPERATION_NON_TRANSPOSE,this->m,descrA,csrValA,csrRowPtrA,csrColIndA,info_l));
+          CHECK_CUSPARSE(cusparseXcsrilu0(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,descrA,csrValA,csrRowPtrA,csrColIndA,info_l));
           //set factored flag to true
           factored=true;
       }
@@ -300,13 +301,13 @@ namespace nvgraph {
       
       //preconditioning Mx=f (where M = L*U, threfore x=U\(L\f))
       //solve lower triangular factor
-      CHECK_CUSPARSE(cusparseSetMatFillMode(descrA,CUSPARSE_FILL_MODE_LOWER));
-      CHECK_CUSPARSE(cusparseSetMatDiagType(descrA,CUSPARSE_DIAG_TYPE_UNIT));
-      CHECK_CUSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(),CUSPARSE_OPERATION_NON_TRANSPOSE,this->m,k,alpha,descrA,csrValA,csrRowPtrA,csrColIndA,info_l,fx,this->m,t,this->m));
+      CHECK_CUSPARSE(hipsparseSetMatFillMode(descrA,HIPSPARSE_FILL_MODE_LOWER));
+      CHECK_CUSPARSE(hipsparseSetMatDiagType(descrA,HIPSPARSE_DIAG_TYPE_UNIT));
+      CHECK_CUSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,k,alpha,descrA,csrValA,csrRowPtrA,csrColIndA,info_l,fx,this->m,t,this->m));
       //solve upper triangular factor
-      CHECK_CUSPARSE(cusparseSetMatFillMode(descrA,CUSPARSE_FILL_MODE_UPPER));
-      CHECK_CUSPARSE(cusparseSetMatDiagType(descrA,CUSPARSE_DIAG_TYPE_NON_UNIT));
-      CHECK_CUSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(),CUSPARSE_OPERATION_NON_TRANSPOSE,this->m,k,alpha,descrA,csrValA,csrRowPtrA,csrColIndA,info_u,t,this->m,fx,this->m));
+      CHECK_CUSPARSE(hipsparseSetMatFillMode(descrA,HIPSPARSE_FILL_MODE_UPPER));
+      CHECK_CUSPARSE(hipsparseSetMatDiagType(descrA,HIPSPARSE_DIAG_TYPE_NON_UNIT));
+      CHECK_CUSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,k,alpha,descrA,csrValA,csrRowPtrA,csrColIndA,info_u,t,this->m,fx,this->m));
       
   } 
 
@@ -370,7 +371,7 @@ namespace nvgraph {
   
   /// Get and Set CUDA stream     
   template <typename IndexType_, typename ValueType_>
-  void LaplacianMatrix<IndexType_, ValueType_>::setCUDAStream(cudaStream_t _s) {
+  void LaplacianMatrix<IndexType_, ValueType_>::setCUDAStream(hipStream_t _s) {
       this->s = _s;
       //printf("LaplacianMatrix setCUDAStream stream=%p\n",this->s);
       A->setCUDAStream(_s);
@@ -379,7 +380,7 @@ namespace nvgraph {
       }
   }  
   template <typename IndexType_, typename ValueType_>
-  void LaplacianMatrix<IndexType_, ValueType_>::getCUDAStream(cudaStream_t * _s) {
+  void LaplacianMatrix<IndexType_, ValueType_>::getCUDAStream(hipStream_t * _s) {
       *_s = this->s;
       //A->getCUDAStream(_s);
   }  
@@ -399,7 +400,7 @@ namespace nvgraph {
 
     // Scale result vector
     if(beta==0)
-      CHECK_CUDA(cudaMemset(y, 0, (this->n)*sizeof(ValueType_)))
+      CHECK_CUDA(hipMemset(y, 0, (this->n)*sizeof(ValueType_)))
     else if(beta!=1)
       thrust::transform(thrust::device_pointer_cast(y),
       thrust::device_pointer_cast(y+this->n),
@@ -459,7 +460,7 @@ namespace nvgraph {
       // Apply diagonal matrix
       if(beta == 0.0) {
           //set vectors to 0 (WARNING: notice that you need to set, not scale, because of NaNs corner case)
-          CHECK_CUDA(cudaMemset(y, 0, t*sizeof(ValueType_)));
+          CHECK_CUDA(hipMemset(y, 0, t*sizeof(ValueType_)));
           diagmm<IndexType_,ValueType_,true> <<< gridDim, blockDim, 0, A->s >>> (this->n, k, alpha, D.raw(), x, beta, y);
       }
       else {
@@ -545,7 +546,7 @@ namespace nvgraph {
   
   /// Get and Set CUDA stream     
   template <typename IndexType_, typename ValueType_>
-  void ModularityMatrix<IndexType_, ValueType_>::setCUDAStream(cudaStream_t _s) {
+  void ModularityMatrix<IndexType_, ValueType_>::setCUDAStream(hipStream_t _s) {
       this->s = _s;
       //printf("ModularityMatrix setCUDAStream stream=%p\n",this->s);
       A->setCUDAStream(_s);
@@ -555,7 +556,7 @@ namespace nvgraph {
   }  
 
   template <typename IndexType_, typename ValueType_>
-  void ModularityMatrix<IndexType_, ValueType_>::getCUDAStream(cudaStream_t * _s) {
+  void ModularityMatrix<IndexType_, ValueType_>::getCUDAStream(hipStream_t * _s) {
       *_s = this->s;
       //A->getCUDAStream(_s);
   }  

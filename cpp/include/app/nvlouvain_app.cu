@@ -32,8 +32,8 @@
 #include <thrust/generate.h>
 #include <thrust/reduce.h>
 #include <thrust/functional.h>
-#include <cuda.h>
-#include <cuda_profiler_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_profile.h>
 using T = float;
 
 int main(int argc, char* argv[]){
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]){
   int m, k, nnz;
   MM_typecode mc;
 
-  CUDA_CALL(cudaSetDevice(0));
+  CUDA_CALL(hipSetDevice(0));
 
   EXPECT_EQ((mm_properties<int>(fin, 1, &mc, &m, &k, &nnz)) ,0);
   EXPECT_EQ(m,k);  
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]){
     int* init_cluster_ptr = thrust::raw_pointer_cast(cluster_d.data());
     int num_level;
     
-    cudaProfilerStart(); 
+    hipProfilerStart(); 
     hr_clock.start(); 
     nvlouvain::louvain<int,T>(csr_ptr_ptr, csr_ind_ptr, csr_val_ptr,
                             m, nnz, 
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){
                             init_cluster_ptr, final_modulartiy, clustering_h, num_level);
 
     hr_clock.stop(&louvain_time);
-    cudaProfilerStop();
+    hipProfilerStop();
 
     std::cout<<"Final modularity: "<<COLOR_MGT<<final_modulartiy<<COLOR_WHT<<" num_level: "<<num_level<<std::endl;
     std::cout<<"louvain total runtime:"<<louvain_time/1000<<" ms\n"; 

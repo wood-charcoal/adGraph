@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentSegmentFixup implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduce-value-by-key.
+ * hipcub::AgentSegmentFixup implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduce-value-by-key.
  */
 
 #pragma once
@@ -129,7 +129,7 @@ struct AgentSegmentFixup
 
         // Whether or not the scan operation has a zero-valued identity value (true if we're performing addition on a primitive type)
         // not used. 
-        //HAS_IDENTITY_ZERO   = (Equals<ReductionOpT, cub::Sum>::VALUE) && (Traits<ValueT>::PRIMITIVE),
+        //HAS_IDENTITY_ZERO   = (Equals<ReductionOpT, hipcub::Sum>::VALUE) && (Traits<ValueT>::PRIMITIVE),
     };
 
     // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys

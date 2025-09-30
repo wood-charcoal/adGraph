@@ -48,7 +48,7 @@
 #include <sstream>
 #include <cstdint>
 #include <math.h>
-#include "cuda_profiler_api.h"
+#include "hip/hip_profile.h"
 
 // do the perf measurements, enabled by command line parameter '--perf'
 static int PERF = 0;
@@ -65,7 +65,7 @@ struct nvgraph_Const;
 template<>
 struct nvgraph_Const<int>
 {
-	static const cudaDataType_t Type = CUDA_R_32I;
+	static const hipblasDatatype_t Type = HIPBLAS_R_32I;
 	static const int inf;
 };
 const int nvgraph_Const<int>::inf = INT_MAX;
@@ -184,7 +184,7 @@ public:
 		int blockN = std::max(2,(int)ceil(sqrt(numDevices)));
 		std::cout << "Using " << blockN << " as block N\n";
 
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, &sources[0], &destinations[0], CUDA_R_32I,
+		nvgraph2dCOOTopology32I_st topology = { n, nnz, &sources[0], &destinations[0], HIPBLAS_R_32I,
 		NULL, blockN, devices, numDevices, NVGRAPH_DEFAULT };
 		status = nvgraphSetGraphStructure(handle, g1, (void*) &topology, topo);
 
@@ -194,15 +194,15 @@ public:
 
 		int source_vert = param.source_vert;
 		std::cout << "Starting from vertex: " << source_vert << "\n";
-		cudaProfilerStart();
+		hipProfilerStart();
 		status = nvgraph2dBfs(handle,
 										g1,
 										source_vert,
 										&calculated_distances_res[0],
 										&calculated_predecessors_res[0]);
-		cudaProfilerStop();
+		hipProfilerStop();
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		if (PERF && n > PERF_ROWS_LIMIT)	{
 			double start, stop;
@@ -216,7 +216,7 @@ public:
 												&calculated_predecessors_res[0]);
 				ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			}
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 			stop = second();
 			printf("&&&& PERF Time_%s %10.8f -ms\n",
 						test_id.c_str(),

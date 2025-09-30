@@ -99,7 +99,7 @@ void modularity_test_no_matrix(thrust::device_vector<int> &csr_ptr_d,
                                                                      weighted, k_vec_ptr, Q_arr_ptr, temp_i_ptr, score_ptr);
 
      
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   double Q = score[0];
 */
   hr_clock.stop(&timed);
@@ -152,7 +152,7 @@ void modularity_test_no_matrix_block(thrust::device_vector<int> &csr_ptr_d,
                                                                           cluster_d.begin(), 
                                                                           weighted, k_vec_ptr, Q_arr_ptr);
  
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
 
   hr_clock.stop(&timed);
   double mod_time(timed);
@@ -230,7 +230,7 @@ void modularity_test_no_matrix(std::string file_name){
                                                                      weighted, k_vec_ptr, Q_arr_ptr, temp_i_ptr, score_ptr);
 
      
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   double Q = score[0];
   hr_clock.stop(&timed);
   double mod_time(timed);

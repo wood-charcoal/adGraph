@@ -157,12 +157,12 @@ void ref_cooSortByDestination(int nnz,
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Random generators
 ////////////////////////////////////////////////////////////////////////////////////////////////
-void randomArray(int n, void* arr, cudaDataType_t *dataType){
-    if(*dataType==CUDA_R_32F){
+void randomArray(int n, void* arr, hipblasDatatype_t *dataType){
+    if(*dataType==HIPBLAS_R_32F){
         float* a = (float*)arr;
         for(int i=0; i<n; ++i)
             a[i] = (float)rand()/(rand()+1); // don't divide by 0.
-    } else if(*dataType==CUDA_R_64F) {
+    } else if(*dataType==HIPBLAS_R_64F) {
         double* a = (double*)arr;
         for(int i=0; i<n; ++i)
             a[i] = (double)rand()/(rand()+1); // don't divide by 0.
@@ -446,8 +446,8 @@ class NVGraphAPIConvertTest : public ::testing::Test {
                 p->source_offsets = (int*)malloc(sizeof(int)*(n+1));
                 p->destination_indices = (int*)malloc(sizeof(int)*(nnz));
             } else if(aSpace==DEVICE){
-                cudaMalloc((void**)&(p->source_offsets), sizeof(int)*(n+1));
-                cudaMalloc((void**)&(p->destination_indices), sizeof(int)*(nnz));
+                hipMalloc((void**)&(p->source_offsets), sizeof(int)*(n+1));
+                hipMalloc((void**)&(p->destination_indices), sizeof(int)*(nnz));
             } else {
                 FAIL();
             }
@@ -462,8 +462,8 @@ class NVGraphAPIConvertTest : public ::testing::Test {
                 p->destination_offsets = (int*)malloc(sizeof(int)*(n+1));
                 p->source_indices = (int*)malloc(sizeof(int)*(nnz));
             } else if(aSpace==DEVICE){
-                cudaMalloc((void**)&(p->destination_offsets), sizeof(int)*(n+1));
-                cudaMalloc((void**)&(p->source_indices), sizeof(int)*(nnz));
+                hipMalloc((void**)&(p->destination_offsets), sizeof(int)*(n+1));
+                hipMalloc((void**)&(p->source_indices), sizeof(int)*(nnz));
             } else {
                 FAIL();
             }
@@ -478,8 +478,8 @@ class NVGraphAPIConvertTest : public ::testing::Test {
                 p->source_indices = (int*)malloc(sizeof(int)*(nnz));
                 p->destination_indices = (int*)malloc(sizeof(int)*(nnz));
             } else if(aSpace==DEVICE){
-                cudaMalloc((void**)&(p->source_indices), sizeof(int)*(nnz));
-                cudaMalloc((void**)&(p->destination_indices), sizeof(int)*(nnz));
+                hipMalloc((void**)&(p->source_indices), sizeof(int)*(nnz));
+                hipMalloc((void**)&(p->destination_indices), sizeof(int)*(nnz));
             } else {
                 FAIL();
             }
@@ -531,14 +531,14 @@ class NVGraphAPIConvertTest : public ::testing::Test {
             free(rowPtr);
             free(colPtr);
         } else if (aSpace==DEVICE){
-            cudaFree(rowPtr);
-            cudaFree(colPtr);
+            hipFree(rowPtr);
+            hipFree(colPtr);
         } else {
             FAIL();
         }
     }
 
-    static void cpyTopo(void *dst, void *src, testTopologyType_t TType, enum cudaMemcpyKind kind=cudaMemcpyDefault){
+    static void cpyTopo(void *dst, void *src, testTopologyType_t TType, enum hipMemcpyKind kind=hipMemcpyDefault){
 
         int *srcRow=NULL, *srcCol=NULL;
         int *dstRow=NULL, *dstCol=NULL;
@@ -572,8 +572,8 @@ class NVGraphAPIConvertTest : public ::testing::Test {
             FAIL();
         }
 
-        ASSERT_EQ(cudaSuccess, cudaMemcpy(dstRow, srcRow, sizeof(int)*rowSize, kind));
-        ASSERT_EQ(cudaSuccess, cudaMemcpy(dstCol, srcCol, sizeof(int)*colSize, kind));
+        ASSERT_EQ(hipSuccess, hipMemcpy(dstRow, srcRow, sizeof(int)*rowSize, kind));
+        ASSERT_EQ(hipSuccess, hipMemcpy(dstCol, srcCol, sizeof(int)*colSize, kind));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -584,14 +584,14 @@ class NVGraphAPIConvertTest : public ::testing::Test {
 
         T *_refData=NULL, *_dstData=NULL; if(refSapce==DEVICE){
             _refData = (T*)malloc(sizeof(T)*n);
-            cudaMemcpy(_refData, ref, sizeof(T)*n, cudaMemcpyDefault);
+            hipMemcpy(_refData, ref, sizeof(T)*n, hipMemcpyDefault);
         } else {
             _refData = ref;
         }
 
         if(dstSpace==DEVICE){
             _dstData = (T*)malloc(sizeof(T)*n);
-            cudaMemcpy(_dstData, dst, sizeof(T)*n, cudaMemcpyDefault);
+            hipMemcpy(_dstData, dst, sizeof(T)*n, hipMemcpyDefault);
         } else {
             _dstData = dst;
         }
@@ -661,8 +661,8 @@ class NVGraphAPIConvertTest : public ::testing::Test {
         if(refSpace==DEVICE){
             refRowsHost = (int*)malloc(sizeof(int)*rowSize);
             refColsHost = (int*)malloc(sizeof(int)*colSize);
-            cudaMemcpy(refRowsHost, _refRows, sizeof(int)*rowSize, cudaMemcpyDefault);
-            cudaMemcpy(refColsHost, _refCols, sizeof(int)*colSize, cudaMemcpyDefault);
+            hipMemcpy(refRowsHost, _refRows, sizeof(int)*rowSize, hipMemcpyDefault);
+            hipMemcpy(refColsHost, _refCols, sizeof(int)*colSize, hipMemcpyDefault);
         } else {
             refRowsHost = _refRows;
             refColsHost = _refCols;
@@ -671,8 +671,8 @@ class NVGraphAPIConvertTest : public ::testing::Test {
         if(dstSpace==DEVICE){
             dstRowsHost = (int*)malloc(sizeof(int)*rowSize);
             dstColsHost = (int*)malloc(sizeof(int)*colSize);
-            cudaMemcpy(dstRowsHost, _dstRows, sizeof(int)*rowSize, cudaMemcpyDefault);
-            cudaMemcpy(dstColsHost, _dstCols, sizeof(int)*colSize, cudaMemcpyDefault);
+            hipMemcpy(dstRowsHost, _dstRows, sizeof(int)*rowSize, hipMemcpyDefault);
+            hipMemcpy(dstColsHost, _dstCols, sizeof(int)*colSize, hipMemcpyDefault);
         } else {
             dstRowsHost = _dstRows;
             dstColsHost = _dstCols;
@@ -721,7 +721,7 @@ class NVGraphAPIConvertTest : public ::testing::Test {
 
 // Compares the convesion result from and to preset values (Used primary for simple test, and to validate reference convsrsion).
 class PresetTopology : public NVGraphAPIConvertTest,
-                       public ::testing::WithParamInterface<std::tr1::tuple< cudaDataType_t,                // dataType
+                       public ::testing::WithParamInterface<std::tr1::tuple< hipblasDatatype_t,                // dataType
                                                                              testTopologyType_t,            // srcTopoType
                                                                              testTopologyType_t,            // dstTopoType
                                                                              presetTestContainer_st> > {    // prestTestContainer
@@ -769,7 +769,7 @@ class PresetTopology : public NVGraphAPIConvertTest,
 
     // nvgraph conversion test
     template <typename T>
-    void nvgraphPresetConvertTest(testTopologyType_t srcTestTopoType, void *srcTopologyHst, const double *srcEdgeDataHst, cudaDataType_t *dataType,
+    void nvgraphPresetConvertTest(testTopologyType_t srcTestTopoType, void *srcTopologyHst, const double *srcEdgeDataHst, hipblasDatatype_t *dataType,
                                   testTopologyType_t dstTestTopoType, void *refTopologyHst, const double *refEdgeDataHst){
 
         int srcN=0, srcNNZ=0;
@@ -783,7 +783,7 @@ class PresetTopology : public NVGraphAPIConvertTest,
         void *srcTopologyDv=NULL, *dstTopologyDv=NULL;
         allocateTopo(&srcTopologyDv, srcTestTopoType, refN, refNNZ, DEVICE);
         allocateTopo(&dstTopologyDv, dstTestTopoType, refN, refNNZ, DEVICE);
-        cpyTopo(srcTopologyDv, srcTopologyHst, srcTestTopoType, cudaMemcpyHostToDevice); // Copy src topology to device
+        cpyTopo(srcTopologyDv, srcTopologyHst, srcTestTopoType, hipMemcpyHostToDevice); // Copy src topology to device
         //////////////////////////////////////////////////
 
         // Convert host edge data to template type
@@ -799,9 +799,9 @@ class PresetTopology : public NVGraphAPIConvertTest,
 
         // Allocate edge data in device memory
         T *srcEdgeDataDvT, *dstEdgeDataDvT;
-        ASSERT_EQ(cudaSuccess, cudaMalloc((void**)&srcEdgeDataDvT, sizeof(T)*srcNNZ));
-        ASSERT_EQ(cudaSuccess, cudaMalloc((void**)&dstEdgeDataDvT, sizeof(T)*refNNZ));
-        ASSERT_EQ(cudaSuccess, cudaMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T)*srcNNZ, cudaMemcpyDefault)); // Copy edge data to device
+        ASSERT_EQ(hipSuccess, hipMalloc((void**)&srcEdgeDataDvT, sizeof(T)*srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void**)&dstEdgeDataDvT, sizeof(T)*refNNZ));
+        ASSERT_EQ(hipSuccess, hipMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T)*srcNNZ, hipMemcpyDefault)); // Copy edge data to device
         //////////////////////////////////////////////////
 
         nvgraphTopologyType_t srcTType, dstTType;
@@ -816,8 +816,8 @@ class PresetTopology : public NVGraphAPIConvertTest,
 
         free(srcEdgeDataHstT);
         free(refEdgeDataHstT);
-        ASSERT_EQ(cudaSuccess, cudaFree(srcEdgeDataDvT));
-        ASSERT_EQ(cudaSuccess, cudaFree(dstEdgeDataDvT));
+        ASSERT_EQ(hipSuccess, hipFree(srcEdgeDataDvT));
+        ASSERT_EQ(hipSuccess, hipFree(dstEdgeDataDvT));
         deAllocateTopo(srcTopologyDv, srcTestTopoType, DEVICE);
         deAllocateTopo(dstTopologyDv, dstTestTopoType, DEVICE);
     }
@@ -854,7 +854,7 @@ class PresetTopology : public NVGraphAPIConvertTest,
 
 TEST_P(PresetTopology, referenceValidation) {
 
-    cudaDataType_t dataType = std::tr1::get<0>(GetParam());
+    hipblasDatatype_t dataType = std::tr1::get<0>(GetParam());
     testTopologyType_t srcTestTopoType = std::tr1::get<1>(GetParam());
     testTopologyType_t dstTestTopoType = std::tr1::get<2>(GetParam());
     presetTestContainer_st prestTestContainer = std::tr1::get<3>(GetParam());
@@ -867,10 +867,10 @@ TEST_P(PresetTopology, referenceValidation) {
     this->getTestData(srcTestTopoType, &srcTopology, &srcEdgeData, prestTestContainer);
     this->getTestData(dstTestTopoType, &refTopology, &refEdgeData, prestTestContainer);
 
-    if(dataType==CUDA_R_32F) {
+    if(dataType==HIPBLAS_R_32F) {
         this->refPrestConvertTest<float>(srcTestTopoType, srcTopology, (const double*)srcEdgeData,
                                          dstTestTopoType, refTopology, (const double*)refEdgeData);
-    } else if (dataType==CUDA_R_64F) {
+    } else if (dataType==HIPBLAS_R_64F) {
         this->refPrestConvertTest<double>(srcTestTopoType, srcTopology, (const double*)srcEdgeData,
                                           dstTestTopoType, refTopology, (const double*)refEdgeData);
     } else {
@@ -881,7 +881,7 @@ TEST_P(PresetTopology, referenceValidation) {
 
 TEST_P(PresetTopology, nvgraphConvertTopology) {
 
-    cudaDataType_t dataType = std::tr1::get<0>(GetParam());
+    hipblasDatatype_t dataType = std::tr1::get<0>(GetParam());
     testTopologyType_t srcTestTopoType = std::tr1::get<1>(GetParam());
     testTopologyType_t dstTestTopoType = std::tr1::get<2>(GetParam());
     presetTestContainer_st prestTestContainer = std::tr1::get<3>(GetParam());
@@ -894,10 +894,10 @@ TEST_P(PresetTopology, nvgraphConvertTopology) {
     this->getTestData(srcTestTopoType, &srcTopology, &srcEdgeData, prestTestContainer);
     this->getTestData(dstTestTopoType, &refTopology, &refEdgeData, prestTestContainer);
 
-    if(dataType==CUDA_R_32F){
+    if(dataType==HIPBLAS_R_32F){
         this->nvgraphPresetConvertTest<float>( srcTestTopoType, srcTopology, (const double*)srcEdgeData, &dataType,
                                                dstTestTopoType, refTopology, (const double*)refEdgeData);
-    } else if (dataType==CUDA_R_64F) {
+    } else if (dataType==HIPBLAS_R_64F) {
         this->nvgraphPresetConvertTest<double>( srcTestTopoType, srcTopology, (const double*)srcEdgeData, &dataType,
                                                 dstTestTopoType, refTopology, (const double*)refEdgeData);
     } else {
@@ -908,7 +908,7 @@ TEST_P(PresetTopology, nvgraphConvertTopology) {
 
 
 class RandomTopology : public NVGraphAPIConvertTest,
-                       public ::testing::WithParamInterface<std::tr1::tuple< cudaDataType_t,            // dataType
+                       public ::testing::WithParamInterface<std::tr1::tuple< hipblasDatatype_t,            // dataType
                                                                              testTopologyType_t,        // srcTopoType
                                                                              testTopologyType_t,        // dstTopoType
                                                                              int,                       // n
@@ -920,7 +920,7 @@ class RandomTopology : public NVGraphAPIConvertTest,
     // nvgraph conversion check
     template <typename T>
     void nvgraphTopologyConvertTest(testTopologyType_t srcTestTopoType, void *srcTopologyHst, const double *srcEdgeDataHst,
-                                    cudaDataType_t *dataType, testTopologyType_t dstTestTopoType){
+                                    hipblasDatatype_t *dataType, testTopologyType_t dstTestTopoType){
         int srcN=0, srcNNZ=0;
         topoGetN(srcTestTopoType, srcTopologyHst, &srcN);
         topoGetNNZ(srcTestTopoType, srcTopologyHst, &srcNNZ);
@@ -934,10 +934,10 @@ class RandomTopology : public NVGraphAPIConvertTest,
         // Allocate topologies space in device memory
         void *srcTopologyDv=NULL, *resultTopologyDv=NULL;
         T *resultEdgeData=NULL;
-        ASSERT_EQ(cudaSuccess, cudaMalloc( (void**)&resultEdgeData, sizeof(T)*srcNNZ) );
+        ASSERT_EQ(hipSuccess, hipMalloc( (void**)&resultEdgeData, sizeof(T)*srcNNZ) );
         allocateTopo(&srcTopologyDv, srcTestTopoType, srcN, srcNNZ, DEVICE);
         allocateTopo(&resultTopologyDv, dstTestTopoType, srcN, srcNNZ, DEVICE);
-        cpyTopo(srcTopologyDv, srcTopologyHst, srcTestTopoType, cudaMemcpyHostToDevice); // Copy src topology to device
+        cpyTopo(srcTopologyDv, srcTopologyHst, srcTestTopoType, hipMemcpyHostToDevice); // Copy src topology to device
         //////////////////////////////////////////////////
 
         // Convert host edge data to template type
@@ -949,9 +949,9 @@ class RandomTopology : public NVGraphAPIConvertTest,
 
         // Allocate edge data in device memory
         T *srcEdgeDataDvT, *resultEdgeDataDvT;
-        ASSERT_EQ(cudaSuccess, cudaMalloc((void**)&srcEdgeDataDvT, sizeof(T)*srcNNZ));
-        ASSERT_EQ(cudaSuccess, cudaMalloc((void**)&resultEdgeDataDvT, sizeof(T)*srcNNZ));
-        ASSERT_EQ(cudaSuccess, cudaMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T)*srcNNZ, cudaMemcpyDefault)); // Copy edge data to device
+        ASSERT_EQ(hipSuccess, hipMalloc((void**)&srcEdgeDataDvT, sizeof(T)*srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void**)&resultEdgeDataDvT, sizeof(T)*srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T)*srcNNZ, hipMemcpyDefault)); // Copy edge data to device
         //////////////////////////////////////////////////
 
         nvgraphTopologyType_t srcTType, dstTType;
@@ -967,9 +967,9 @@ class RandomTopology : public NVGraphAPIConvertTest,
 
         free(refResultEdgeDataT);
         free(srcEdgeDataHstT);
-        ASSERT_EQ(cudaSuccess, cudaFree(resultEdgeData));
-        ASSERT_EQ(cudaSuccess, cudaFree(srcEdgeDataDvT));
-        ASSERT_EQ(cudaSuccess, cudaFree(resultEdgeDataDvT));
+        ASSERT_EQ(hipSuccess, hipFree(resultEdgeData));
+        ASSERT_EQ(hipSuccess, hipFree(srcEdgeDataDvT));
+        ASSERT_EQ(hipSuccess, hipFree(resultEdgeDataDvT));
         deAllocateTopo(refResultTopologyHst, dstTestTopoType, HOST);
         deAllocateTopo(srcTopologyDv, srcTestTopoType, DEVICE);
         deAllocateTopo(resultTopologyDv, dstTestTopoType, DEVICE);
@@ -979,7 +979,7 @@ class RandomTopology : public NVGraphAPIConvertTest,
     // nvgraph conversion check
     template <typename T>
     void nvgraphGraphConvertTest(testTopologyType_t srcTestTopoType, void *srcTopologyHst, const double *srcEdgeDataHst,
-                                 cudaDataType_t *dataType, testTopologyType_t dstTestTopoType){
+                                 hipblasDatatype_t *dataType, testTopologyType_t dstTestTopoType){
         int srcN=0, srcNNZ=0;
         topoGetN(srcTestTopoType, srcTopologyHst, &srcN);
         topoGetNNZ(srcTestTopoType, srcTopologyHst, &srcNNZ);
@@ -993,10 +993,10 @@ class RandomTopology : public NVGraphAPIConvertTest,
         // Allocate topologies space in device memory
         void *srcTopologyDv=NULL, *resultTopologyDv=NULL;
         T *resultEdgeData=NULL;
-        ASSERT_EQ(cudaSuccess, cudaMalloc( (void**)&resultEdgeData, sizeof(T)*srcNNZ) );
+        ASSERT_EQ(hipSuccess, hipMalloc( (void**)&resultEdgeData, sizeof(T)*srcNNZ) );
         allocateTopo(&srcTopologyDv, srcTestTopoType, srcN, srcNNZ, DEVICE);
         allocateTopo(&resultTopologyDv, dstTestTopoType, srcN, srcNNZ, DEVICE);
-        cpyTopo(srcTopologyDv, srcTopologyHst, srcTestTopoType, cudaMemcpyHostToDevice); // Copy src topology to device
+        cpyTopo(srcTopologyDv, srcTopologyHst, srcTestTopoType, hipMemcpyHostToDevice); // Copy src topology to device
         //////////////////////////////////////////////////
 
         // Convert host edge data to template type
@@ -1008,9 +1008,9 @@ class RandomTopology : public NVGraphAPIConvertTest,
 
         // Allocate edge data in device memory
         T *srcEdgeDataDvT, *resultEdgeDataDvT;
-        ASSERT_EQ(cudaSuccess, cudaMalloc((void**)&srcEdgeDataDvT, sizeof(T)*srcNNZ));
-        ASSERT_EQ(cudaSuccess, cudaMalloc((void**)&resultEdgeDataDvT, sizeof(T)*srcNNZ));
-        ASSERT_EQ(cudaSuccess, cudaMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T)*srcNNZ, cudaMemcpyDefault)); // Copy edge data to device
+        ASSERT_EQ(hipSuccess, hipMalloc((void**)&srcEdgeDataDvT, sizeof(T)*srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void**)&resultEdgeDataDvT, sizeof(T)*srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T)*srcNNZ, hipMemcpyDefault)); // Copy edge data to device
         //////////////////////////////////////////////////
 
         nvgraphTopologyType_t srcTType, dstTType;
@@ -1026,9 +1026,9 @@ class RandomTopology : public NVGraphAPIConvertTest,
 
         free(refResultEdgeDataT);
         free(srcEdgeDataHstT);
-        ASSERT_EQ(cudaSuccess, cudaFree(resultEdgeData));
-        ASSERT_EQ(cudaSuccess, cudaFree(srcEdgeDataDvT));
-        ASSERT_EQ(cudaSuccess, cudaFree(resultEdgeDataDvT));
+        ASSERT_EQ(hipSuccess, hipFree(resultEdgeData));
+        ASSERT_EQ(hipSuccess, hipFree(srcEdgeDataDvT));
+        ASSERT_EQ(hipSuccess, hipFree(resultEdgeDataDvT));
         deAllocateTopo(refResultTopologyHst, dstTestTopoType, HOST);
         deAllocateTopo(srcTopologyDv, srcTestTopoType, DEVICE);
         deAllocateTopo(resultTopologyDv, dstTestTopoType, DEVICE);
@@ -1038,7 +1038,7 @@ class RandomTopology : public NVGraphAPIConvertTest,
 
 TEST_P(RandomTopology, nvgraphConvertTopology) {
 
-    cudaDataType_t dataType = std::tr1::get<0>(GetParam());
+    hipblasDatatype_t dataType = std::tr1::get<0>(GetParam());
     testTopologyType_t srcTestTopoType = std::tr1::get<1>(GetParam());
     testTopologyType_t dstTestTopoType = std::tr1::get<2>(GetParam());
     int n = std::tr1::get<3>(GetParam());
@@ -1078,9 +1078,9 @@ TEST_P(RandomTopology, nvgraphConvertTopology) {
     for(int i=0; i<nnz; ++i)
         srcEdgeData[i]=(double)rand()/(rand()+1); // don't divide by zero
 
-    if(dataType==CUDA_R_32F){
+    if(dataType==HIPBLAS_R_32F){
         this->nvgraphTopologyConvertTest<float> (srcTestTopoType, srcTopology, srcEdgeData, &dataType, dstTestTopoType);
-    } else if (dataType==CUDA_R_64F) {
+    } else if (dataType==HIPBLAS_R_64F) {
         this->nvgraphTopologyConvertTest<double> (srcTestTopoType, srcTopology, srcEdgeData, &dataType, dstTestTopoType);
     } else {
         FAIL();
@@ -1091,7 +1091,7 @@ TEST_P(RandomTopology, nvgraphConvertTopology) {
 
 
 class RandomGraph : public NVGraphAPIConvertTest,
-                    public ::testing::WithParamInterface<std::tr1::tuple< cudaDataType_t,             // dataType
+                    public ::testing::WithParamInterface<std::tr1::tuple< hipblasDatatype_t,             // dataType
                                                                           testTopologyType_t,         // srcTopoType
                                                                           testTopologyType_t,         // dstTopoType
                                                                           int,                        // n
@@ -1148,7 +1148,7 @@ class RandomGraph : public NVGraphAPIConvertTest,
 
 TEST_P(RandomGraph, nvgraphConvertGraph) {
 
-    cudaDataType_t dataType = std::tr1::get<0>(GetParam());
+    hipblasDatatype_t dataType = std::tr1::get<0>(GetParam());
     srcTestTopoType = std::tr1::get<1>(GetParam());
     dstTestTopoType = std::tr1::get<2>(GetParam());
     int n = std::tr1::get<3>(GetParam());
@@ -1204,7 +1204,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Prepeate data arrays
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    if(dataType==CUDA_R_32F){
+    if(dataType==HIPBLAS_R_32F){
         srcEdgeData = malloc(sizeof(float)*nnz);
         dstEdgeData = malloc(sizeof(float)*nnz);
         refEdgeData = malloc(sizeof(float)*nnz);
@@ -1212,7 +1212,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
         dstVertexData = malloc(sizeof(float)*n);
         refVertexData = malloc(sizeof(float)*n);
     }
-    else if (dataType==CUDA_R_64F){
+    else if (dataType==HIPBLAS_R_64F){
         srcEdgeData = malloc(sizeof(double)*nnz);
         dstEdgeData = malloc(sizeof(double)*nnz);
         refEdgeData = malloc(sizeof(double)*nnz);
@@ -1232,10 +1232,10 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
     // Prepare reference graph
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     allocateTopo(&refTopology, dstTestTopoType, n, nnz, HOST);
-    if(dataType==CUDA_R_32F)
+    if(dataType==HIPBLAS_R_32F)
         refConvert( srcTopoType, srcTopology, (float*)srcEdgeData,
                     dstTopoType, refTopology, (float*)refEdgeData ); // We don't care about edgeData
-    else if (dataType==CUDA_R_64F)
+    else if (dataType==HIPBLAS_R_64F)
         refConvert( srcTopoType, srcTopology, (double*)srcEdgeData,
                     dstTopoType, refTopology, (double*)refEdgeData ); // We don't care about edgeData
     else
@@ -1255,7 +1255,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
     // Fill graph with vertex and edge data
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     size_t edgeDataDim = (rand() % 11); // up to 10 edgeData sets
-    std::vector<cudaDataType_t> edgeDataType(edgeDataDim);
+    std::vector<hipblasDatatype_t> edgeDataType(edgeDataDim);
     std::fill (edgeDataType.begin(), edgeDataType.end(), dataType);
     status = nvgraphAllocateEdgeData( handle, srcGrDesc, edgeDataDim, edgeDataType.data());
     if(edgeDataDim==0)
@@ -1273,10 +1273,10 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
         status = nvgraphSetEdgeData(handle, srcGrDesc, srcEdgeData, i);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         // ref Graph (not the fastest approach, but I'm too lazy to do the permutation approach)
-        if(dataType==CUDA_R_32F)
+        if(dataType==HIPBLAS_R_32F)
             refConvert( srcTopoType, srcTopology, (float*)srcEdgeData,
                         dstTopoType, refTopology, (float*)refEdgeData );
-        else if (dataType==CUDA_R_64F)
+        else if (dataType==HIPBLAS_R_64F)
             refConvert( srcTopoType, srcTopology, (double*)srcEdgeData,
                         dstTopoType, refTopology, (double*)refEdgeData );
         else
@@ -1287,7 +1287,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
 
 
     size_t vertexDataDim = (rand() % 6); // up to 5 vertexData sets
-    std::vector<cudaDataType_t> vertexDataType(vertexDataDim);
+    std::vector<hipblasDatatype_t> vertexDataType(vertexDataDim);
     std::fill (vertexDataType.begin(), vertexDataType.end(), dataType);
     status = nvgraphAllocateVertexData( handle, srcGrDesc, vertexDataDim, vertexDataType.data());
     if(vertexDataDim==0)
@@ -1319,7 +1319,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
     // ///////////////////////////////////////////////////////////////////////////////////////////////////////
     int ref_nvertices, ref_nedges, dst_nvertices, dst_nedges;
     int *dstOffset, *dstInd, *refOffset, *refInd;
-    if(dataType==CUDA_R_32F){
+    if(dataType==HIPBLAS_R_32F){
         nvgraph::MultiValuedCsrGraph<int, float> *refMCSRG = static_cast<nvgraph::MultiValuedCsrGraph<int, float>*> (refGrDesc->graph_handle);
         ref_nvertices = static_cast<int>(refMCSRG->get_num_vertices());
         ref_nedges = static_cast<int>(refMCSRG->get_num_edges());
@@ -1331,7 +1331,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
         dst_nedges = static_cast<int>(dstMCSRG->get_num_edges());
         dstOffset = dstMCSRG->get_raw_row_offsets();
         dstInd = dstMCSRG->get_raw_column_indices();
-    } else if (dataType==CUDA_R_64F) {
+    } else if (dataType==HIPBLAS_R_64F) {
         nvgraph::MultiValuedCsrGraph<int, double> *refMCSRG = static_cast<nvgraph::MultiValuedCsrGraph<int, double>*> (refGrDesc->graph_handle);
         ref_nvertices = static_cast<int>(refMCSRG->get_num_vertices());
         ref_nedges = static_cast<int>(refMCSRG->get_num_edges());
@@ -1356,9 +1356,9 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphGetEdgeData(handle, dstGrDesc, dstEdgeData, i);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        if(dataType==CUDA_R_32F)
+        if(dataType==HIPBLAS_R_32F)
             cmpArray((float*)refEdgeData, HOST, (float*)dstEdgeData, HOST, nnz);
-        else if (dataType==CUDA_R_64F)
+        else if (dataType==HIPBLAS_R_64F)
             cmpArray((double*)refEdgeData, HOST, (double*)dstEdgeData, HOST, nnz);
         else
             FAIL();
@@ -1369,16 +1369,16 @@ TEST_P(RandomGraph, nvgraphConvertGraph) {
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphGetVertexData(handle, dstGrDesc, dstVertexData, i);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        if(dataType==CUDA_R_32F)
+        if(dataType==HIPBLAS_R_32F)
             cmpArray((float*)refVertexData, HOST, (float*)dstVertexData, HOST, n);
-        else if (dataType==CUDA_R_64F)
+        else if (dataType==HIPBLAS_R_64F)
             cmpArray((double*)refVertexData, HOST, (double*)dstVertexData, HOST, n);
         else
             FAIL();
     }
 }
 
-cudaDataType_t DATA_TYPES[] = {CUDA_R_32F, CUDA_R_64F};
+hipblasDatatype_t DATA_TYPES[] = {HIPBLAS_R_32F, HIPBLAS_R_64F};
 testTopologyType_t SRC_TOPO_TYPES[] = {CSR_32, CSC_32, COO_SOURCE_32, COO_DESTINATION_32, COO_UNSORTED_32};
 testTopologyType_t DST_TOPO_TYPES[] = {CSR_32, CSC_32, COO_SOURCE_32, COO_DESTINATION_32, COO_UNSORTED_32};
 int ns[] = {10, 100, 1000, 50000, 100000, 200000, 300000, 456179, 500000, 1000000};

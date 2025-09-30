@@ -73,7 +73,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<double>
 { 
-    static const cudaDataType_t Type = CUDA_R_64F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_64F;
     static const double inf;
     static const double tol;
     typedef union fpint 
@@ -89,7 +89,7 @@ const double nvgraph_Const<double>::tol = 1e-6; // this is what we use as a tole
 template <>
 struct nvgraph_Const<float>
 { 
-    static const cudaDataType_t Type = CUDA_R_32F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32F;
     static const float inf;
     static const float tol;
 
@@ -218,7 +218,7 @@ template <typename T>
 bool enough_device_memory(int n, int nnz, size_t add)
 {
     size_t mtotal, mfree;
-    cudaMemGetInfo(&mfree, &mtotal);
+    hipMemGetInfo(&mfree, &mtotal);
     if (mfree > add + sizeof(T)*3*(n + nnz)) 
         return true;
     return false;
@@ -421,10 +421,10 @@ class NVGraphCAPITests_SrSPMV : public ::testing::TestWithParam<SrSPMV_Usecase> 
             //printf ("data1[%d]==%f, data2[%d]==%f\n", i, data1[i], i, data2[i]);
         }
         void*  vertexptr[2] = {(void*)&data1[0], (void*)&data2[0]};
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -448,7 +448,7 @@ class NVGraphCAPITests_SrSPMV : public ::testing::TestWithParam<SrSPMV_Usecase> 
             // warmup
             status = nvgraphSrSpmv(handle, g1, weight_index, (void*)&alphaT, x_index, (void*)&betaT, y_index, param.sr);
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
 
             int repeat = simple_repeats;
             start = second();
@@ -459,7 +459,7 @@ class NVGraphCAPITests_SrSPMV : public ::testing::TestWithParam<SrSPMV_Usecase> 
                 status = nvgraphSrSpmv(handle, g1, weight_index, (void*)&alphaT, x_index, (void*)&betaT, y_index, param.sr);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s_%s %10.8f -ms\n", test_id.c_str(), SR_OPS.get_name(param.sr), 1000.0*(stop-start)/((double)repeat));
         }
@@ -576,10 +576,10 @@ class NVGraphCAPITests_WidestPath : public ::testing::TestWithParam<WidestPath_U
         size_t numsets = 1;
         std::vector<T> calculated_res(n);
         //void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -595,7 +595,7 @@ class NVGraphCAPITests_WidestPath : public ::testing::TestWithParam<WidestPath_U
         int widest_path_index = 0;
 
         status = nvgraphWidestPath(handle, g1, weight_index, &source_vert, widest_path_index);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         // run
         if (PERF)
@@ -609,7 +609,7 @@ class NVGraphCAPITests_WidestPath : public ::testing::TestWithParam<WidestPath_U
                 status = nvgraphWidestPath(handle, g1, weight_index, &source_vert, widest_path_index);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0*(stop-start)/repeat);
         }
@@ -721,10 +721,10 @@ class NVGraphCAPITests_SSSP : public ::testing::TestWithParam<SSSP_Usecase> {
         size_t numsets = 1;
         std::vector<T> calculated_res(n);
         //void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -740,7 +740,7 @@ class NVGraphCAPITests_SSSP : public ::testing::TestWithParam<SSSP_Usecase> {
 
         // run
         status = nvgraphSssp(handle, g1, weight_index, &source_vert, sssp_index);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
         if (PERF)
@@ -754,7 +754,7 @@ class NVGraphCAPITests_SSSP : public ::testing::TestWithParam<SSSP_Usecase> {
                 status = nvgraphSssp(handle, g1, weight_index, &source_vert, sssp_index);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0*(stop-start)/repeat);
         }
@@ -834,8 +834,8 @@ class NVGraphCAPITests_Pagerank : public ::testing::TestWithParam<Pagerank_Useca
 
         // Waive hugebubbles test, http://nvbugs/200189611
         /*{
-            cudaDeviceProp prop;
-            cudaGetDeviceProperties ( &prop, 0 );
+            hipDeviceProp_t prop;
+            hipGetDeviceProperties ( &prop, 0 );
             std::string gpu(prop.name);
             if (param.graph_file.find("hugebubbles-00020") != std::string::npos &&
                 (gpu.find("M40") != npos ||
@@ -883,10 +883,10 @@ class NVGraphCAPITests_Pagerank : public ::testing::TestWithParam<Pagerank_Useca
         // set up graph data
         std::vector<T> calculated_res(n, (T)1.0/n);
         void*  vertexptr[2] = {(void*)&dangling[0], (void*)&calculated_res[0]};
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -908,7 +908,7 @@ class NVGraphCAPITests_Pagerank : public ::testing::TestWithParam<Pagerank_Useca
         int max_iter = 1000;
 
         status = nvgraphPagerank(handle, g1, weight_index, (void*)&alpha, bookmark_index, has_guess, pagerank_index, tolerance, max_iter);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
         // run
@@ -923,7 +923,7 @@ class NVGraphCAPITests_Pagerank : public ::testing::TestWithParam<Pagerank_Useca
                 status = nvgraphPagerank(handle, g1, weight_index, (void*)&alpha, bookmark_index, has_guess, pagerank_index, tolerance, max_iter);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0*(stop-start)/repeat);
         }
@@ -1046,10 +1046,10 @@ class NVGraphCAPITests_KrylovPagerank : public ::testing::TestWithParam<Pagerank
         // set up graph data
         std::vector<T> calculated_res(n, (T)1.0/n);
         void*  vertexptr[2] = {(void*)&dangling[0], (void*)&calculated_res[0]};
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -1180,8 +1180,8 @@ class NVGraphCAPITests_SrSPMV_Sanity : public ::testing::Test {
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void*)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1313,8 +1313,8 @@ class NVGraphCAPITests_SSSP_Sanity : public ::testing::Test {
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void*)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1477,8 +1477,8 @@ class NVGraphCAPITests_WidestPath_Sanity : public ::testing::Test {
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void*)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1637,8 +1637,8 @@ class NVGraphCAPITests_Pagerank_Sanity : public ::testing::Test {
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void*)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1780,8 +1780,8 @@ class NVGraphCAPITests_SrSPMV_CornerCases : public ::testing::Test {
         nnz = topology.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         // not multivalued CSR
         status = nvgraphSrSpmv(handle, g1, weight_index, (void*)&alpha, x_index, (void*)&beta, y_index, NVGRAPH_PLUS_TIMES_SR);
@@ -1838,10 +1838,10 @@ class NVGraphCAPITests_SrSPMV_CornerCases : public ::testing::Test {
         // but we cannot check SrSPMV for that because AllocateData will throw an error first
         /*for (int i = 0; i < 10; i++)
         {
-            if (i == CUDA_R_32F || i == CUDA_R_64F)
+            if (i == HIPBLAS_R_32F || i == HIPBLAS_R_64F)
                 continue;
-            cudaDataType_t t_type_v[2] = {(cudaDataType_t)i, (cudaDataType_t)i};
-            cudaDataType_t t_type_e[1] = {(cudaDataType_t)i};
+            hipblasDatatype_t t_type_v[2] = {(hipblasDatatype_t)i, (hipblasDatatype_t)i};
+            hipblasDatatype_t t_type_e[1] = {(hipblasDatatype_t)i};
             status = nvgraphCreateGraphDescr(handle, &g1);  
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, NVGRAPH_CSR_32);
@@ -1932,8 +1932,8 @@ class NVGraphCAPITests_SSSP_CornerCases : public ::testing::Test {
         status = nvgraphSssp(handle, g1, weight_index, &source_vert, sssp_index);
         ASSERT_NE(NVGRAPH_STATUS_SUCCESS, status);
 
-        cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1980,10 +1980,10 @@ class NVGraphCAPITests_SSSP_CornerCases : public ::testing::Test {
         // but we cannot check SSSP for that because AllocateData will throw an error first
         /*for (int i = 0; i < 10; i++)
         {
-            if (i == CUDA_R_32F || i == CUDA_R_64F)
+            if (i == HIPBLAS_R_32F || i == HIPBLAS_R_64F)
                 continue;
-            cudaDataType_t t_type_v[2] = {(cudaDataType_t)i, (cudaDataType_t)i};
-            cudaDataType_t t_type_e[1] = {(cudaDataType_t)i};
+            hipblasDatatype_t t_type_v[2] = {(hipblasDatatype_t)i, (hipblasDatatype_t)i};
+            hipblasDatatype_t t_type_e[1] = {(hipblasDatatype_t)i};
             status = nvgraphCreateGraphDescr(handle, &g1);  
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, NVGRAPH_CSC_32);
@@ -2078,8 +2078,8 @@ class NVGraphCAPITests_WidestPath_CornerCases : public ::testing::Test {
         ASSERT_NE(NVGRAPH_STATUS_SUCCESS, status);
 
 
-        cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -2126,10 +2126,10 @@ class NVGraphCAPITests_WidestPath_CornerCases : public ::testing::Test {
         // but we cannot check WidestPath for that because AllocateData will throw an error first
         /*for (int i = 0; i < 10; i++)
         {
-            if (i == CUDA_R_32F || i == CUDA_R_64F)
+            if (i == HIPBLAS_R_32F || i == HIPBLAS_R_64F)
                 continue;
-            cudaDataType_t t_type_v[2] = {(cudaDataType_t)i, (cudaDataType_t)i};
-            cudaDataType_t t_type_e[1] = {(cudaDataType_t)i};
+            hipblasDatatype_t t_type_v[2] = {(hipblasDatatype_t)i, (hipblasDatatype_t)i};
+            hipblasDatatype_t t_type_e[1] = {(hipblasDatatype_t)i};
             status = nvgraphCreateGraphDescr(handle, &g1);  
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, NVGRAPH_CSC_32);
@@ -2215,8 +2215,8 @@ class NVGraphCAPITests_Pagerank_CornerCases : public ::testing::Test {
         nnz = topology.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         int bookmark_index = 0;
         int weight_index = 0;
@@ -2288,10 +2288,10 @@ class NVGraphCAPITests_Pagerank_CornerCases : public ::testing::Test {
         // but we cannot check Pagerank for that because AllocateData will throw an error first
         /*for (int i = 0; i < 10; i++)
         {
-            if (i == CUDA_R_32F || i == CUDA_R_64F)
+            if (i == HIPBLAS_R_32F || i == HIPBLAS_R_64F)
                 continue;
-            cudaDataType_t t_type_v[2] = {(cudaDataType_t)i, (cudaDataType_t)i};
-            cudaDataType_t t_type_e[1] = {(cudaDataType_t)i};
+            hipblasDatatype_t t_type_v[2] = {(hipblasDatatype_t)i, (hipblasDatatype_t)i};
+            hipblasDatatype_t t_type_e[1] = {(hipblasDatatype_t)i};
             status = nvgraphCreateGraphDescr(handle, &g1);  
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, NVGRAPH_CSC_32);
@@ -2387,10 +2387,10 @@ class NVGraphCAPITests_SrSPMV_Stress : public ::testing::TestWithParam<SrSPMV_Us
             data2[i] = (T)(1.0*rand()/RAND_MAX - 0.5);
         }
         void*  vertexptr[2] = {(void*)&data1[0], (void*)&data2[0]};
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v );
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -2423,7 +2423,7 @@ class NVGraphCAPITests_SrSPMV_Stress : public ::testing::TestWithParam<SrSPMV_Us
         size_t free_mid = 0, free_last = 0, total = 0;      
         for (int i = 0; i < repeat; i++)
         {
-//            cudaMemGetInfo(&t, &total);
+//            hipMemGetInfo(&t, &total);
 //            printf("Iteration: %d, freemem: %zu\n", i, t);
 
             status = nvgraphSrSpmv(handle, g1, weight_index, (void*)&alphaT, x_index, (void*)&betaT, y_index, param.sr);
@@ -2457,11 +2457,11 @@ class NVGraphCAPITests_SrSPMV_Stress : public ::testing::TestWithParam<SrSPMV_Us
             }
             if (i == std::min(50, (int)(repeat/2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat-1)
             {
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
 
             // reset vectors
@@ -2552,10 +2552,10 @@ class NVGraphCAPITests_Widest_Stress : public ::testing::TestWithParam<WidestPat
         size_t numsets = 1;
         std::vector<T> calculated_res(n);
         //void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -2575,7 +2575,7 @@ class NVGraphCAPITests_Widest_Stress : public ::testing::TestWithParam<WidestPat
         size_t free_mid = 0, free_last = 0, total = 0;      
         for (int i = 0; i < repeat; i++)
         {
-            //cudaMemGetInfo(&t, &total);
+            //hipMemGetInfo(&t, &total);
             //printf("Iteration: %d, freemem: %zu\n", i, t);
 
             status = nvgraphWidestPath(handle, g1, weight_index, &source_vert, widest_path_index);
@@ -2610,11 +2610,11 @@ class NVGraphCAPITests_Widest_Stress : public ::testing::TestWithParam<WidestPat
 
             if (i == std::min(50, (int)(repeat/2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat-1)
             {
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
         }
 
@@ -2700,10 +2700,10 @@ class NVGraphCAPITests_SSSP_Stress : public ::testing::TestWithParam<SSSP_Usecas
         size_t numsets = 1;
         std::vector<T> calculated_res(n);
         //void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        cudaDataType_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -2723,7 +2723,7 @@ class NVGraphCAPITests_SSSP_Stress : public ::testing::TestWithParam<SSSP_Usecas
         size_t free_mid = 0, free_last = 0, total = 0;      
         for (int i = 0; i < repeat; i++)
         {
-//            cudaMemGetInfo(&t, &total);
+//            hipMemGetInfo(&t, &total);
 //            printf("Iteration: %d, freemem: %zu\n", i, t);
 
             status = nvgraphSssp(handle, g1, weight_index, &source_vert, sssp_index);
@@ -2758,13 +2758,13 @@ class NVGraphCAPITests_SSSP_Stress : public ::testing::TestWithParam<SSSP_Usecas
 
             if (i == std::min(50, (int)(repeat/2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat-1)
             {
                 status = nvgraphGetVertexData(handle, g1, (void *)&calculated_res_last[0], sssp_index);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
         }
 
@@ -2850,10 +2850,10 @@ class NVGraphCAPITests_Pagerank_Stress : public ::testing::TestWithParam<Pageran
         // set up graph data
         std::vector<T> calculated_res(n, (T)1.0/n);
         void*  vertexptr[2] = {(void*)&dangling[0], (void*)&calculated_res[0]};
-        cudaDataType_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
         
         void*  edgeptr[1] = {(void*)&read_val[0]};
-        cudaDataType_t type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -2882,7 +2882,7 @@ class NVGraphCAPITests_Pagerank_Stress : public ::testing::TestWithParam<Pageran
         size_t free_mid = 0, free_last = 0, total = 0;      
         for (int i = 0; i < repeat; i++)
         {
-            //cudaMemGetInfo(&t, &total);
+            //hipMemGetInfo(&t, &total);
             //printf("Iteration: %d, freemem: %zu\n", i, t);
 
             status = nvgraphPagerank(handle, g1, weight_index, (void*)&alpha, bookmark_index, has_guess, pagerank_index, tolerance, max_iter);
@@ -2917,11 +2917,11 @@ class NVGraphCAPITests_Pagerank_Stress : public ::testing::TestWithParam<Pageran
 
             if (i == std::min(50, (int)(repeat/2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat-1)
             {
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
         }
 

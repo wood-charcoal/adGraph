@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -15,9 +16,9 @@
  */
 #pragma once
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <cuda_profiler_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_profile.h>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/generate.h>
@@ -28,7 +29,7 @@
 #include "functor.cuh"
 //#include "block_delta_modularity.cuh"
 
-#include <cusparse.h>
+#include <hipsparse.h>
 
 
 namespace nvlouvain{
@@ -387,7 +388,7 @@ void build_delta_modularity_vector_old(const int n_vertex, const int c_size, Val
   kernel_compute_cluster_sum<<<block_size_1d, grid_size_1d>>>( n_vertex, c_size, 
                                                                cluster_inv_ptr_ptr, cluster_inv_ind_ptr,
                                                                k_vec_ptr, cluster_sum_vec_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
 
   thrust::fill(thrust::cuda::par, delta_Q_arr_ptr, delta_Q_arr_ptr + n_edges, 0.0);
 
@@ -405,7 +406,7 @@ void build_delta_modularity_vector_old(const int n_vertex, const int c_size, Val
                                                               cluster_d.begin(),
                                                               cluster_sum_vec_ptr,
                                                               k_vec_ptr, delta_Q_arr_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
 
     
   block_size_1d = dim3((n_vertex + BLOCK_SIZE_1D*4 -1)/ BLOCK_SIZE_1D*4, 1, 1);
@@ -413,7 +414,7 @@ void build_delta_modularity_vector_old(const int n_vertex, const int c_size, Val
 
   // zero out non maximum delta modularity for each vertex i grid size are now (128, 1, 1)
   max_delta_modularity_vec<<<block_size_1d, grid_size_1d>>>(n_vertex, csr_ptr_d.begin(), csr_ind_d.begin(), csr_val_d.begin(), delta_Q_arr_ptr );
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   
 }
 
@@ -424,7 +425,7 @@ void build_delta_modularity_vector_old(const int n_vertex, const int c_size, Val
 //  
 //
 template<typename IdxType, typename ValType>
-void build_delta_modularity_vector(cusparseHandle_t cusp_handle, const int n_vertex, const int c_size, ValType m2, bool updated,
+void build_delta_modularity_vector(hipsparseHandle_t cusp_handle, const int n_vertex, const int c_size, ValType m2, bool updated,
                                    thrust::device_vector<IdxType>& csr_ptr_d, thrust::device_vector<IdxType>& csr_ind_d, thrust::device_vector<ValType>& csr_val_d, 
                                    thrust::device_vector<IdxType>& cluster_d,
                                    IdxType* cluster_inv_ptr_ptr, IdxType* cluster_inv_ind_ptr, // precompute cluster inverse
@@ -440,7 +441,7 @@ void build_delta_modularity_vector(cusparseHandle_t cusp_handle, const int n_ver
   kernel_compute_cluster_sum<<<block_size_1d, grid_size_1d>>>( n_vertex, c_size, 
                                                                cluster_inv_ptr_ptr, cluster_inv_ind_ptr,
                                                                k_vec_ptr, cluster_sum_vec_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
     
   thrust::fill(thrust::cuda::par, delta_Q_arr_ptr, delta_Q_arr_ptr + n_edges, 0.0);
   IdxType *csr_ptr_ptr = thrust::raw_pointer_cast(csr_ptr_d.data());
@@ -451,9 +452,9 @@ void build_delta_modularity_vector(cusparseHandle_t cusp_handle, const int n_ver
   // pre compute coo row indices using cusparse
   thrust::device_vector<IdxType> coo_row_ind(n_edges);
   IdxType* coo_row_ind_ptr =  thrust::raw_pointer_cast(coo_row_ind.data());
-  cusparseXcsr2coo(cusp_handle, csr_ptr_ptr,  
+  hipsparseXcsr2coo(cusp_handle, csr_ptr_ptr,  
                    n_edges, n_vertex, coo_row_ind_ptr, 
-                   CUSPARSE_INDEX_BASE_ZERO);  
+                   HIPSPARSE_INDEX_BASE_ZERO);  
   // build delta modularity vec flatten (1 thread per 1 edges) 
   block_size_1d = dim3((n_edges + BLOCK_SIZE_1D * 2 -1)/ BLOCK_SIZE_1D * 2, 1, 1);
   grid_size_1d  = dim3(BLOCK_SIZE_1D*2, 1, 1); 
@@ -463,14 +464,14 @@ void build_delta_modularity_vector(cusparseHandle_t cusp_handle, const int n_ver
                                                                 cluster_ptr,
                                                                 cluster_sum_vec_ptr,
                                                                 k_vec_ptr, delta_Q_arr_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
 
  // Done compute delta modularity vec
   block_size_1d = dim3(n_vertex, 1, 1);
   grid_size_1d  = dim3(WARP_SIZE, 1, 1);
  
   max_delta_modularity_vec_stride<<<block_size_1d, grid_size_1d>>>(n_vertex, n_edges, csr_ptr_d.begin(), csr_ind_d.begin(), csr_val_d.begin(), cluster_d.begin(), delta_Q_arr_ptr );
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
  
 
 }

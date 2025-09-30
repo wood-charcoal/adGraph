@@ -57,7 +57,7 @@ struct Coord
 
 //create a device function interface to call the above dispatch function
 template <typename IndexType_, typename ValueType_>
-cudaError_t csrmv_mp(
+hipError_t csrmv_mp(
 	IndexType_ n,
 	IndexType_ m, 
 	IndexType_ nnz,
@@ -69,10 +69,10 @@ cudaError_t csrmv_mp(
 	ValueType_ beta,
 	ValueType_ *dVectorY,
 	Semiring SR,  //this parameter is of type enum and gives the semiring name
-	cudaStream_t stream = 0 );
+	hipStream_t stream = 0 );
 //overloaded function that has valued_csr_graph parameter to store the matrix
 template<typename IndexType_, typename ValueType_>
-cudaError_t csrmv_mp(
+hipError_t csrmv_mp(
 	IndexType_ n,
 	IndexType_ m,
 	IndexType_ nnz,
@@ -82,7 +82,7 @@ cudaError_t csrmv_mp(
 	ValueType_ beta,
 	ValueType_ *dVectorY,
 	Semiring SR, //this parameter is of type enum and gives the semiring name
-	cudaStream_t stream = 0);	
+	hipStream_t stream = 0);	
 } //end nvgraph namespace
 
 template<typename IndexType_, typename ValueType_>
