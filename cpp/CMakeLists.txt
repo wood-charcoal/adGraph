@@ -20,6 +20,8 @@ project(NV_GRAPH VERSION 0.4.0 LANGUAGES C CXX HIP)
 # Enable HIP language support
 enable_language(HIP)
 
+find_package(HIP REQUIRED)
+
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
 
@@ -222,10 +224,20 @@ endif(NVGRAPH_LIGHT MATCHES True)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
+# target_link_libraries(nvgraph 
+#     -Wl,--start-group 
+#     hipblas rocsparse rocrand rocsolver amdhip64
+#     -Wl,--end-group
+# )
 target_link_libraries(nvgraph 
-    -Wl,--start-group 
-    hipblas rocsparse rocrand rocsolver amdhip64
-    -Wl,--end-group
+    PRIVATE
+        hipblas 
+        rocsparse
+        rocrand 
+        rocsolver 
+        amdhip64
+        hipsparse
+        hip::host
 )
 # hip_hcc amdhip64 stdc++ gcc_s gcc
 
@@ -239,6 +251,3 @@ install(FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/include/nvgraph.h
          ${CMAKE_CURRENT_SOURCE_DIR}/include/test_opt_utils.cuh
         DESTINATION include/nvgraph)
-
-
-
