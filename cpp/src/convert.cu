@@ -17,156 +17,171 @@
 #include "nvgraph_convert.hxx"
 #include "nvgraph_error.hxx"
 
+namespace nvgraph
+{
+  void csr2coo(const int *csrSortedRowPtr,
+               int nnz, int m, int *cooRowInd, hipsparseIndexBase_t idxBase)
+  {
+    CHECK_CUSPARSE(hipsparseXcsr2coo(Cusparse::get_handle(),
+                                     csrSortedRowPtr, nnz, m, cooRowInd, idxBase));
+  }
+  void coo2csr(const int *cooRowInd,
+               int nnz, int m, int *csrSortedRowPtr, hipsparseIndexBase_t idxBase)
+  {
+    CHECK_CUSPARSE(hipsparseXcoo2csr(Cusparse::get_handle(),
+                                     cooRowInd, nnz, m, csrSortedRowPtr, idxBase));
+  }
 
+  void csr2csc(int m, int n, int nnz,
+               const void *csrVal, const int *csrRowPtr, const int *csrColInd,
+               void *cscVal, int *cscRowInd, int *cscColPtr,
+               hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
+               hipDataType *dataType)
+  {
+    CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
+                                     m, n, nnz,
+                                     csrVal, *dataType, csrRowPtr, csrColInd,
+                                     cscVal, *dataType, cscRowInd, cscColPtr,
+                                     copyValues, idxBase, *dataType));
+  }
+  void csc2csr(int m, int n, int nnz,
+               const void *cscVal, const int *cscRowInd, const int *cscColPtr,
+               void *csrVal, int *csrRowPtr, int *csrColInd,
+               hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
+               hipDataType *dataType)
+  {
+    CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
+                                     m, n, nnz,
+                                     cscVal, *dataType, cscColPtr, cscRowInd,
+                                     csrVal, *dataType, csrColInd, csrRowPtr,
+                                     copyValues, idxBase, *dataType));
+  }
 
- namespace nvgraph{
-    void csr2coo( const int *csrSortedRowPtr,
-                  int nnz, int m, int *cooRowInd, hipsparseIndexBase_t idxBase){
-      CHECK_CUSPARSE( hipsparseXcsr2coo(  Cusparse::get_handle(),
-                                         csrSortedRowPtr, nnz, m, cooRowInd, idxBase ));
-    }
-    void coo2csr( const int *cooRowInd,
-                  int nnz, int m, int *csrSortedRowPtr, hipsparseIndexBase_t idxBase){
-      CHECK_CUSPARSE( hipsparseXcoo2csr( Cusparse::get_handle(),
-                                        cooRowInd, nnz, m, csrSortedRowPtr, idxBase ));
-    }
+  void cooSortByDestination(int m, int n, int nnz,
+                            const void *srcVal, const int *srcRowInd, const int *srcColInd,
+                            void *dstVal, int *dstRowInd, int *dstColInd,
+                            hipsparseIndexBase_t idxBase, hipDataType *dataType)
+  {
+    size_t pBufferSizeInBytes = 0;
+    SHARED_PREFIX::shared_ptr<char> pBuffer;
+    SHARED_PREFIX::shared_ptr<int> P; // permutation array
 
+    // step 0: copy src to dst
+    if (dstRowInd != srcRowInd)
+      CHECK_CUDA(hipMemcpy(dstRowInd, srcRowInd, nnz * sizeof(int), hipMemcpyDefault));
+    if (dstColInd != srcColInd)
+      CHECK_CUDA(hipMemcpy(dstColInd, srcColInd, nnz * sizeof(int), hipMemcpyDefault));
+    // step 1: allocate buffer (needed for cooSortByRow)
+    cooSortBufferSize(m, n, nnz, dstRowInd, dstColInd, &pBufferSizeInBytes);
+    pBuffer = allocateDevice<char>(pBufferSizeInBytes, NULL);
+    // step 2: setup permutation vector P to identity
+    P = allocateDevice<int>(nnz, NULL);
+    createIdentityPermutation(nnz, P.get());
+    // step 3: sort COO format by Row
+    cooGetDestinationPermutation(m, n, nnz, dstRowInd, dstColInd, P.get(), pBuffer.get());
+    // step 4: gather sorted cooVals
+    gthrX(nnz, srcVal, dstVal, P.get(), idxBase, dataType);
+  }
+  void cooSortBySource(int m, int n, int nnz,
+                       const void *srcVal, const int *srcRowInd, const int *srcColInd,
+                       void *dstVal, int *dstRowInd, int *dstColInd,
+                       hipsparseIndexBase_t idxBase, hipDataType *dataType)
+  {
+    size_t pBufferSizeInBytes = 0;
+    SHARED_PREFIX::shared_ptr<char> pBuffer;
+    SHARED_PREFIX::shared_ptr<int> P; // permutation array
 
-    void csr2csc( int m, int n, int nnz,
-                  const void *csrVal, const int *csrRowPtr, const int *csrColInd,
-                  void *cscVal, int *cscRowInd, int *cscColPtr,
-                  hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
-                  hipblasDatatype_t *dataType){
-      CHECK_CUSPARSE( cusparseCsr2cscEx( Cusparse::get_handle(),
-                                         m, n, nnz,
-                                         csrVal, *dataType, csrRowPtr, csrColInd,
-                                         cscVal, *dataType, cscRowInd, cscColPtr,
-                                         copyValues, idxBase, *dataType ));
-    }
-    void csc2csr( int m, int n, int nnz,
-                  const void *cscVal, const int *cscRowInd, const int *cscColPtr,
-                  void *csrVal, int *csrRowPtr, int *csrColInd,
-                  hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
-                  hipblasDatatype_t *dataType){
-      CHECK_CUSPARSE( cusparseCsr2cscEx( Cusparse::get_handle(),
-                                         m, n, nnz,
-                                         cscVal, *dataType, cscColPtr, cscRowInd,
-                                         csrVal, *dataType, csrColInd, csrRowPtr,
-                                         copyValues, idxBase, *dataType ));
-    }
+    // step 0: copy src to dst
+    CHECK_CUDA(hipMemcpy(dstRowInd, srcRowInd, nnz * sizeof(int), hipMemcpyDefault));
+    CHECK_CUDA(hipMemcpy(dstColInd, srcColInd, nnz * sizeof(int), hipMemcpyDefault));
+    // step 1: allocate buffer (needed for cooSortByRow)
+    cooSortBufferSize(m, n, nnz, dstRowInd, dstColInd, &pBufferSizeInBytes);
+    pBuffer = allocateDevice<char>(pBufferSizeInBytes, NULL);
+    // step 2: setup permutation vector P to identity
+    P = allocateDevice<int>(nnz, NULL);
+    createIdentityPermutation(nnz, P.get());
+    // step 3: sort COO format by Row
+    cooGetSourcePermutation(m, n, nnz, dstRowInd, dstColInd, P.get(), pBuffer.get());
+    // step 4: gather sorted cooVals
+    gthrX(nnz, srcVal, dstVal, P.get(), idxBase, dataType);
+  }
 
-    void cooSortByDestination(int m, int n, int nnz,
+  void coos2csc(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
-                void *dstVal, int *dstRowInd, int *dstColInd,
-                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
-      size_t pBufferSizeInBytes = 0;
-      SHARED_PREFIX::shared_ptr<char> pBuffer;
-      SHARED_PREFIX::shared_ptr<int> P; // permutation array
-
-      // step 0: copy src to dst
-      if(dstRowInd!=srcRowInd)
-        CHECK_CUDA( hipMemcpy(dstRowInd, srcRowInd, nnz*sizeof(int), hipMemcpyDefault) );
-      if(dstColInd!=srcColInd)
-        CHECK_CUDA( hipMemcpy(dstColInd, srcColInd, nnz*sizeof(int), hipMemcpyDefault) );
-      // step 1: allocate buffer (needed for cooSortByRow)
-      cooSortBufferSize(m, n, nnz, dstRowInd, dstColInd, &pBufferSizeInBytes);
-      pBuffer = allocateDevice<char>(pBufferSizeInBytes, NULL);
-      // step 2: setup permutation vector P to identity
-      P = allocateDevice<int>(nnz, NULL);
-      createIdentityPermutation(nnz, P.get());
-      // step 3: sort COO format by Row
-      cooGetDestinationPermutation(m, n, nnz, dstRowInd, dstColInd, P.get(), pBuffer.get());
-      // step 4: gather sorted cooVals
-      gthrX(nnz, srcVal, dstVal, P.get(), idxBase, dataType);
-    }
-    void cooSortBySource(int m, int n, int nnz,
+                void *dstVal, int *dstRowInd, int *dstColPtr,
+                hipsparseIndexBase_t idxBase, hipDataType *dataType)
+  {
+    // coos -> cood -> csc
+    SHARED_PREFIX::shared_ptr<int> tmp = allocateDevice<int>(nnz, NULL);
+    cooSortByDestination(m, n, nnz, srcVal, srcRowInd, srcColInd, dstVal, dstRowInd, tmp.get(), idxBase, dataType);
+    coo2csr(tmp.get(), nnz, m, dstColPtr, idxBase);
+  }
+  void cood2csr(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
-                void *dstVal, int *dstRowInd, int *dstColInd,
-                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
-      size_t pBufferSizeInBytes = 0;
-      SHARED_PREFIX::shared_ptr<char> pBuffer;
-      SHARED_PREFIX::shared_ptr<int> P; // permutation array
+                void *dstVal, int *dstRowPtr, int *dstColInd,
+                hipsparseIndexBase_t idxBase, hipDataType *dataType)
+  {
+    // cood -> coos -> csr
+    SHARED_PREFIX::shared_ptr<int> tmp = allocateDevice<int>(nnz, NULL);
+    cooSortBySource(m, n, nnz, srcVal, srcRowInd, srcColInd, dstVal, tmp.get(), dstColInd, idxBase, dataType);
+    coo2csr(tmp.get(), nnz, m, dstRowPtr, idxBase);
+  }
+  void coou2csr(int m, int n, int nnz,
+                const void *srcVal, const int *srcRowInd, const int *srcColInd,
+                void *dstVal, int *dstRowPtr, int *dstColInd,
+                hipsparseIndexBase_t idxBase, hipDataType *dataType)
+  {
+    cood2csr(m, n, nnz,
+             srcVal, srcRowInd, srcColInd,
+             dstVal, dstRowPtr, dstColInd,
+             idxBase, dataType);
+  }
+  void coou2csc(int m, int n, int nnz,
+                const void *srcVal, const int *srcRowInd, const int *srcColInd,
+                void *dstVal, int *dstRowInd, int *dstColPtr,
+                hipsparseIndexBase_t idxBase, hipDataType *dataType)
+  {
+    coos2csc(m, n, nnz,
+             srcVal, srcRowInd, srcColInd,
+             dstVal, dstRowInd, dstColPtr,
+             idxBase, dataType);
+  }
 
-      // step 0: copy src to dst
-      CHECK_CUDA( hipMemcpy(dstRowInd, srcRowInd, nnz*sizeof(int), hipMemcpyDefault) );
-      CHECK_CUDA( hipMemcpy(dstColInd, srcColInd, nnz*sizeof(int), hipMemcpyDefault) );
-      // step 1: allocate buffer (needed for cooSortByRow)
-      cooSortBufferSize(m, n, nnz, dstRowInd, dstColInd, &pBufferSizeInBytes);
-      pBuffer = allocateDevice<char>(pBufferSizeInBytes, NULL);
-      // step 2: setup permutation vector P to identity
-      P = allocateDevice<int>(nnz, NULL);
-      createIdentityPermutation(nnz, P.get());
-      // step 3: sort COO format by Row
-      cooGetSourcePermutation(m, n, nnz, dstRowInd, dstColInd, P.get(), pBuffer.get());
-      // step 4: gather sorted cooVals
-      gthrX(nnz, srcVal, dstVal, P.get(), idxBase, dataType);
-    }
+  ////////////////////////// Utility functions //////////////////////////
+  void createIdentityPermutation(int n, int *p)
+  {
+    CHECK_CUSPARSE(hipsparseCreateIdentityPermutation(Cusparse::get_handle(), n, p));
+  }
 
-    void coos2csc(int m, int n, int nnz,
-              const void *srcVal, const int *srcRowInd, const int *srcColInd,
-              void *dstVal, int *dstRowInd, int *dstColPtr,
-              hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
-      // coos -> cood -> csc
-      SHARED_PREFIX::shared_ptr<int> tmp = allocateDevice<int>(nnz, NULL);
-      cooSortByDestination(m, n, nnz, srcVal, srcRowInd, srcColInd, dstVal, dstRowInd, tmp.get(), idxBase, dataType);
-      coo2csr(tmp.get(), nnz, m, dstColPtr, idxBase);
+  void gthrX(int nnz, const void *y, void *xVal, const int *xInd,
+             hipsparseIndexBase_t idxBase, hipDataType *dataType)
+  {
+    if (*dataType == HIP_R_32F)
+    {
+      CHECK_CUSPARSE(hipsparseSgthr(Cusparse::get_handle(), nnz, (float *)y, (float *)xVal, xInd, idxBase));
     }
-    void cood2csr(int m, int n, int nnz,
-              const void *srcVal, const int *srcRowInd, const int *srcColInd,
-              void *dstVal, int *dstRowPtr, int *dstColInd,
-              hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
-      // cood -> coos -> csr
-      SHARED_PREFIX::shared_ptr<int> tmp = allocateDevice<int>(nnz, NULL);
-      cooSortBySource(m, n, nnz, srcVal, srcRowInd, srcColInd, dstVal, tmp.get(), dstColInd, idxBase, dataType);
-      coo2csr(tmp.get(), nnz, m, dstRowPtr, idxBase);
+    else if (*dataType == HIP_R_64F)
+    {
+      CHECK_CUSPARSE(hipsparseDgthr(Cusparse::get_handle(), nnz, (double *)y, (double *)xVal, xInd, idxBase));
     }
-    void coou2csr(int m, int n, int nnz,
-              const void *srcVal, const int *srcRowInd, const int *srcColInd,
-              void *dstVal, int *dstRowPtr, int *dstColInd,
-              hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
-      cood2csr(m, n, nnz,
-              srcVal, srcRowInd, srcColInd,
-              dstVal, dstRowPtr, dstColInd,
-              idxBase, dataType);
-    }
-    void coou2csc(int m, int n, int nnz,
-              const void *srcVal, const int *srcRowInd, const int *srcColInd,
-              void *dstVal, int *dstRowInd, int *dstColPtr,
-              hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
-      coos2csc(m, n, nnz,
-              srcVal, srcRowInd, srcColInd,
-              dstVal, dstRowInd, dstColPtr,
-              idxBase, dataType);
-    }
+  }
 
-    ////////////////////////// Utility functions //////////////////////////
-    void createIdentityPermutation(int n, int *p){
-        CHECK_CUSPARSE( hipsparseCreateIdentityPermutation(Cusparse::get_handle(), n, p) );
-    }
-
-    void gthrX( int nnz, const void *y, void *xVal, const int *xInd,
-                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType){
-      if(*dataType==HIPBLAS_R_32F){
-        CHECK_CUSPARSE( hipsparseSgthr(Cusparse::get_handle(), nnz, (float*)y, (float*)xVal, xInd, idxBase ));
-      } else if(*dataType==HIPBLAS_R_64F) {
-        CHECK_CUSPARSE( hipsparseDgthr(Cusparse::get_handle(), nnz, (double*)y, (double*)xVal, xInd, idxBase ));
-      }
-    }
-
-
-    void cooSortBufferSize(int m, int n, int nnz, const int *cooRows, const int *cooCols, size_t *pBufferSizeInBytes) {
-        CHECK_CUSPARSE( hipsparseXcoosort_bufferSizeExt( Cusparse::get_handle(),
-                                                        m, n, nnz,
-                                                        cooRows, cooCols, pBufferSizeInBytes ));
-    }
-    void cooGetSourcePermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer) {
-        CHECK_CUSPARSE( hipsparseXcoosortByRow( Cusparse::get_handle(),
-                                                m, n, nnz,
-                                                cooRows, cooCols, p, pBuffer ));
-    }
-    void cooGetDestinationPermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer) {
-        CHECK_CUSPARSE( hipsparseXcoosortByColumn( Cusparse::get_handle(),
-                                                  m, n, nnz,
-                                                  cooRows, cooCols, p, pBuffer ));
-    }
-} //end namespace nvgraph
+  void cooSortBufferSize(int m, int n, int nnz, const int *cooRows, const int *cooCols, size_t *pBufferSizeInBytes)
+  {
+    CHECK_CUSPARSE(hipsparseXcoosort_bufferSizeExt(Cusparse::get_handle(),
+                                                   m, n, nnz,
+                                                   cooRows, cooCols, pBufferSizeInBytes));
+  }
+  void cooGetSourcePermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer)
+  {
+    CHECK_CUSPARSE(hipsparseXcoosortByRow(Cusparse::get_handle(),
+                                          m, n, nnz,
+                                          cooRows, cooCols, p, pBuffer));
+  }
+  void cooGetDestinationPermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer)
+  {
+    CHECK_CUSPARSE(hipsparseXcoosortByColumn(Cusparse::get_handle(),
+                                             m, n, nnz,
+                                             cooRows, cooCols, p, pBuffer));
+  }
+} // end namespace nvgraph
