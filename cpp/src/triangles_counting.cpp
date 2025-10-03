@@ -45,7 +45,7 @@ TrianglesCount<IndexType>::TrianglesCount(const CsrGraph <IndexType>& graph, hip
     m_mat.cols_d = graph.get_raw_column_indices();
 
     m_seq.allocate(m_mat.N, stream);
-    create_nondangling_vector(m_mat.roff_d, m_seq.raw(), &(m_mat.nrows), m_mat.N, m_stream); 
+    create_nondangling_vector(m_mat.roff_d, m_seq.raw(), &(m_mat.nrows), m_mat.N, (ihipStream_t*)m_stream); 
     m_mat.rows_d = m_seq.raw();
 }
 
@@ -115,7 +115,7 @@ void TrianglesCount<IndexType>::tcount_b2b()
     bmapL1_d.allocate(bmldL1*nblock);
     //cuda 8.0 : memory past 16th GB may not be set with hipMemset(),
     //CHECK_CUDA(hipMemset(bmapL1_d, 0, bmapL1_sz));
-    myCudaMemset((unsigned long long *)bmapL1_d.raw(), 0ull, bmapL1_sz/8, m_stream);
+    myCudaMemset((unsigned long long *)bmapL1_d.raw(), 0ull, bmapL1_sz/8, (ihipStream_t*)m_stream);
 
     // allocate level 0 bitmap
     Vector<unsigned int> bmapL0_d;
@@ -127,9 +127,9 @@ void TrianglesCount<IndexType>::tcount_b2b()
     size_t bmapL0_sz = sizeof(*bmapL0_d.raw())*nblock*bmldL0;
     bmapL0_d.allocate(nblock*bmldL0);
 
-    myCudaMemset((unsigned long long *)bmapL0_d.raw(), 0ull, bmapL0_sz/8, m_stream);
-    tricnt_b2b(nblock, &m_mat, ocnt_d.raw(), bmapL0_d.raw(), bmldL0, bmapL1_d.raw(), bmldL1, m_stream);
-    m_triangles_number = reduce(ocnt_d.raw(), nblock, m_stream);
+    myCudaMemset((unsigned long long *)bmapL0_d.raw(), 0ull, bmapL0_sz/8, (ihipStream_t*)m_stream);
+    tricnt_b2b(nblock, &m_mat, ocnt_d.raw(), bmapL0_d.raw(), bmldL0, bmapL1_d.raw(), bmldL1, (ihipStream_t*)m_stream);
+    m_triangles_number = reduce(ocnt_d.raw(), nblock, (ihipStream_t*)m_stream);
 }
 
 template <typename IndexType>
@@ -167,10 +167,10 @@ void TrianglesCount<IndexType>::tcount_wrp()
     bmap_d.allocate(bmap_sz);
     //CUDA 8.0 memory past 16th GB may not be set with hipMemset()
     //CHECK_CUDA(hipMemset(bmap_d, 0, bmap_sz));
-    myCudaMemset((unsigned long long *)bmap_d.raw(), 0ull, bmap_sz*sizeof(*bmap_d.raw())/8, m_stream);
+    myCudaMemset((unsigned long long *)bmap_d.raw(), 0ull, bmap_sz*sizeof(*bmap_d.raw())/8, (ihipStream_t*)m_stream);
 
-    tricnt_wrp(nblock, &m_mat, ocnt_d.raw(), bmap_d.raw(), bmld, m_stream);
-    m_triangles_number = reduce(ocnt_d.raw(), nblock, m_stream);
+    tricnt_wrp(nblock, &m_mat, ocnt_d.raw(), bmap_d.raw(), bmld, (ihipStream_t*)m_stream);
+    m_triangles_number = reduce(ocnt_d.raw(), nblock, (ihipStream_t*)m_stream);
 }
 
 template <typename IndexType>
@@ -187,8 +187,8 @@ void TrianglesCount<IndexType>::tcount_thr()
     hipMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
     cudaCheckError();
 
-    tricnt_thr(nblock, &m_mat, ocnt_d.raw(), m_stream);
-    m_triangles_number = reduce(ocnt_d.raw(), nblock, m_stream);
+    tricnt_thr(nblock, &m_mat, ocnt_d.raw(), (ihipStream_t*)m_stream);
+    m_triangles_number = reduce(ocnt_d.raw(), nblock, (ihipStream_t*)m_stream);
 }
 
 template <typename IndexType>

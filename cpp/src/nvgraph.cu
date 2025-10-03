@@ -339,7 +339,6 @@ namespace nvgraph
 				return "Unknown nvGRAPH Status";
 			}
 		};
-	}
 
 	static nvgraphStatus_t nvgraphCreateMulti_impl(struct nvgraphContext **outCtx,
 												   int numDevices,
@@ -4064,3 +4063,5 @@ nvgraphStatus_t NVGRAPH_API nvgraphAttachEdgeData(nvgraphHandle_t handle,
 {
 	return nvgraph::nvgraphAttachEdgeData_impl(handle, descrG, setnum, settype, edgeData);
 }
+
+} // extern "C"

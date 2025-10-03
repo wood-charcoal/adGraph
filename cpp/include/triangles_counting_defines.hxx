@@ -84,7 +84,7 @@ struct type_utils<int64_t>
 
     static __inline__ LOCINT abs(const LOCINT& x)
     {
-        return llabs(x);
+        return x; // unsigned values are always positive, no need for abs
     }
 };
 

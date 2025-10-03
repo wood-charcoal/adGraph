@@ -61,7 +61,7 @@ namespace nvgraph
   {
 
 // hide behind 
-    void* tmp_get(size_t size, hipStream_t stream)
+    void* tmp_get(size_t size, ihipStream_t* stream)
                   {
       void *t = NULL;
       cnmemStatus_t status = cnmemMalloc(&t, size, stream);
@@ -77,7 +77,7 @@ namespace nvgraph
       return t;
     }
 
-    void tmp_release(void* ptr, hipStream_t stream)
+    void tmp_release(void* ptr, ihipStream_t* stream)
                      {
       cnmemStatus_t status = cnmemFree(ptr, stream);
       if (status != CNMEM_STATUS_SUCCESS)
@@ -95,7 +95,7 @@ namespace nvgraph
                                  int num_items,
                                  ReductionOpT reduction_op,
                                  T init,
-                                 hipStream_t stream = 0,
+                                 ihipStream_t* stream = 0,
                                  bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -124,7 +124,7 @@ namespace nvgraph
     template<typename InputIteratorT, typename OutputIteratorT>
     static inline void cubSum(InputIteratorT d_in, OutputIteratorT d_out,
                               int num_items,
-                              hipStream_t stream = 0,
+                              ihipStream_t* stream = 0,
                               bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -152,7 +152,7 @@ namespace nvgraph
     static inline void cubSortKeys(KeyT *d_keys_in, KeyT *d_keys_out, int num_items,
                                    int begin_bit = 0,
                                    int end_bit = sizeof(KeyT) * 8,
-                                   hipStream_t stream = 0,
+                                   ihipStream_t* stream = 0,
                                    bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -186,7 +186,7 @@ namespace nvgraph
                                     ValueT *d_values_out,
                                     int num_items,
                                     int begin_bit = 0, int end_bit = sizeof(KeyT) * 8,
-                                    hipStream_t stream = 0,
+                                    ihipStream_t* stream = 0,
                                     bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -222,7 +222,7 @@ namespace nvgraph
                                               ValueT *d_values_out,
                                               int num_items,
                                               int begin_bit = 0, int end_bit = sizeof(KeyT) * 8,
-                                              hipStream_t stream = 0,
+                                              ihipStream_t* stream = 0,
                                               bool debug_synchronous = false) {
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
@@ -255,7 +255,7 @@ namespace nvgraph
     static inline void cubUnique(InputIteratorT d_in, OutputIteratorT d_out,
                                  NumSelectedIteratorT d_num_selected_out,
                                  int num_items,
-                                 hipStream_t stream = 0,
+                                 ihipStream_t* stream = 0,
                                  bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -289,7 +289,7 @@ namespace nvgraph
                                  LengthsOutputIteratorT d_counts_out,
                                  NumRunsOutputIteratorT d_num_runs_out,
                                  int num_items,
-                                 hipStream_t stream = 0, bool debug_synchronous = false) {
+                                 ihipStream_t* stream = 0, bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
@@ -320,7 +320,7 @@ namespace nvgraph
         typename OutputIteratorT>
     static inline void cubMin(InputIteratorT d_in, OutputIteratorT d_out,
                               int num_items,
-                              hipStream_t stream = 0,
+                              ihipStream_t* stream = 0,
                               bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -348,7 +348,7 @@ namespace nvgraph
         typename OutputIteratorT>
     static inline void cubMax(InputIteratorT d_in, OutputIteratorT d_out,
                               int num_items,
-                              hipStream_t stream = 0,
+                              ihipStream_t* stream = 0,
                               bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -379,7 +379,7 @@ namespace nvgraph
     static inline void cubIf(InputIteratorT d_in, OutputIteratorT d_out,
                              NumSelectedIteratorT d_num_selected_out,
                              int num_items, SelectOp select_op,
-                             hipStream_t stream = 0,
+                             ihipStream_t* stream = 0,
                              bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -415,7 +415,7 @@ namespace nvgraph
                                   OutputIteratorT d_out,
                                   NumSelectedIteratorT d_num_selected_out,
                                   int num_items,
-                                  hipStream_t stream = 0,
+                                  ihipStream_t* stream = 0,
                                   bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -445,7 +445,7 @@ namespace nvgraph
         typename OutputIteratorT>
     static inline void cubExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out,
                                        int num_items,
-                                       hipStream_t stream = 0,
+                                       ihipStream_t* stream = 0,
                                        bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -473,7 +473,7 @@ namespace nvgraph
         typename OutputIteratorT>
     static inline void cubInclusiveSum(InputIteratorT d_in, OutputIteratorT d_out,
                                        int num_items,
-                                       hipStream_t stream = 0,
+                                       ihipStream_t* stream = 0,
                                        bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -510,7 +510,7 @@ namespace nvgraph
                                       NumRunsOutputIteratorT d_num_runs_out,
                                       ReductionOpT reduction_op,
                                       int num_items,
-                                      hipStream_t stream = 0,
+                                      ihipStream_t* stream = 0,
                                       bool debug_synchronous = false) {
 
       void *d_temp_storage = NULL;
@@ -695,7 +695,7 @@ namespace nvgraph
                     size_t bmldL0,
                     unsigned int *bmapL1_d,
                     size_t bmldL1,
-                    hipStream_t stream) {
+                    ihipStream_t* stream) {
 
       // still best overall (with no psum)
       tricnt_b2b_k<THREADS, 32, BLK_BWL0> <<<nblock, THREADS, 0, stream>>>(m->nrows, m->rows_d,
@@ -831,7 +831,7 @@ namespace nvgraph
     }
 
     template<typename T>
-    void tricnt_bsh(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, size_t bmld, hipStream_t stream) {
+    void tricnt_bsh(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, size_t bmld, ihipStream_t* stream) {
 
       tricnt_bsh_k<THREADS, 32> <<<nblock, THREADS, sizeof(unsigned int) * bmld, stream>>>(m->nrows,
                                                                                            m->rows_d,
@@ -1014,7 +1014,7 @@ namespace nvgraph
                     uint64_t *ocnt_d,
                     unsigned int *bmap_d,
                     size_t bmld,
-                    hipStream_t stream) {
+                    ihipStream_t* stream) {
 
       dim3 block(32, THREADS / 32);
       tricnt_wrp_ps_k<32, THREADS / 32, WP_LEN_TH1, WP_LEN_TH2> <<<nblock, block, 0, stream>>>(m->nrows,
@@ -1117,7 +1117,7 @@ namespace nvgraph
     }
 
     template<typename T>
-    void tricnt_thr(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, hipStream_t stream) {
+    void tricnt_thr(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, ihipStream_t* stream) {
 
       hipFuncSetCacheConfig(reinterpret_cast<const void*>(tricnt_thr_k<THREADS), TH_CENT_K_LOCLEN, typename type_utils<T>::LOCINT,
                                  typename type_utils<T>::LOCINT, uint64_t>,
@@ -1144,7 +1144,7 @@ namespace nvgraph
     void myCudaMemset(unsigned long long *p,
                       unsigned long long v,
                       long long n,
-                      hipStream_t stream) {
+                      ihipStream_t* stream) {
       if (n <= 0)
         return;
       myset<<<DIV_UP(n, THREADS), THREADS, 0, stream>>>(p, v, n);
@@ -1170,7 +1170,7 @@ namespace nvgraph
                                    T *p_nonempty,
                                    T *n_nonempty,
                                    size_t n,
-                                   hipStream_t stream)
+                                   ihipStream_t* stream)
                                    {
       if (n <= 0)
         return;
@@ -1186,7 +1186,7 @@ namespace nvgraph
     }
 
     template<typename T>
-    uint64_t reduce(uint64_t *v_d, T n, hipStream_t stream) {
+    uint64_t reduce(uint64_t *v_d, T n, ihipStream_t* stream) {
 
       uint64_t n_h;
       uint64_t *n_d = (uint64_t *) tmp_get(sizeof(*n_d), stream);
@@ -1205,17 +1205,17 @@ namespace nvgraph
                                   spmat_t<int> *m,
                                   uint64_t *ocnt_d,
                                   size_t bmld,
-                                  hipStream_t stream);
+                                  ihipStream_t* stream);
     template void tricnt_wrp<int>(int nblock,
                                   spmat_t<int> *m,
                                   uint64_t *ocnt_d,
                                   unsigned int *bmap_d,
                                   size_t bmld,
-                                  hipStream_t stream);
+                                  ihipStream_t* stream);
     template void tricnt_thr<int>(int nblock,
                                   spmat_t<int> *m,
                                   uint64_t *ocnt_d,
-                                  hipStream_t stream);
+                                  ihipStream_t* stream);
     template void tricnt_b2b<int>(int nblock,
                                   spmat_t<int> *m,
                                   uint64_t *ocnt_d,
@@ -1223,14 +1223,14 @@ namespace nvgraph
                                   size_t bmldL0,
                                   unsigned int *bmapL1_d,
                                   size_t bmldL1,
-                                  hipStream_t stream);
+                                  ihipStream_t* stream);
 
-    template uint64_t reduce<int>(uint64_t *v_d, int n, hipStream_t stream);
+    template uint64_t reduce<int>(uint64_t *v_d, int n, ihipStream_t* stream);
     template void create_nondangling_vector<int>(const int *roff,
                                                  int *p_nonempty,
                                                  int *n_nonempty,
                                                  size_t n,
-                                                 hipStream_t stream);
+                                                 ihipStream_t* stream);
 
   } // end namespace triangle counting
 
