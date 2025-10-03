@@ -13,7 +13,7 @@ cd ${SLURM_SUBMIT_DIR}
 
 module purge
 module load compiler/gcc/8.2.0
-module load compiler/rocm/dtk-22.04.2
+module load compiler/rocm/dtk-23.04
 module load nvidia/cuda/11.3
 module load compiler/cmake/3.23.3
 module list
@@ -23,7 +23,7 @@ source ./setup_hip_env.sh
 # export BUILD_TYPE=Release
 # export BUILD_ABI=ON
 
-# export DTK_ROOT=/public/software/compiler/rocm/dtk-22.04.2
+# export DTK_ROOT=/public/software/compiler/rocm/dtk-23.04
 # export CXX=/public/software/compiler/gcc-8.2.0/bin/g++
 # export CUDA_TOOLKIT_ROOT_DIR=/public/software/compiler/nvidia/cuda/11.3.1
 # export CMAKE_CUDA_COMPILER=/public/software/compiler/nvidia/cuda/11.3.1/bin/nvcc

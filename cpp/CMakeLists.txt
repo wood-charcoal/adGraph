@@ -222,7 +222,11 @@ endif(NVGRAPH_LIGHT MATCHES True)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(nvgraph hipblas rocsparse rocrand rocsolver hip_hcc)
+target_link_libraries(nvgraph 
+    -Wl,--start-group 
+    hipblas rocsparse rocrand rocsolver hip_hcc amdhip64 stdc++ gcc_s gcc
+    -Wl,--end-group
+)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------

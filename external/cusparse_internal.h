@@ -17,6 +17,7 @@
 #if !defined(CUSPARSE_INTERNAL_H_)
 #define CUSPARSE_INTERNAL_H_
 
+#include <hip/hip_fp16.h>
 
 #ifndef CUSPARSEAPI
 #ifdef _WIN32
@@ -25,7 +26,6 @@
 #define CUSPARSEAPI 
 #endif
 #endif
-
 
 #define CACHE_LINE_SIZE   128 
 
