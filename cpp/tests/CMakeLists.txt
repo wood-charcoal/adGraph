@@ -9,6 +9,7 @@ enable_language(HIP)
 # - compiler function -----------------------------------------------------------------------------
 
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
+    message(STATUS "ADD TEST: " ${CMAKE_TEST_NAME} " from " ${CMAKE_TEST_SRC})
     add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     # target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread nvgraph hipblas rocsparse rocrand rocsolver amdhip64)
@@ -47,6 +48,7 @@ include_directories(
 link_directories("$ENV{DTK_ROOT}/lib"
                  "$ENV{DTK_ROOT}/lib64"
                  "${CMAKE_BINARY_DIR}/lib"
+                 "${CMAKE_BINARY_DIR}"
                  "${GTEST_LIBRARY_DIR}")
 
 ###################################################################################################
