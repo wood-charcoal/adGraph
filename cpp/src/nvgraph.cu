@@ -112,6 +112,41 @@ bool check_ptr(const T *p)
 	return ret;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const char *nvgraphStatusGetString(nvgraphStatus_t status)
+{
+	switch (status)
+	{
+	case NVGRAPH_STATUS_SUCCESS:
+		return "Success";
+	case NVGRAPH_STATUS_NOT_INITIALIZED:
+		return "nvGRAPH not initialized";
+	case NVGRAPH_STATUS_ALLOC_FAILED:
+		return "nvGRAPH alloc failed";
+	case NVGRAPH_STATUS_INVALID_VALUE:
+		return "nvGRAPH invalid value";
+	case NVGRAPH_STATUS_ARCH_MISMATCH:
+		return "nvGRAPH arch mismatch";
+	case NVGRAPH_STATUS_MAPPING_ERROR:
+		return "nvGRAPH mapping error";
+	case NVGRAPH_STATUS_EXECUTION_FAILED:
+		return "nvGRAPH execution failed";
+	case NVGRAPH_STATUS_INTERNAL_ERROR:
+		return "nvGRAPH internal error";
+	case NVGRAPH_STATUS_TYPE_NOT_SUPPORTED:
+		return "nvGRAPH type not supported";
+	case NVGRAPH_STATUS_NOT_CONVERGED:
+		return "nvGRAPH algorithm failed to converge";
+	case NVGRAPH_STATUS_GRAPH_TYPE_NOT_SUPPORTED:
+		return "nvGRAPH graph type not supported";
+	default:
+		return "Unknown nvGRAPH Status";
+	}
+};
+
 namespace nvgraph
 {
 
@@ -307,39 +342,6 @@ namespace nvgraph
 		return ret;
 	}
 
-	extern "C"
-	{
-		const char *nvgraphStatusGetString(nvgraphStatus_t status)
-		{
-			switch (status)
-			{
-			case NVGRAPH_STATUS_SUCCESS:
-				return "Success";
-			case NVGRAPH_STATUS_NOT_INITIALIZED:
-				return "nvGRAPH not initialized";
-			case NVGRAPH_STATUS_ALLOC_FAILED:
-				return "nvGRAPH alloc failed";
-			case NVGRAPH_STATUS_INVALID_VALUE:
-				return "nvGRAPH invalid value";
-			case NVGRAPH_STATUS_ARCH_MISMATCH:
-				return "nvGRAPH arch mismatch";
-			case NVGRAPH_STATUS_MAPPING_ERROR:
-				return "nvGRAPH mapping error";
-			case NVGRAPH_STATUS_EXECUTION_FAILED:
-				return "nvGRAPH execution failed";
-			case NVGRAPH_STATUS_INTERNAL_ERROR:
-				return "nvGRAPH internal error";
-			case NVGRAPH_STATUS_TYPE_NOT_SUPPORTED:
-				return "nvGRAPH type not supported";
-			case NVGRAPH_STATUS_NOT_CONVERGED:
-				return "nvGRAPH algorithm failed to converge";
-			case NVGRAPH_STATUS_GRAPH_TYPE_NOT_SUPPORTED:
-				return "nvGRAPH graph type not supported";
-			default:
-				return "Unknown nvGRAPH Status";
-			}
-		};
-
 	static nvgraphStatus_t nvgraphCreateMulti_impl(struct nvgraphContext **outCtx,
 												   int numDevices,
 												   int *_devices)
@@ -384,8 +386,8 @@ namespace nvgraph
 				FatalError("Cannot initialize memory manager.", NVGRAPH_ERR_UNKNOWN);
 
 			// Cublas and Cusparse
-			nvgraph::Cusparse::get_handle();
-			nvgraph::Cublas::get_handle();
+			Cusparse::get_handle();
+			Cublas::get_handle();
 
 			// others
 			ctx->stream = 0;
@@ -436,8 +438,8 @@ namespace nvgraph
 				FatalError("Cannot initialize memory manager.", NVGRAPH_ERR_UNKNOWN);
 
 			// Cublas and Cusparse
-			nvgraph::Cusparse::get_handle();
-			nvgraph::Cublas::get_handle();
+			Cusparse::get_handle();
+			Cublas::get_handle();
 
 			// others
 			ctx->stream = 0;
@@ -462,8 +464,8 @@ namespace nvgraph
 				FatalError("Cannot initialize memory manager.", NVGRAPH_ERR_NO_MEMORY);
 
 			// Cublas and Cusparse
-			nvgraph::Cusparse::destroy_handle();
-			nvgraph::Cublas::destroy_handle();
+			Cusparse::destroy_handle();
+			Cublas::destroy_handle();
 			// cnmem
 
 //     compiler is complaining, cm_status is not used in release build
@@ -527,8 +529,8 @@ namespace nvgraph
 					{
 					case HIPBLAS_R_32I:
 					{
-						nvgraph::Matrix2d<int32_t, int32_t, int32_t> *m =
-							static_cast<nvgraph::Matrix2d<int32_t, int32_t, int32_t> *>(descrG->graph_handle);
+						Matrix2d<int32_t, int32_t, int32_t> *m =
+							static_cast<Matrix2d<int32_t, int32_t, int32_t> *>(descrG->graph_handle);
 						delete m;
 						break;
 					}
@@ -546,8 +548,8 @@ namespace nvgraph
 					}
 					case HAS_TOPOLOGY:
 					{
-						nvgraph::CsrGraph<int> *CSRG =
-							static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
+						CsrGraph<int> *CSRG =
+							static_cast<CsrGraph<int> *>(descrG->graph_handle);
 						delete CSRG;
 						break;
 					}
@@ -555,20 +557,20 @@ namespace nvgraph
 					{
 						if (descrG->T == HIP_R_32F)
 						{
-							nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-								static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+							MultiValuedCsrGraph<int, float> *MCSRG =
+								static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 							delete MCSRG;
 						}
 						else if (descrG->T == HIP_R_64F)
 						{
-							nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-								static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+							MultiValuedCsrGraph<int, double> *MCSRG =
+								static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 							delete MCSRG;
 						}
 						else if (descrG->T == HIPBLAS_R_32I)
 						{
-							nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-								static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+							MultiValuedCsrGraph<int, int> *MCSRG =
+								static_cast<MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
 							delete MCSRG;
 						}
 						else
@@ -603,8 +605,8 @@ namespace nvgraph
 			// nvgraph handle
 			handle->stream = stream;
 			// Cublas and Cusparse
-			nvgraph::Cublas::setStream(stream);
-			nvgraph::Cusparse::setStream(stream);
+			Cublas::setStream(stream);
+			Cusparse::setStream(stream);
 		}
 		NVGRAPH_CATCHES(rc)
 
@@ -660,7 +662,7 @@ namespace nvgraph
 				descrG->TT = TT;
 
 				// Create the internal CSR representation
-				nvgraph::CsrGraph<int> *CSRG = new nvgraph::CsrGraph<int>(v, e, handle->stream);
+				CsrGraph<int> *CSRG = new CsrGraph<int>(v, e, handle->stream);
 
 				CHECK_CUDA(hipMemcpy(CSRG->get_raw_row_offsets(),
 									 neighborhood,
@@ -693,13 +695,13 @@ namespace nvgraph
 					std::vector<int32_t> devices;
 					for (int32_t i = 0; i < td->numDevices; i++)
 						devices.push_back(td->devices[i]);
-					nvgraph::MatrixDecompositionDescription<int32_t, int32_t> description(td->nvertices,
+					MatrixDecompositionDescription<int32_t, int32_t> description(td->nvertices,
 																						  td->blockN,
 																						  td->nedges,
 																						  devices);
-					nvgraph::Matrix2d<int32_t, int32_t, int32_t> *m = new nvgraph::Matrix2d<int32_t,
+					Matrix2d<int32_t, int32_t, int32_t> *m = new Matrix2d<int32_t,
 																							int32_t, int32_t>();
-					*m = nvgraph::COOto2d(description,
+					*m = COOto2d(description,
 										  td->source_indices,
 										  td->destination_indices,
 										  (int32_t *)td->values);
@@ -771,7 +773,7 @@ namespace nvgraph
 				descrG->TT = TT;
 
 				// Create the internal CSR representation
-				nvgraph::CsrGraph<int> *CSRG = new nvgraph::CsrGraph<int>(v, e, handle->stream);
+				CsrGraph<int> *CSRG = new CsrGraph<int>(v, e, handle->stream);
 
 				CSRG->set_raw_row_offsets(neighborhood);
 				CSRG->set_raw_column_indices(edgedest);
@@ -797,13 +799,13 @@ namespace nvgraph
 					std::vector<int32_t> devices;
 					for (int32_t i = 0; i < td->numDevices; i++)
 						devices.push_back(td->devices[i]);
-					nvgraph::MatrixDecompositionDescription<int32_t, int32_t> description(td->nvertices,
+					MatrixDecompositionDescription<int32_t, int32_t> description(td->nvertices,
 																						  td->blockN,
 																						  td->nedges,
 																						  devices);
-					nvgraph::Matrix2d<int32_t, int32_t, int32_t> *m = new nvgraph::Matrix2d<int32_t,
+					Matrix2d<int32_t, int32_t, int32_t> *m = new Matrix2d<int32_t,
 																							int32_t, int32_t>();
-					*m = nvgraph::COOto2d(description,
+					*m = COOto2d(description,
 										  td->source_indices,
 										  td->destination_indices,
 										  (int32_t *)td->values);
@@ -844,8 +846,8 @@ namespace nvgraph
 
 			if (topologyData != NULL)
 			{
-				nvgraph::CsrGraph<int> *CSRG =
-					static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
+				CsrGraph<int> *CSRG =
+					static_cast<CsrGraph<int> *>(descrG->graph_handle);
 				int v = static_cast<int>(CSRG->get_num_vertices());
 				int e = static_cast<int>(CSRG->get_num_edges());
 				int *neighborhood = NULL, *edgedest = NULL;
@@ -912,25 +914,25 @@ namespace nvgraph
 			{
 				if (*settypes == HIP_R_32F)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG = new nvgraph::MultiValuedCsrGraph<
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, float> *MCSRG = new MultiValuedCsrGraph<
 						int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else if (*settypes == HIP_R_64F)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG = new nvgraph::MultiValuedCsrGraph<
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, double> *MCSRG = new MultiValuedCsrGraph<
 						int, double>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else if (*settypes == HIPBLAS_R_32I)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, int> *MCSRG = new nvgraph::MultiValuedCsrGraph<int,
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, int> *MCSRG = new MultiValuedCsrGraph<int,
 																									 int>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
@@ -950,20 +952,20 @@ namespace nvgraph
 			// Allocate and transfer
 			if (*settypes == HIP_R_32F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				MCSRG->allocateVertexData(numsets, NULL);
 			}
 			else if (*settypes == HIP_R_64F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				MCSRG->allocateVertexData(numsets, NULL);
 			}
 			else if (*settypes == HIPBLAS_R_32I)
 			{
-				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, int> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
 				MCSRG->allocateVertexData(numsets, NULL);
 			}
 			else
@@ -990,25 +992,25 @@ namespace nvgraph
 			{
 				if (settype == HIP_R_32F)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG = new nvgraph::MultiValuedCsrGraph<
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, float> *MCSRG = new MultiValuedCsrGraph<
 						int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else if (settype == HIP_R_64F)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG = new nvgraph::MultiValuedCsrGraph<
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, double> *MCSRG = new MultiValuedCsrGraph<
 						int, double>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else if (settype == HIPBLAS_R_32I)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, int> *MCSRG = new nvgraph::MultiValuedCsrGraph<int,
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, int> *MCSRG = new MultiValuedCsrGraph<int,
 																									 int>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
@@ -1028,20 +1030,20 @@ namespace nvgraph
 			// transfer
 			if (settype == HIP_R_32F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				MCSRG->attachVertexData(setnum, (float *)vertexData, NULL);
 			}
 			else if (settype == HIP_R_64F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				MCSRG->attachVertexData(setnum, (double *)vertexData, NULL);
 			}
 			else if (settype == HIPBLAS_R_32I)
 			{
-				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, int> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
 				MCSRG->attachVertexData(setnum, (int *)vertexData, NULL);
 			}
 			else
@@ -1068,25 +1070,25 @@ namespace nvgraph
 			{
 				if (*settypes == HIP_R_32F)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG = new nvgraph::MultiValuedCsrGraph<
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, float> *MCSRG = new MultiValuedCsrGraph<
 						int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else if (*settypes == HIP_R_64F)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG = new nvgraph::MultiValuedCsrGraph<
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, double> *MCSRG = new MultiValuedCsrGraph<
 						int, double>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else if (*settypes == HIPBLAS_R_32I)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, int> *MCSRG = new nvgraph::MultiValuedCsrGraph<int,
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, int> *MCSRG = new MultiValuedCsrGraph<int,
 																									 int>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
@@ -1106,20 +1108,20 @@ namespace nvgraph
 			// Allocate and transfer
 			if (*settypes == HIP_R_32F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				MCSRG->allocateEdgeData(numsets, NULL);
 			}
 			else if (*settypes == HIP_R_64F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				MCSRG->allocateEdgeData(numsets, NULL);
 			}
 			else if (*settypes == HIPBLAS_R_32I)
 			{
-				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, int> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
 				MCSRG->allocateEdgeData(numsets, NULL);
 			}
 			else
@@ -1146,25 +1148,25 @@ namespace nvgraph
 			{
 				if (settype == HIP_R_32F)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG = new nvgraph::MultiValuedCsrGraph<
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, float> *MCSRG = new MultiValuedCsrGraph<
 						int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else if (settype == HIP_R_64F)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG = new nvgraph::MultiValuedCsrGraph<
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, double> *MCSRG = new MultiValuedCsrGraph<
 						int, double>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else if (settype == HIPBLAS_R_32I)
 				{
-					nvgraph::CsrGraph<int> *CSRG =
-						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, int> *MCSRG = new nvgraph::MultiValuedCsrGraph<int,
+					CsrGraph<int> *CSRG =
+						static_cast<CsrGraph<int> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, int> *MCSRG = new MultiValuedCsrGraph<int,
 																									 int>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
@@ -1184,20 +1186,20 @@ namespace nvgraph
 			// Allocate and transfer
 			if (settype == HIP_R_32F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				MCSRG->attachEdgeData(setnum, (float *)edgeData, NULL);
 			}
 			else if (settype == HIP_R_64F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				MCSRG->attachEdgeData(setnum, (double *)edgeData, NULL);
 			}
 			else if (settype == HIPBLAS_R_32I)
 			{
-				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, int> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
 				MCSRG->attachEdgeData(setnum, (int *)edgeData, NULL);
 			}
 			else
@@ -1224,8 +1226,8 @@ namespace nvgraph
 
 			if (descrG->T == HIP_R_32F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
@@ -1235,8 +1237,8 @@ namespace nvgraph
 			}
 			else if (descrG->T == HIP_R_64F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
@@ -1246,8 +1248,8 @@ namespace nvgraph
 			}
 			else if (descrG->T == HIPBLAS_R_32I)
 			{
-				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, int> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
@@ -1281,8 +1283,8 @@ namespace nvgraph
 
 			if (descrG->T == HIP_R_32F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((float *)vertexData,
@@ -1292,8 +1294,8 @@ namespace nvgraph
 			}
 			else if (descrG->T == HIP_R_64F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((double *)vertexData,
@@ -1303,8 +1305,8 @@ namespace nvgraph
 			}
 			else if (descrG->T == HIPBLAS_R_32I)
 			{
-				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, int> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((int *)vertexData,
@@ -1670,8 +1672,8 @@ namespace nvgraph
 
 			if (descrG->T == HIP_R_32F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
@@ -1681,8 +1683,8 @@ namespace nvgraph
 			}
 			else if (descrG->T == HIP_R_64F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
@@ -1692,8 +1694,8 @@ namespace nvgraph
 			}
 			else if (descrG->T == HIPBLAS_R_32I)
 			{
-				nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, int> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
@@ -1727,8 +1729,8 @@ namespace nvgraph
 
 			if (descrG->T == HIP_R_32F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((float *)edgeData,
@@ -1738,8 +1740,8 @@ namespace nvgraph
 			}
 			else if (descrG->T == HIP_R_64F)
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((double *)edgeData,
@@ -1803,30 +1805,30 @@ namespace nvgraph
 			{
 			case HIP_R_32F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || sssp >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
 				int n = static_cast<int>(MCSRG->get_num_vertices());
-				nvgraph::Vector<float> co(n, handle->stream);
-				nvgraph::Sssp<int, float> sssp_solver(*MCSRG->get_valued_csr_graph(weight_index));
-				nvgraph::set_connectivity<int, float>(n, *source_vert, 0.0, FLT_MAX, co.raw());
+				Vector<float> co(n, handle->stream);
+				Sssp<int, float> sssp_solver(*MCSRG->get_valued_csr_graph(weight_index));
+				set_connectivity<int, float>(n, *source_vert, 0.0, FLT_MAX, co.raw());
 				MCSRG->get_vertex_dim(sssp).copy(co);
 				rc = sssp_solver.solve(*source_vert, co, MCSRG->get_vertex_dim(sssp));
 				break;
 			}
 			case HIP_R_64F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || sssp >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
 				int n = static_cast<int>(MCSRG->get_num_vertices());
-				nvgraph::Vector<double> co(n, handle->stream);
-				nvgraph::Sssp<int, double> sssp_solver(*MCSRG->get_valued_csr_graph(weight_index));
-				nvgraph::set_connectivity<int, double>(n, *source_vert, 0.0, DBL_MAX, co.raw());
+				Vector<double> co(n, handle->stream);
+				Sssp<int, double> sssp_solver(*MCSRG->get_valued_csr_graph(weight_index));
+				set_connectivity<int, double>(n, *source_vert, 0.0, DBL_MAX, co.raw());
 				MCSRG->get_vertex_dim(sssp).copy(co);
 				rc = sssp_solver.solve(*source_vert, co, MCSRG->get_vertex_dim(sssp));
 				break;
@@ -1862,7 +1864,7 @@ namespace nvgraph
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
 
 			// Results (bfs distances, predecessors..) are written in dimension in mvcsrg
-			nvgraph::MultiValuedCsrGraph<int, int> *MCSRG = static_cast<nvgraph::MultiValuedCsrGraph<
+			MultiValuedCsrGraph<int, int> *MCSRG = static_cast<MultiValuedCsrGraph<
 				int, int> *>(descrG->graph_handle);
 
 			//
@@ -1921,7 +1923,7 @@ namespace nvgraph
 			switch (traversalT)
 			{
 			case NVGRAPH_TRAVERSAL_BFS:
-				nvgraph::Bfs<int> bfs_solver(n,
+				Bfs<int> bfs_solver(n,
 											 nnz,
 											 row_offsets,
 											 col_indices,
@@ -1968,10 +1970,10 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 			if (descrG->T != HIPBLAS_R_32I)
 				return NVGRAPH_STATUS_INVALID_VALUE;
-			nvgraph::Matrix2d<int32_t, int32_t, int32_t> *m = static_cast<nvgraph::Matrix2d<int32_t,
+			Matrix2d<int32_t, int32_t, int32_t> *m = static_cast<Matrix2d<int32_t,
 																							int32_t, int32_t> *>(descrG->graph_handle);
 			//			std::cout << m->toString();
-			nvgraph::Bfs2d<int32_t, int32_t, int32_t> bfs(m, true, 0, 0);
+			Bfs2d<int32_t, int32_t, int32_t> bfs(m, true, 0, 0);
 			rc = bfs.configure(distances, predecessors);
 			rc = bfs.traverse(source_vert);
 		}
@@ -2004,30 +2006,30 @@ namespace nvgraph
 			{
 			case HIP_R_32F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || widest_path >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
 				int n = static_cast<int>(MCSRG->get_num_vertices());
-				nvgraph::Vector<float> co(n, handle->stream);
-				nvgraph::WidestPath<int, float> widest_path_solver(*MCSRG->get_valued_csr_graph(weight_index));
-				nvgraph::set_connectivity<int, float>(n, *source_vert, FLT_MAX, -FLT_MAX, co.raw());
+				Vector<float> co(n, handle->stream);
+				WidestPath<int, float> widest_path_solver(*MCSRG->get_valued_csr_graph(weight_index));
+				set_connectivity<int, float>(n, *source_vert, FLT_MAX, -FLT_MAX, co.raw());
 				MCSRG->get_vertex_dim(widest_path).copy(co);
 				rc = widest_path_solver.solve(*source_vert, co, MCSRG->get_vertex_dim(widest_path));
 				break;
 			}
 			case HIP_R_64F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || widest_path >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
 				int n = static_cast<int>(MCSRG->get_num_vertices());
-				nvgraph::Vector<double> co(n, handle->stream);
-				nvgraph::WidestPath<int, double> widest_path_solver(*MCSRG->get_valued_csr_graph(weight_index));
-				nvgraph::set_connectivity<int, double>(n, *source_vert, DBL_MAX, -DBL_MAX, co.raw());
+				Vector<double> co(n, handle->stream);
+				WidestPath<int, double> widest_path_solver(*MCSRG->get_valued_csr_graph(weight_index));
+				set_connectivity<int, double>(n, *source_vert, DBL_MAX, -DBL_MAX, co.raw());
 				MCSRG->get_vertex_dim(widest_path).copy(co);
 				rc = widest_path_solver.solve(*source_vert, co, MCSRG->get_vertex_dim(widest_path));
 				break;
@@ -2088,20 +2090,20 @@ namespace nvgraph
 				float alphaT = *static_cast<const float *>(alpha);
 				if (alphaT <= 0.0f || alphaT >= 1.0f)
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || bookmark >= MCSRG->get_num_vertex_dim() || rank >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
 				int n = static_cast<int>(MCSRG->get_num_vertices());
-				nvgraph::Vector<float> guess(n, handle->stream);
-				nvgraph::Vector<float> bm(n, handle->stream);
+				Vector<float> guess(n, handle->stream);
+				Vector<float> bm(n, handle->stream);
 				if (has_guess)
 					guess.copy(MCSRG->get_vertex_dim(rank));
 				else
 					guess.fill(static_cast<float>(1.0 / n));
 				bm.copy(MCSRG->get_vertex_dim(bookmark));
-				nvgraph::Pagerank<int, float> pagerank_solver(*MCSRG->get_valued_csr_graph(weight_index),
+				Pagerank<int, float> pagerank_solver(*MCSRG->get_valued_csr_graph(weight_index),
 															  bm);
 				rc = pagerank_solver.solve(alphaT, guess, MCSRG->get_vertex_dim(rank), tol, max_it);
 				break;
@@ -2112,20 +2114,20 @@ namespace nvgraph
 				if (alphaT <= 0.0 || alphaT >= 1.0)
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || bookmark >= MCSRG->get_num_vertex_dim() || rank >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
 				int n = static_cast<int>(MCSRG->get_num_vertices());
-				nvgraph::Vector<double> guess(n, handle->stream);
-				nvgraph::Vector<double> bm(n, handle->stream);
+				Vector<double> guess(n, handle->stream);
+				Vector<double> bm(n, handle->stream);
 				bm.copy(MCSRG->get_vertex_dim(bookmark));
 				if (has_guess)
 					guess.copy(MCSRG->get_vertex_dim(rank));
 				else
 					guess.fill(static_cast<float>(1.0 / n));
-				nvgraph::Pagerank<int, double> pagerank_solver(*MCSRG->get_valued_csr_graph(weight_index),
+				Pagerank<int, double> pagerank_solver(*MCSRG->get_valued_csr_graph(weight_index),
 															   bm);
 				rc = pagerank_solver.solve(alphaT, guess, MCSRG->get_vertex_dim(rank), tol, max_it);
 				break;
@@ -2191,18 +2193,18 @@ namespace nvgraph
 				float alphaT = *static_cast<const float *>(alpha);
 				if (alphaT <= 0.0f || alphaT >= 1.0f)
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || bookmark >= MCSRG->get_num_vertex_dim() || rank >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
 				int n = static_cast<int>(MCSRG->get_num_vertices());
-				nvgraph::Vector<float> guess(n, handle->stream), eigVals(1, handle->stream);
+				Vector<float> guess(n, handle->stream), eigVals(1, handle->stream);
 				if (has_guess)
 					guess.copy(MCSRG->get_vertex_dim(rank));
 				else
 					guess.fill(static_cast<float>(1.0 / n));
-				nvgraph::ImplicitArnoldi<int, float> iram_solver(*MCSRG->get_valued_csr_graph(weight_index),
+				ImplicitArnoldi<int, float> iram_solver(*MCSRG->get_valued_csr_graph(weight_index),
 																 MCSRG->get_vertex_dim(bookmark),
 																 tol,
 																 max_it,
@@ -2217,18 +2219,18 @@ namespace nvgraph
 				float alphaT = static_cast<float>(alphaTemp);
 				if (alphaT <= 0.0f || alphaT >= 1.0f)
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || bookmark >= MCSRG->get_num_vertex_dim() || rank >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 
 				int n = static_cast<int>(MCSRG->get_num_vertices());
-				nvgraph::Vector<double> guess(n, handle->stream), eigVals(1, handle->stream);
+				Vector<double> guess(n, handle->stream), eigVals(1, handle->stream);
 				if (has_guess)
 					guess.copy(MCSRG->get_vertex_dim(rank));
 				else
 					guess.fill(static_cast<float>(1.0 / n));
-				nvgraph::ImplicitArnoldi<int, double> iram_solver(*MCSRG->get_valued_csr_graph(weight_index),
+				ImplicitArnoldi<int, double> iram_solver(*MCSRG->get_valued_csr_graph(weight_index),
 																  MCSRG->get_vertex_dim(bookmark),
 																  tol,
 																  max_it,
@@ -2273,8 +2275,8 @@ namespace nvgraph
 			{
 			case HAS_TOPOLOGY: // CsrGraph
 			{
-				nvgraph::CsrGraph<int> *CSRG =
-					static_cast<nvgraph::CsrGraph<IndexType> *>(descrG->graph_handle);
+				CsrGraph<int> *CSRG =
+					static_cast<CsrGraph<IndexType> *>(descrG->graph_handle);
 
 				Graph<IndexType> *subgraph = extract_subgraph_by_vertices(*CSRG,
 																		  subvertices,
@@ -2289,10 +2291,10 @@ namespace nvgraph
 			case HAS_VALUES: // MultiValuedCsrGraph
 				if (descrG->T == HIP_R_32F)
 				{
-					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-						static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, float> *MCSRG =
+						static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 
-					nvgraph::MultiValuedCsrGraph<int, float> *subgraph =
+					MultiValuedCsrGraph<int, float> *subgraph =
 						extract_subgraph_by_vertices(*MCSRG,
 													 subvertices,
 													 numvertices,
@@ -2303,10 +2305,10 @@ namespace nvgraph
 				}
 				else if (descrG->T == HIP_R_64F)
 				{
-					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-						static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, double> *MCSRG =
+						static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 
-					nvgraph::MultiValuedCsrGraph<int, double> *subgraph =
+					MultiValuedCsrGraph<int, double> *subgraph =
 						extract_subgraph_by_vertices(*MCSRG,
 													 subvertices,
 													 numvertices,
@@ -2357,8 +2359,8 @@ namespace nvgraph
 			{
 			case HAS_TOPOLOGY: // CsrGraph
 			{
-				nvgraph::CsrGraph<int> *CSRG =
-					static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
+				CsrGraph<int> *CSRG =
+					static_cast<CsrGraph<int> *>(descrG->graph_handle);
 				Graph<IndexType> *subgraph = extract_subgraph_by_edges(*CSRG,
 																	   subedges,
 																	   numedges,
@@ -2372,10 +2374,10 @@ namespace nvgraph
 			case HAS_VALUES: // MultiValuedCsrGraph
 				if (descrG->T == HIP_R_32F)
 				{
-					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-						static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, float> *MCSRG =
+						static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 
-					nvgraph::MultiValuedCsrGraph<int, float> *subgraph =
+					MultiValuedCsrGraph<int, float> *subgraph =
 						extract_subgraph_by_edges(*MCSRG, subedges, numedges, handle->stream);
 
 					subdescrG->graph_handle = subgraph;
@@ -2383,10 +2385,10 @@ namespace nvgraph
 				}
 				else if (descrG->T == HIP_R_64F)
 				{
-					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-						static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, double> *MCSRG =
+						static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 
-					nvgraph::MultiValuedCsrGraph<int, double> *subgraph =
+					MultiValuedCsrGraph<int, double> *subgraph =
 						extract_subgraph_by_edges(*MCSRG, subedges, numedges, handle->stream);
 
 					subdescrG->graph_handle = subgraph;
@@ -2475,11 +2477,11 @@ namespace nvgraph
 			{
 			case HIP_R_32F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices())) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, float> network =
+				ValuedCsrGraph<int, float> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				Vector<float> eigVals(n_eig_vects, handle->stream);
@@ -2542,11 +2544,11 @@ namespace nvgraph
 			}
 			case HIP_R_64F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices())) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, double> network =
+				ValuedCsrGraph<int, double> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				Vector<double> eigVals(n_eig_vects, handle->stream);
@@ -2644,11 +2646,11 @@ namespace nvgraph
 			case HIP_R_32F:
 			{
 				float edge_cut, ratio_cut;
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices()))
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, float> network =
+				ValuedCsrGraph<int, float> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				CHECK_CUDA(hipMemcpy(clust.raw(),
@@ -2667,11 +2669,11 @@ namespace nvgraph
 			case HIP_R_64F:
 			{
 				double edge_cut, ratio_cut;
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices())) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, double> network =
+				ValuedCsrGraph<int, double> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				CHECK_CUDA(hipMemcpy(clust.raw(),
@@ -2743,15 +2745,15 @@ namespace nvgraph
 			{
 			case HIP_R_32F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim())
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, float> network =
+				ValuedCsrGraph<int, float> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> agg(MCSRG->get_num_vertices(), handle->stream);
 				int num_agg = 0;
-				nvgraph::Size2Selector<int, float> one_phase_hand_checking(sim_metric);
+				Size2Selector<int, float> one_phase_hand_checking(sim_metric);
 				rc = one_phase_hand_checking.setAggregates(network, agg, num_agg);
 				*num_aggregates = static_cast<size_t>(num_agg);
 				CHECK_CUDA(hipMemcpy((int *)aggregates,
@@ -2762,16 +2764,16 @@ namespace nvgraph
 			}
 			case HIP_R_64F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim())
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, double> network =
+				ValuedCsrGraph<int, double> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> agg(MCSRG->get_num_vertices(), handle->stream);
 				Vector<int> agg_global(MCSRG->get_num_vertices(), handle->stream);
 				int num_agg = 0;
-				nvgraph::Size2Selector<int, double> one_phase_hand_checking(sim_metric);
+				Size2Selector<int, double> one_phase_hand_checking(sim_metric);
 				rc = one_phase_hand_checking.setAggregates(network, agg, num_agg);
 				*num_aggregates = static_cast<size_t>(num_agg);
 				CHECK_CUDA(hipMemcpy((int *)aggregates,
@@ -2854,11 +2856,11 @@ namespace nvgraph
 			{
 			case HIP_R_32F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices())) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, float> network =
+				ValuedCsrGraph<int, float> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				Vector<float> eigVals(n_eig_vects, handle->stream);
@@ -2899,11 +2901,11 @@ namespace nvgraph
 			}
 			case HIP_R_64F:
 			{
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices())) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, double> network =
+				ValuedCsrGraph<int, double> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				Vector<double> eigVals(n_eig_vects, handle->stream);
@@ -2978,11 +2980,11 @@ namespace nvgraph
 			case HIP_R_32F:
 			{
 				float mod;
-				nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, float> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices()))
 					return NVGRAPH_STATUS_INVALID_VALUE;
-				nvgraph::ValuedCsrGraph<int, float> network =
+				ValuedCsrGraph<int, float> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				CHECK_CUDA(hipMemcpy(clust.raw(),
@@ -2999,8 +3001,8 @@ namespace nvgraph
 			case HIP_R_64F:
 			{
 				double mod;
-				nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-					static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+				MultiValuedCsrGraph<int, double> *MCSRG =
+					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices())) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
@@ -3008,7 +3010,7 @@ namespace nvgraph
 									 (int *)clustering,
 									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
 									 hipMemcpyDefault));
-				nvgraph::ValuedCsrGraph<int, double> network =
+				ValuedCsrGraph<int, double> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				rc = analyzeModularity<int, double>(network,
 													n_clusters,
@@ -3056,8 +3058,8 @@ namespace nvgraph
 			{
 			case HAS_TOPOLOGY: // CsrGraph
 			{
-				nvgraph::CsrGraph<int> *CSRG =
-					static_cast<nvgraph::CsrGraph<IndexType> *>(descrG->graph_handle);
+				CsrGraph<int> *CSRG =
+					static_cast<CsrGraph<IndexType> *>(descrG->graph_handle);
 
 				Graph<IndexType> *contracted_graph = NULL;
 
@@ -3113,9 +3115,9 @@ namespace nvgraph
 			case HAS_VALUES: // MultiValuedCsrGraph
 				if (descrG->T == HIP_R_32F)
 				{
-					nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-						static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
-					nvgraph::MultiValuedCsrGraph<int, float> *contracted_graph = NULL;
+					MultiValuedCsrGraph<int, float> *MCSRG =
+						static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, float> *contracted_graph = NULL;
 
 					switch (VertexCombineOp)
 					{
@@ -3166,10 +3168,10 @@ namespace nvgraph
 				}
 				else if (descrG->T == HIP_R_64F)
 				{
-					nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-						static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+					MultiValuedCsrGraph<int, double> *MCSRG =
+						static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 
-					nvgraph::MultiValuedCsrGraph<int, double> *contracted_graph = NULL;
+					MultiValuedCsrGraph<int, double> *contracted_graph = NULL;
 
 					switch (VertexCombineOp)
 					{
@@ -3243,7 +3245,7 @@ namespace nvgraph
 		if (check_ptr(params) || check_ptr(clustering) || check_ptr(eig_vals) || check_ptr(eig_vects))
 			FatalError("Incorrect parameters.", NVGRAPH_ERR_BAD_PARAMETERS);
 		if (params->algorithm == NVGRAPH_MODULARITY_MAXIMIZATION)
-			return nvgraph::nvgraphSpectralModularityMaximization_impl(handle,
+			return nvgraphSpectralModularityMaximization_impl(handle,
 																	   descrG,
 																	   weight_index,
 																	   params->n_clusters,
@@ -3256,7 +3258,7 @@ namespace nvgraph
 																	   eig_vals,
 																	   eig_vects);
 		else if (params->algorithm == NVGRAPH_BALANCED_CUT_LANCZOS)
-			return nvgraph::nvgraphBalancedCutClustering_impl(handle,
+			return nvgraphBalancedCutClustering_impl(handle,
 															  descrG,
 															  weight_index,
 															  params->n_clusters,
@@ -3270,7 +3272,7 @@ namespace nvgraph
 															  eig_vals,
 															  eig_vects);
 		else if (params->algorithm == NVGRAPH_BALANCED_CUT_LOBPCG)
-			return nvgraph::nvgraphBalancedCutClustering_impl(handle,
+			return nvgraphBalancedCutClustering_impl(handle,
 															  descrG,
 															  weight_index,
 															  params->n_clusters,
@@ -3307,7 +3309,7 @@ namespace nvgraph
 		else if (metric == NVGRAPH_EDGE_CUT)
 		{
 			float dummy = 0;
-			return nvgraph::nvgraphAnalyzeBalancedCut_impl(handle,
+			return nvgraphAnalyzeBalancedCut_impl(handle,
 														   descrG,
 														   weight_index,
 														   n_clusters,
@@ -3318,7 +3320,7 @@ namespace nvgraph
 		else if (metric == NVGRAPH_RATIO_CUT)
 		{
 			float dummy = 0;
-			return nvgraph::nvgraphAnalyzeBalancedCut_impl(handle,
+			return nvgraphAnalyzeBalancedCut_impl(handle,
 														   descrG,
 														   weight_index,
 														   n_clusters,
@@ -3348,10 +3350,10 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE; // should have topology
 			}
 
-			nvgraph::CsrGraph<int> *CSRG = static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
+			CsrGraph<int> *CSRG = static_cast<CsrGraph<int> *>(descrG->graph_handle);
 			if (CSRG == NULL)
 				return NVGRAPH_STATUS_MAPPING_ERROR;
-			nvgraph::triangles_counting::TrianglesCount<int> counter(*CSRG); /* stream, device */
+			triangles_counting::TrianglesCount<int> counter(*CSRG); /* stream, device */
 			rc = counter.count();
 			uint64_t s_res = counter.get_triangles_count();
 			*result = static_cast<uint64_t>(s_res);
@@ -4064,4 +4066,6 @@ nvgraphStatus_t NVGRAPH_API nvgraphAttachEdgeData(nvgraphHandle_t handle,
 	return nvgraph::nvgraphAttachEdgeData_impl(handle, descrG, setnum, settype, edgeData);
 }
 
+#ifdef __cplusplus
 } // extern "C"
+#endif

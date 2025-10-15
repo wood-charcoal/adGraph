@@ -30,6 +30,6 @@ source ./setup_hip_env.sh
 # export PATH=/public/software/compiler/gcc-8.2.0/bin:$PATH
 export LD_LIBRARY_PATH=/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
 
-./build_hip.sh
+./build_hip.sh -v
 
 date

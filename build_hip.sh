@@ -125,6 +125,10 @@ cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
       -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
       -DBUILD_GMOCK=ON \
       ..
+
+echo -e "\n===== =====\nBuilding libnvgraph\n===== =====\n"
+echo "Install target: ${INSTALL_TARGET}"
+
 make -j${PARALLEL_LEVEL} VERBOSE=${VERBOSE} ${INSTALL_TARGET}
 
 echo "Build completed successfully!"

@@ -32,7 +32,7 @@
 #ifdef _WIN32
 #define NVGRAPH_API __stdcall
 #else
-#define NVGRAPH_API
+#define NVGRAPH_API __attribute__((visibility("default")))
 #endif
 #endif
 
