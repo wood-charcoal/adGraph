@@ -31,8 +31,8 @@
 
 #include <multi_valued_csr_graph.hxx>
 #include <nvgraph_vector.hxx>
-#include <hipcub/device/device_radix_sort.cuh>
-#include <hipcub/device/device_run_length_encode.cuh>
+#include <hipcub/device/device_radix_sort.hpp>
+#include <hipcub/device/device_run_length_encode.hpp>
 #include <thrust/extrema.h>
 #include <thrust/scan.h>
 #include <thrust/sort.h>

@@ -71,7 +71,7 @@ namespace nvgraph {
 		       IndexType_ & iters_kmeans);
 
   template <typename IndexType_, typename ValueType_>
-  NVGRAPH_ERROR partition_lobpcg( ValuedCsrGraph<IndexType_,ValueType_>& G, Matrix<IndexType_,ValueType_> * M, cusolverDnHandle_t cusolverHandle,
+  NVGRAPH_ERROR partition_lobpcg( ValuedCsrGraph<IndexType_,ValueType_>& G, Matrix<IndexType_,ValueType_> * M, hipsolverDnHandle_t cusolverHandle,
            IndexType_ nParts,
            IndexType_ nEigVecs,
            IndexType_ maxIter_lanczos,

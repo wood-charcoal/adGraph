@@ -38,7 +38,7 @@ namespace nvgraph
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipDataType *dataType)
   {
-    CHECK_CUSPARSE(hipsparseCsr2cscEx2(Cusparse::get_handle(),
+    CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
                                        m, n, nnz,
                                        csrVal, *dataType, csrRowPtr, csrColInd,
                                        cscVal, *dataType, cscRowInd, cscColPtr,
@@ -50,7 +50,7 @@ namespace nvgraph
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipDataType *dataType)
   {
-    CHECK_CUSPARSE(hipsparseCsr2cscEx2(Cusparse::get_handle(),
+    CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
                                        m, n, nnz,
                                        cscVal, *dataType, cscColPtr, cscRowInd,
                                        csrVal, *dataType, csrColInd, csrRowPtr,

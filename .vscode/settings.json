@@ -64,5 +64,6 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "bit": "cpp"
-    }
+    },
+    "editor.wordWrap": "on"
 }

@@ -18,16 +18,17 @@
 #include "matrix.hxx"
 #include "partition.hxx"
 
-namespace nvgraph {
+namespace nvgraph
+{
 
     template <typename IndexType_, typename ValueType_>
-    int lobpcg_simplified(hipblasHandle_t cublasHandle, cusolverDnHandle_t cusolverHandle,
+    int lobpcg_simplified(hipblasHandle_t cublasHandle, hipsolverDnHandle_t cusolverHandle,
                           IndexType_ n, IndexType_ k,
-                          /*const*/ Matrix<IndexType_,ValueType_> * A,
-                          ValueType_ * __restrict__ eigVecs_dev,
-                          ValueType_ * __restrict__ eigVals_dev,
-                          IndexType_ maxIter,ValueType_ tol,
-                          ValueType_ * __restrict__ work_dev,
-                          IndexType_ & iter);
+                          /*const*/ Matrix<IndexType_, ValueType_> *A,
+                          ValueType_ *__restrict__ eigVecs_dev,
+                          ValueType_ *__restrict__ eigVals_dev,
+                          IndexType_ maxIter, ValueType_ tol,
+                          ValueType_ *__restrict__ work_dev,
+                          IndexType_ &iter);
 
 }

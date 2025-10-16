@@ -497,11 +497,11 @@ namespace nvgraph
   }
 
   // cublasXtrsm
-  inline hipblasStatus_t cublasXtrsm(hipblasHandle_t handle, hipblasSideMode_t side, hipblasFillMode_t uplo, hipblasOperation_t trans, hipblasDiagType_t diag, int m, int n, const float *alpha, const float *A, int lda, float *B, int ldb)
+  inline hipblasStatus_t cublasXtrsm(hipblasHandle_t handle, hipblasSideMode_t side, hipblasFillMode_t uplo, hipblasOperation_t trans, hipblasDiagType_t diag, int m, int n, const float *alpha, float *A, int lda, float *B, int ldb)
   {
     return hipblasStrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb);
   }
-  inline hipblasStatus_t cublasXtrsm(hipblasHandle_t handle, hipblasSideMode_t side, hipblasFillMode_t uplo, hipblasOperation_t trans, hipblasDiagType_t diag, int m, int n, const double *alpha, const double *A, int lda, double *B, int ldb)
+  inline hipblasStatus_t cublasXtrsm(hipblasHandle_t handle, hipblasSideMode_t side, hipblasFillMode_t uplo, hipblasOperation_t trans, hipblasDiagType_t diag, int m, int n, const double *alpha, double *A, int lda, double *B, int ldb)
   {
     return hipblasDtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb);
   }
@@ -524,27 +524,27 @@ namespace nvgraph
   }
 
   // cusolverXpotrf_bufferSize
-  inline hipsolverStatus_t cusolverXpotrf_bufferSize(cusolverDnHandle_t handle, int n, float *A, int lda, int *Lwork)
+  inline hipsolverStatus_t cusolverXpotrf_bufferSize(hipsolverDnHandle_t handle, int n, float *A, int lda, int *Lwork)
   {
-    return cusolverDnSpotrf_bufferSize(handle, HIPBLAS_FILL_MODE_LOWER, n, A, lda, Lwork);
+    return hipsolverDnSpotrf_bufferSize(handle, HIPSOLVER_FILL_MODE_LOWER, n, A, lda, Lwork);
   }
-  inline hipsolverStatus_t cusolverXpotrf_bufferSize(cusolverDnHandle_t handle, int n, double *A, int lda, int *Lwork)
+  inline hipsolverStatus_t cusolverXpotrf_bufferSize(hipsolverDnHandle_t handle, int n, double *A, int lda, int *Lwork)
   {
-    return cusolverDnDpotrf_bufferSize(handle, HIPBLAS_FILL_MODE_LOWER, n, A, lda, Lwork);
+    return hipsolverDnDpotrf_bufferSize(handle, HIPSOLVER_FILL_MODE_LOWER, n, A, lda, Lwork);
   }
 
   // cusolverXpotrf
-  inline hipsolverStatus_t cusolverXpotrf(cusolverDnHandle_t handle, int n, float *A, int lda, float *Workspace, int Lwork, int *devInfo)
+  inline hipsolverStatus_t cusolverXpotrf(hipsolverDnHandle_t handle, int n, float *A, int lda, float *Workspace, int Lwork, int *devInfo)
   {
-    return cusolverDnSpotrf(handle, HIPBLAS_FILL_MODE_LOWER, n, A, lda, Workspace, Lwork, devInfo);
+    return hipsolverDnSpotrf(handle, HIPSOLVER_FILL_MODE_LOWER, n, A, lda, Workspace, Lwork, devInfo);
   }
-  inline hipsolverStatus_t cusolverXpotrf(cusolverDnHandle_t handle, int n, double *A, int lda, double *Workspace, int Lwork, int *devInfo)
+  inline hipsolverStatus_t cusolverXpotrf(hipsolverDnHandle_t handle, int n, double *A, int lda, double *Workspace, int Lwork, int *devInfo)
   {
-    return cusolverDnDpotrf(handle, HIPBLAS_FILL_MODE_LOWER, n, A, lda, Workspace, Lwork, devInfo);
+    return hipsolverDnDpotrf(handle, HIPSOLVER_FILL_MODE_LOWER, n, A, lda, Workspace, Lwork, devInfo);
   }
 
   // cusolverXgesvd_bufferSize
-  inline hipsolverStatus_t cusolverXgesvd_bufferSize(cusolverDnHandle_t handle, int m, int n, float *A, int lda, float *U, int ldu, float *VT, int ldvt, int *Lwork)
+  inline hipsolverStatus_t cusolverXgesvd_bufferSize(hipsolverDnHandle_t handle, int m, int n, float *A, int lda, float *U, int ldu, float *VT, int ldvt, int *Lwork)
   {
     // ideally
     // char jobu = 'O';
@@ -552,10 +552,10 @@ namespace nvgraph
     // only supported
     // char jobu = 'A';
     // char jobvt= 'A';
-    return cusolverDnSgesvd_bufferSize(handle, m, n, Lwork);
+    return hipsolverDnSgesvd_bufferSize(handle, m, n, Lwork);
   }
 
-  inline hipsolverStatus_t cusolverXgesvd_bufferSize(cusolverDnHandle_t handle, int m, int n, double *A, int lda, double *U, int ldu, double *VT, int ldvt, int *Lwork)
+  inline hipsolverStatus_t cusolverXgesvd_bufferSize(hipsolverDnHandle_t handle, int m, int n, double *A, int lda, double *U, int ldu, double *VT, int ldvt, int *Lwork)
   {
     // ideally
     // char jobu = 'O';
@@ -563,11 +563,11 @@ namespace nvgraph
     // only supported
     // char jobu = 'A';
     // char jobvt= 'A';
-    return cusolverDnDgesvd_bufferSize(handle, m, n, Lwork);
+    return hipsolverDnDgesvd_bufferSize(handle, m, n, Lwork);
   }
 
   // cusolverXgesvd
-  inline hipsolverStatus_t cusolverXgesvd(cusolverDnHandle_t handle, int m, int n, float *A, int lda, float *S, float *U, int ldu, float *VT, int ldvt, float *Work, int Lwork, float *rwork, int *devInfo)
+  inline hipsolverStatus_t cusolverXgesvd(hipsolverDnHandle_t handle, int m, int n, float *A, int lda, float *S, float *U, int ldu, float *VT, int ldvt, float *Work, int Lwork, float *rwork, int *devInfo)
   {
     // ideally
     // char jobu = 'O';
@@ -576,10 +576,10 @@ namespace nvgraph
     char jobu = 'A';
     char jobvt = 'A';
 
-    return cusolverDnSgesvd(handle, jobu, jobvt, m, n, A, lda, S, U, ldu, VT, ldvt, Work, Lwork, rwork, devInfo);
+    return hipsolverDnSgesvd(handle, jobu, jobvt, m, n, A, lda, S, U, ldu, VT, ldvt, Work, Lwork, rwork, devInfo);
   }
 
-  inline hipsolverStatus_t cusolverXgesvd(cusolverDnHandle_t handle, int m, int n, double *A, int lda, double *S, double *U, int ldu, double *VT, int ldvt, double *Work, int Lwork, double *rwork, int *devInfo)
+  inline hipsolverStatus_t cusolverXgesvd(hipsolverDnHandle_t handle, int m, int n, double *A, int lda, double *S, double *U, int ldu, double *VT, int ldvt, double *Work, int Lwork, double *rwork, int *devInfo)
   {
     // ideally
     // char jobu = 'O';
@@ -587,11 +587,11 @@ namespace nvgraph
     // only supported
     char jobu = 'A';
     char jobvt = 'A';
-    return cusolverDnDgesvd(handle, jobu, jobvt, m, n, A, lda, S, U, ldu, VT, ldvt, Work, Lwork, rwork, devInfo);
+    return hipsolverDnDgesvd(handle, jobu, jobvt, m, n, A, lda, S, U, ldu, VT, ldvt, Work, Lwork, rwork, devInfo);
   }
 
   // cusolverXgesvd_cond
-  inline hipsolverStatus_t cusolverXgesvd_cond(cusolverDnHandle_t handle, int m, int n, float *A, int lda, float *S, float *U, int ldu, float *VT, int ldvt, float *Work, int Lwork, float *rwork, int *devInfo)
+  inline hipsolverStatus_t cusolverXgesvd_cond(hipsolverDnHandle_t handle, int m, int n, float *A, int lda, float *S, float *U, int ldu, float *VT, int ldvt, float *Work, int Lwork, float *rwork, int *devInfo)
   {
     // ideally
     // char jobu = 'N';
@@ -599,10 +599,10 @@ namespace nvgraph
     // only supported
     char jobu = 'A';
     char jobvt = 'A';
-    return cusolverDnSgesvd(handle, jobu, jobvt, m, n, A, lda, S, U, ldu, VT, ldvt, Work, Lwork, rwork, devInfo);
+    return hipsolverDnSgesvd(handle, jobu, jobvt, m, n, A, lda, S, U, ldu, VT, ldvt, Work, Lwork, rwork, devInfo);
   }
 
-  inline hipsolverStatus_t cusolverXgesvd_cond(cusolverDnHandle_t handle, int m, int n, double *A, int lda, double *S, double *U, int ldu, double *VT, int ldvt, double *Work, int Lwork, double *rwork, int *devInfo)
+  inline hipsolverStatus_t cusolverXgesvd_cond(hipsolverDnHandle_t handle, int m, int n, double *A, int lda, double *S, double *U, int ldu, double *VT, int ldvt, double *Work, int Lwork, double *rwork, int *devInfo)
   {
     // ideally
     // char jobu = 'N';
@@ -610,7 +610,7 @@ namespace nvgraph
     // only supported
     char jobu = 'A';
     char jobvt = 'A';
-    return cusolverDnDgesvd(handle, jobu, jobvt, m, n, A, lda, S, U, ldu, VT, ldvt, Work, Lwork, rwork, devInfo);
+    return hipsolverDnDgesvd(handle, jobu, jobvt, m, n, A, lda, S, U, ldu, VT, ldvt, Work, Lwork, rwork, devInfo);
   }
 
   // cusparseXcsrmv
@@ -626,7 +626,7 @@ namespace nvgraph
                                           const float *beta,
                                           float *y)
   {
-    return cusparseScsrmv_mp(handle, transA, m, n, nnz,
+    return hipsparseScsrmv(handle, transA, m, n, nnz,
                              alpha, descrA, csrValA, csrRowPtrA, csrColIndA,
                              x, beta, y);
   }
@@ -642,7 +642,7 @@ namespace nvgraph
                                           const double *beta,
                                           double *y)
   {
-    return cusparseDcsrmv_mp(handle, transA, m, n, nnz,
+    return hipsparseDcsrmv(handle, transA, m, n, nnz,
                              alpha, descrA, csrValA, csrRowPtrA, csrColIndA,
                              x, beta, y);
   }
@@ -800,13 +800,13 @@ namespace nvgraph
     return cusparseDcsrsm_solve(handle, transa, m, k, &alpha, descra, a, ia, ja, info, x, ldx, y, ldy);
   }
 
-  inline hipsparseStatus_t cusparseXcsrcolor(hipsparseHandle_t handle, int m, int nnz, const hipsparseMatDescr_t descrA, const float *csrValA, const int *csrRowPtrA, const int *csrColIndA, const float *fractionToColor, int *ncolors, int *coloring, int *reordering, cusparseColorInfo_t info)
+  inline hipsparseStatus_t cusparseXcsrcolor(hipsparseHandle_t handle, int m, int nnz, const hipsparseMatDescr_t descrA, const float *csrValA, const int *csrRowPtrA, const int *csrColIndA, const float *fractionToColor, int *ncolors, int *coloring, int *reordering, hipsparseColorInfo_t info)
   {
-    return cusparseScsrcolor(handle, m, nnz, descrA, csrValA, csrRowPtrA, csrColIndA, fractionToColor, ncolors, coloring, reordering, info);
+    return hipsparseScsrcolor(handle, m, nnz, descrA, csrValA, csrRowPtrA, csrColIndA, fractionToColor, ncolors, coloring, reordering, info);
   }
-  inline hipsparseStatus_t cusparseXcsrcolor(hipsparseHandle_t handle, int m, int nnz, const hipsparseMatDescr_t descrA, const double *csrValA, const int *csrRowPtrA, const int *csrColIndA, const double *fractionToColor, int *ncolors, int *coloring, int *reordering, cusparseColorInfo_t info)
+  inline hipsparseStatus_t cusparseXcsrcolor(hipsparseHandle_t handle, int m, int nnz, const hipsparseMatDescr_t descrA, const double *csrValA, const int *csrRowPtrA, const int *csrColIndA, const double *fractionToColor, int *ncolors, int *coloring, int *reordering, hipsparseColorInfo_t info)
   {
-    return cusparseDcsrcolor(handle, m, nnz, descrA, csrValA, csrRowPtrA, csrColIndA, fractionToColor, ncolors, coloring, reordering, info);
+    return hipsparseDcsrcolor(handle, m, nnz, descrA, csrValA, csrRowPtrA, csrColIndA, fractionToColor, ncolors, coloring, reordering, info);
   }
 
 }
