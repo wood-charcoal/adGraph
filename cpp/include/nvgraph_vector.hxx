@@ -21,6 +21,10 @@
 
 #include "debug_macros.h"
 
+#include <thrust/device_vector.h> 
+#include <thrust/device_ptr.h>
+#include <thrust/system/hip/execution_policy.h>
+
 namespace nvgraph
 {
 

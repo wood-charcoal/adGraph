@@ -83,7 +83,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
   unsigned int best_c_size = (unsigned) n_vertex;
   unsigned current_n_vertex(n_vertex);
   int num_aggregates(n_edges);
-  ValType m2 = thrust::reduce(thrust::cuda::par, csr_val_d.begin(), csr_val_d.begin() + n_edges);
+  ValType m2 = thrust::reduce(thrust::hip::par, csr_val_d.begin(), csr_val_d.begin() + n_edges);
 
   ValType best_modularity = -1;
 
@@ -113,9 +113,9 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
     // if there is no initialized cluster
     // the cluster as assigned as a sequence (a cluster for each vertex)
     // inv_clusters will also be 2 sequence
-    thrust::sequence(thrust::cuda::par, cluster_d.begin(), cluster_d.end());
-    thrust::sequence(thrust::cuda::par, cluster_inv_ptr.begin(), cluster_inv_ptr.end());
-    thrust::sequence(thrust::cuda::par, cluster_inv_ind.begin(), cluster_inv_ind.end());
+    thrust::sequence(thrust::hip::par, cluster_d.begin(), cluster_d.end());
+    thrust::sequence(thrust::hip::par, cluster_inv_ptr.begin(), cluster_inv_ptr.end());
+    thrust::sequence(thrust::hip::par, cluster_inv_ind.begin(), cluster_inv_ind.end());
   }
   else{
     // assign initialized cluster to cluster_d device vector
@@ -317,12 +317,12 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
       LOG() <<"Complete generate_superverticies_graph size of graph: "<<current_n_vertex<<" -> "<<best_c_size<<" runtime: "<<diff_time/1000<<std::endl;
   
       // update cluster_d as a sequence
-      thrust::sequence(thrust::cuda::par, cluster_d.begin(), cluster_d.begin() + current_n_vertex);  
+      thrust::sequence(thrust::hip::par, cluster_d.begin(), cluster_d.begin() + current_n_vertex);  
       cudaCheckError(); 
     
       // generate cluster inv in CSR form as sequence
-      thrust::sequence(thrust::cuda::par, cluster_inv_ptr.begin(), cluster_inv_ptr.begin() + best_c_size+1);
-      thrust::sequence(thrust::cuda::par, cluster_inv_ind.begin(), cluster_inv_ind.begin() + best_c_size);
+      thrust::sequence(thrust::hip::par, cluster_inv_ptr.begin(), cluster_inv_ptr.begin() + best_c_size+1);
+      thrust::sequence(thrust::hip::par, cluster_inv_ind.begin(), cluster_inv_ind.begin() + best_c_size);
 
       cluster_inv_ptr_ptr = thrust::raw_pointer_cast(cluster_inv_ptr.data());
       cluster_inv_ind_ptr = thrust::raw_pointer_cast(cluster_inv_ind.data());
@@ -468,7 +468,7 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
   unsigned int best_c_size = (unsigned) n_vertex;
   int current_n_vertex(n_vertex);
   int num_aggregates(n_edges);
-  ValType m2 = thrust::reduce(thrust::cuda::par, csr_val_d.begin(), csr_val_d.begin() + n_edges);
+  ValType m2 = thrust::reduce(thrust::hip::par, csr_val_d.begin(), csr_val_d.begin() + n_edges);
 
   ValType best_modularity = -1;
 
@@ -501,9 +501,9 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
     // if there is no initialized cluster
     // the cluster as assigned as a sequence (a cluster for each vertex)
     // inv_clusters will also be 2 sequence
-    thrust::sequence(thrust::cuda::par, cluster_d.begin(), cluster_d.end());
-    thrust::sequence(thrust::cuda::par, cluster_inv_ptr.begin(), cluster_inv_ptr.end());
-    thrust::sequence(thrust::cuda::par, cluster_inv_ind.begin(), cluster_inv_ind.end());
+    thrust::sequence(thrust::hip::par, cluster_d.begin(), cluster_d.end());
+    thrust::sequence(thrust::hip::par, cluster_inv_ptr.begin(), cluster_inv_ptr.end());
+    thrust::sequence(thrust::hip::par, cluster_inv_ind.begin(), cluster_inv_ind.end());
   }
   else{
     // assign initialized cluster to cluster_d device vector
@@ -681,12 +681,12 @@ NVLOUVAIN_STATUS louvain(IdxType* csr_ptr, IdxType* csr_ind, ValType* csr_val,
       LOG() <<"Complete generate_superverticies_graph size of graph: "<<current_n_vertex<<" -> "<<best_c_size<<" runtime: "<<diff_time/1000<<std::endl;
   
       // update cluster_d as a sequence
-      thrust::sequence(thrust::cuda::par, cluster_d.begin(), cluster_d.begin() + current_n_vertex);  
+      thrust::sequence(thrust::hip::par, cluster_d.begin(), cluster_d.begin() + current_n_vertex);  
       cudaCheckError(); 
     
       // generate cluster inv in CSR form as sequence
-      thrust::sequence(thrust::cuda::par, cluster_inv_ptr.begin(), cluster_inv_ptr.begin() + best_c_size+1);
-      thrust::sequence(thrust::cuda::par, cluster_inv_ind.begin(), cluster_inv_ind.begin() + best_c_size);
+      thrust::sequence(thrust::hip::par, cluster_inv_ptr.begin(), cluster_inv_ptr.begin() + best_c_size+1);
+      thrust::sequence(thrust::hip::par, cluster_inv_ind.begin(), cluster_inv_ind.begin() + best_c_size);
 
       cluster_inv_ptr_ptr = thrust::raw_pointer_cast(cluster_inv_ptr.data());
       cluster_inv_ind_ptr = thrust::raw_pointer_cast(cluster_inv_ind.data());

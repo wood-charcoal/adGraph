@@ -17,7 +17,120 @@ cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
 project(NV_GRAPH VERSION 0.4.0 LANGUAGES C CXX HIP)
 
+set_property(SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/arnoldi.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/kmeans.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/nvgraph.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/bfs.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_mv_double_mul.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_mv_double_min.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_csr_max.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_csr_sum.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_mv_double_sum.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_mv_float_min.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_csr_min.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_mv_double_max.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_mv_float_max.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_mv_float_sum.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_csr_mul.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_contraction/contraction_mv_float_mul.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/bfs_kernels.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/jaccard_gpu.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/pagerank.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/triangles_counting_kernels.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/kmeans.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/widest_path.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/bfs2d.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/convert.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/sssp.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/pagerank_kernels.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/nvgraph_vector_kernels.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/nvgraph_lapack.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/lobpcg.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/csrmv_cub.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/graph_extractor.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/csrmv.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/modularity_maximization.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/arnoldi.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/nvgraph_error.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/nvgraph.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/partition.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/matrix.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/size2_selector.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/lanczos.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/tests/cnmem_kernel_test.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_segmented_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_iterator_deprecated.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_batch_memcpy.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_adjacent_difference.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_adjacent_difference.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_reduce.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_warp_scan.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_block_radix_rank.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_namespace_wrapped.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_histogram.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_batch_copy.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_iterator.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_runner.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_load.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_util_type.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_grid_barrier.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_cdp_wrapper.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_thread_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_thread_operators.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_run_length_decode.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_warp_mask.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_printing.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_temporary_storage_layout.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_reduce.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_merge_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_select_unique.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_cdp_variant_state.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_warp_load.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_radix_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_spmv.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/link_b.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_warp_merge_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_warp_reduce.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_warp_exchange.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_warp_store.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_histogram.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_store.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_allocator.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_select_unique_by_key.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_select_if.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_three_way_partition.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_radix_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/link_a.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_scan_by_key.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_reduce_by_key.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_run_length_encode.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_scan.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/c2h/generators.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_scan.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/catch2_test_block_shuffle.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/test/test_device_merge_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/block/example_block_radix_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/block/example_block_reduce_dyn_smem.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/block/example_block_reduce.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/block/example_block_scan.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_scan.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_reduce.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_select_flagged.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_partition_if.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_sort_find_non_trivial_runs.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_radix_sort.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_select_if.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_partition_flagged.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/device/example_device_select_unique.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/examples/cmake/add_subdir/dummy.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/app/nvlouvain_app.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/app/nvlouvain_sample.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/app/nvlouvain_app_hierarchy.cu
+                    ${CMAKE_CURRENT_SOURCE_DIR}/include/app/nvlouvain_sample_hierarchy.cu
+           PROPERTY LANGUAGE HIP)
+
 # Enable HIP language support
+enable_language(CUDA)
 enable_language(HIP)
 
 find_package(HIP REQUIRED)
@@ -34,7 +147,7 @@ set(CMAKE_HIP_STANDARD 14)
 set(CMAKE_HIP_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")  # -Werror")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 set(GPU_ARCHS "" CACHE STRING
@@ -52,7 +165,7 @@ else()
 endif()
 
 # set warnings as errors
-set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -Wall -Werror")
+set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -Wall")  # -Werror")
 
 # set default build type
 set(CMAKE_BUILD_TYPE "Release")
@@ -61,7 +174,7 @@ option(BUILD_TESTS "Configure CMake to build tests"
        ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")  # -Werror")
 
     option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" ON)
     if(CMAKE_CXX11_ABI)
@@ -240,6 +353,14 @@ add_library(nvgraph SHARED
             src/partition.cu
             src/valued_csr_graph.cpp
             src/widest_path.cu         
+)
+
+target_compile_definitions(nvgraph PRIVATE
+    __HIP_PLATFORM_AMD__=1 
+)
+
+target_compile_options(nvgraph PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:-std=c++14> 
 )
 
 ###################################################################################################

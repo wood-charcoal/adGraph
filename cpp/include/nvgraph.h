@@ -17,6 +17,8 @@
 #ifndef _NVGRAPH_H_
 #define _NVGRAPH_H_
 
+#include <hip/hip_runtime.h>
+
 #include "stddef.h"
 #include "stdint.h"
 

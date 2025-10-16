@@ -32,6 +32,9 @@
 #include <thrust/reduce.h>
 #include <thrust/random.h>
 #include <thrust/gather.h>
+#include <thrust/transform.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/system/hip/execution_policy.h>
 
 #include "nvgraph_vector.hxx"
 #include "nvgraph_cublas.hxx"

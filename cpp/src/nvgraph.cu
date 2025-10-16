@@ -44,6 +44,11 @@
 
 #include <csrmv_cub.h>
 
+#include <thrust/sort.h>
+#include <thrust/transform.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/system/hip/execution_policy.h>
+
 #include <nvgraph.h>			  // public header **This is NVGRAPH C API**
 #include <nvgraphP.h>			  // private header, contains structures, and potentially other things, used in the public C API that should never be exposed.
 #include <nvgraph_experimental.h> // experimental header, contains hidden API entries, can be shared only under special circumstances without reveling internal things

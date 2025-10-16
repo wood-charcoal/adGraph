@@ -38,11 +38,11 @@ namespace nvgraph
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipDataType *dataType)
   {
-    CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
-                                     m, n, nnz,
-                                     csrVal, *dataType, csrRowPtr, csrColInd,
-                                     cscVal, *dataType, cscRowInd, cscColPtr,
-                                     copyValues, idxBase, *dataType));
+    CHECK_CUSPARSE(hipsparseCsr2cscEx2(Cusparse::get_handle(),
+                                       m, n, nnz,
+                                       csrVal, *dataType, csrRowPtr, csrColInd,
+                                       cscVal, *dataType, cscRowInd, cscColPtr,
+                                       copyValues, idxBase, *dataType));
   }
   void csc2csr(int m, int n, int nnz,
                const void *cscVal, const int *cscRowInd, const int *cscColPtr,
@@ -50,11 +50,11 @@ namespace nvgraph
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipDataType *dataType)
   {
-    CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
-                                     m, n, nnz,
-                                     cscVal, *dataType, cscColPtr, cscRowInd,
-                                     csrVal, *dataType, csrColInd, csrRowPtr,
-                                     copyValues, idxBase, *dataType));
+    CHECK_CUSPARSE(hipsparseCsr2cscEx2(Cusparse::get_handle(),
+                                       m, n, nnz,
+                                       cscVal, *dataType, cscColPtr, cscRowInd,
+                                       csrVal, *dataType, csrColInd, csrRowPtr,
+                                       copyValues, idxBase, *dataType));
   }
 
   void cooSortByDestination(int m, int n, int nnz,

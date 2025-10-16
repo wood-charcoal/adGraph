@@ -33,6 +33,8 @@
 
 #pragma once
 
+#include <hipcub/hipcub.hpp>
+
 #include "../../thread/thread_operators.cuh"
 #include "../../util_type.cuh"
 #include "../../util_ptx.cuh"

@@ -31,6 +31,9 @@
 #include <thrust/functional.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sort.h>
+#include <thrust/transform.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/system/hip/execution_policy.h>
 
 #define USE_CG 1
 #define DEBUG 1

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- /*
+/*
  * 2d_partitioning.h
  *
  *  Created on: Apr 9, 2018
@@ -31,8 +31,8 @@
 
 #include <multi_valued_csr_graph.hxx>
 #include <nvgraph_vector.hxx>
-#include <cub/device/device_radix_sort.cuh>
-#include <cub/device/device_run_length_encode.cuh>
+#include <hipcub/device/device_radix_sort.cuh>
+#include <hipcub/device/device_run_length_encode.cuh>
 #include <thrust/extrema.h>
 #include <thrust/scan.h>
 #include <thrust/sort.h>
@@ -41,21 +41,24 @@
 #include <thrust/execution_policy.h>
 #include <thrust/transform.h>
 
-namespace nvgraph {
+namespace nvgraph
+{
 
-	template<typename T, typename W>
-	struct CSR_Result_Weighted {
+	template <typename T, typename W>
+	struct CSR_Result_Weighted
+	{
 		int64_t size;
 		int64_t nnz;
-		T* rowOffsets;
-		T* colIndices;
-		W* edgeWeights;
+		T *rowOffsets;
+		T *colIndices;
+		W *edgeWeights;
 
-		CSR_Result_Weighted() :
-				size(0), nnz(0), rowOffsets(NULL), colIndices(NULL), edgeWeights(NULL) {
+		CSR_Result_Weighted() : size(0), nnz(0), rowOffsets(NULL), colIndices(NULL), edgeWeights(NULL)
+		{
 		}
 
-		void Destroy() {
+		void Destroy()
+		{
 			if (rowOffsets)
 				hipFree(rowOffsets);
 			if (colIndices)
@@ -66,11 +69,13 @@ namespace nvgraph {
 	};
 
 	// Define kernel for copying run length encoded values into offset slots.
-	template<typename T>
-	__global__ void offsetsKernel(T runCounts, T* unique, T* counts, T* offsets) {
+	template <typename T>
+	__global__ void offsetsKernel(T runCounts, T *unique, T *counts, T *offsets)
+	{
 		for (int32_t idx = blockDim.x * blockIdx.x + threadIdx.x;
-				idx < runCounts;
-				idx += gridDim.x * blockDim.x) {
+			 idx < runCounts;
+			 idx += gridDim.x * blockDim.x)
+		{
 			offsets[unique[idx]] = counts[idx];
 		}
 	}
@@ -84,17 +89,18 @@ namespace nvgraph {
 	 * @param maxId The largest id contained in the matrix
 	 * @param result The result is stored here.
 	 */
-	template<typename T, typename W>
-	void ConvertCOOtoCSR_weighted(T* sources,
-											T* destinations,
-											W* edgeWeights,
-											int64_t nnz,
-											T maxId,
-											CSR_Result_Weighted<T, W>& result) {
+	template <typename T, typename W>
+	void ConvertCOOtoCSR_weighted(T *sources,
+								  T *destinations,
+								  W *edgeWeights,
+								  int64_t nnz,
+								  T maxId,
+								  CSR_Result_Weighted<T, W> &result)
+	{
 		// Sort source and destination columns by source
 		// Allocate local memory for operating on
-		T* srcs, *dests;
-		W* weights = NULL;
+		T *srcs, *dests;
+		W *weights = NULL;
 		hipMalloc(&srcs, sizeof(T) * nnz);
 		hipMalloc(&dests, sizeof(T) * nnz);
 		if (edgeWeights)
@@ -106,12 +112,12 @@ namespace nvgraph {
 
 		// Call Thrust::sort_by_key to sort the arrays with srcs as keys:
 		if (edgeWeights)
-			thrust::sort_by_key(thrust::device,
-										srcs,
-										srcs + nnz,
-										thrust::make_zip_iterator(thrust::make_tuple(dests, weights)));
+			thrust::sort_by_key(thrust::hip::par,
+								srcs,
+								srcs + nnz,
+								thrust::make_zip_iterator(thrust::make_tuple(dests, weights)));
 		else
-			thrust::sort_by_key(thrust::device, srcs, srcs + nnz, dests);
+			thrust::sort_by_key(thrust::hip::par, srcs, srcs + nnz, dests);
 
 		result.size = maxId + 1;
 
@@ -122,7 +128,7 @@ namespace nvgraph {
 		hipMemset(result.rowOffsets, 0, (maxId + 2) * sizeof(T));
 
 		// Allocate temporary arrays same size as sources array, and single value to get run counts
-		T* unique, *counts, *runCount;
+		T *unique, *counts, *runCount;
 		hipMalloc(&unique, (maxId + 1) * sizeof(T));
 		hipMalloc(&counts, (maxId + 1) * sizeof(T));
 		hipMalloc(&runCount, sizeof(T));
@@ -144,9 +150,9 @@ namespace nvgraph {
 
 		// Scan offsets to get final offsets
 		thrust::exclusive_scan(thrust::device,
-										result.rowOffsets,
-										result.rowOffsets + maxId + 2,
-										result.rowOffsets);
+							   result.rowOffsets,
+							   result.rowOffsets + maxId + 2,
+							   result.rowOffsets);
 
 		// Clean up temporary allocations
 		result.nnz = nnz;
@@ -161,14 +167,15 @@ namespace nvgraph {
 	/**
 	 * Describes the 2D decomposition of a partitioned matrix.
 	 */
-	template<typename GlobalType, typename LocalType>
-	class MatrixDecompositionDescription {
+	template <typename GlobalType, typename LocalType>
+	class MatrixDecompositionDescription
+	{
 	protected:
-		GlobalType numRows; 	// Global number of rows in matrix
-		GlobalType numCols; 	// Global number of columns in matrix
-		GlobalType nnz;			// Global number of non-zeroes in matrix
-		GlobalType blockRows;	// Number of rows of blocks in the decomposition
-		GlobalType blockCols;	// Number of columns of rows in the decomposition
+		GlobalType numRows;	  // Global number of rows in matrix
+		GlobalType numCols;	  // Global number of columns in matrix
+		GlobalType nnz;		  // Global number of non-zeroes in matrix
+		GlobalType blockRows; // Number of rows of blocks in the decomposition
+		GlobalType blockCols; // Number of columns of rows in the decomposition
 		LocalType offset;
 		// Offsets-like arrays for rows and columns defining the start/end of the
 		// sections of the global id space belonging to each row and column.
@@ -177,10 +184,10 @@ namespace nvgraph {
 		// Array of integers one for each block, defining the device it is assigned to
 		std::vector<int32_t> deviceAssignments;
 		std::vector<hipStream_t> blockStreams;
-		public:
 
-		MatrixDecompositionDescription() :
-				numRows(0), numCols(0), nnz(0), blockRows(0), blockCols(0) {
+	public:
+		MatrixDecompositionDescription() : numRows(0), numCols(0), nnz(0), blockRows(0), blockCols(0)
+		{
 			rowOffsets.push_back(0);
 			colOffsets.push_back(0);
 			deviceAssignments.push_back(0);
@@ -188,29 +195,29 @@ namespace nvgraph {
 
 		// Basic constructor, just takes in the values of its members.
 		MatrixDecompositionDescription(GlobalType numRows,
-													GlobalType numCols,
-													GlobalType nnz,
-													GlobalType blockRows,
-													GlobalType blockCols,
-													std::vector<GlobalType> rowOffsets,
-													std::vector<GlobalType> colOffsets,
-													std::vector<int32_t> deviceAssignments) :
-				numRows(numRows), numCols(numCols), nnz(nnz), blockRows(blockRows),
-						blockCols(blockCols), rowOffsets(rowOffsets), colOffsets(colOffsets),
-						deviceAssignments(deviceAssignments) {
+									   GlobalType numCols,
+									   GlobalType nnz,
+									   GlobalType blockRows,
+									   GlobalType blockCols,
+									   std::vector<GlobalType> rowOffsets,
+									   std::vector<GlobalType> colOffsets,
+									   std::vector<int32_t> deviceAssignments) : numRows(numRows), numCols(numCols), nnz(nnz), blockRows(blockRows),
+																				 blockCols(blockCols), rowOffsets(rowOffsets), colOffsets(colOffsets),
+																				 deviceAssignments(deviceAssignments)
+		{
 		}
 
 		// Constructs a MatrixDecompositionDescription for a square matrix given the
 		// number of rows in the matrix and number of rows of blocks.
 		MatrixDecompositionDescription(GlobalType numRows,
-													GlobalType numBlockRows,
-													GlobalType nnz,
-													std::vector<int32_t> devices) :
-				numRows(numRows),
-						numCols(numRows),
-						blockRows(numBlockRows),
-						blockCols(numBlockRows),
-						nnz(nnz) {
+									   GlobalType numBlockRows,
+									   GlobalType nnz,
+									   std::vector<int32_t> devices) : numRows(numRows),
+																	   numCols(numRows),
+																	   blockRows(numBlockRows),
+																	   blockCols(numBlockRows),
+																	   nnz(nnz)
+		{
 			// Tracking the current set device to change back
 			int currentDevice;
 			hipGetDevice(&currentDevice);
@@ -224,7 +231,8 @@ namespace nvgraph {
 
 			rowOffsets.resize(blockRows + 1);
 			colOffsets.resize(blockRows + 1);
-			for (int i = 0; i < blockRows; i++) {
+			for (int i = 0; i < blockRows; i++)
+			{
 				rowOffsets[i] = i * offset;
 				colOffsets[i] = i * offset;
 			}
@@ -235,7 +243,8 @@ namespace nvgraph {
 			// setting up the stream associated with each block.
 			deviceAssignments.resize(getNumBlocks());
 			blockStreams.resize(getNumBlocks());
-			for (int i = 0; i < getNumBlocks(); i++) {
+			for (int i = 0; i < getNumBlocks(); i++)
+			{
 				int device = devices[i % devices.size()];
 				deviceAssignments[i] = device;
 				hipSetDevice(device);
@@ -249,27 +258,32 @@ namespace nvgraph {
 		}
 
 		// Gets the row id for the block containing the given global row id
-		int32_t getRowId(GlobalType val) const {
+		int32_t getRowId(GlobalType val) const
+		{
 			return std::upper_bound(rowOffsets.begin(), rowOffsets.end(), val) - rowOffsets.begin() - 1;
 		}
 
 		// Gets the column id for the block containing the given global column id
-		int32_t getColId(GlobalType val) const {
+		int32_t getColId(GlobalType val) const
+		{
 			return std::upper_bound(colOffsets.begin(), colOffsets.end(), val) - colOffsets.begin() - 1;
 		}
 
 		// Gets the number of blocks in the decomposition:
-		int32_t getNumBlocks() const {
+		int32_t getNumBlocks() const
+		{
 			return blockRows * blockCols;
 		}
 
 		// Getter for offset
-		LocalType getOffset() const {
+		LocalType getOffset() const
+		{
 			return offset;
 		}
 
 		// Getter for deviceAssignments
-		const std::vector<int32_t>& getDeviceAssignments() const {
+		const std::vector<int32_t> &getDeviceAssignments() const
+		{
 			return deviceAssignments;
 		}
 
@@ -277,7 +291,8 @@ namespace nvgraph {
 		 * Getter for vector of streams for each block.
 		 * @return Reference to vector of streams for each block
 		 */
-		const std::vector<hipStream_t>& getBlockStreams() const {
+		const std::vector<hipStream_t> &getBlockStreams() const
+		{
 			return blockStreams;
 		}
 
@@ -285,7 +300,8 @@ namespace nvgraph {
 		 * Getter for nnz
 		 * @return The global number of non-zero elements
 		 */
-		GlobalType getNnz() const {
+		GlobalType getNnz() const
+		{
 			return nnz;
 		}
 
@@ -293,7 +309,8 @@ namespace nvgraph {
 		 * Getter method for numRows
 		 * @return The number of global rows in the matrix
 		 */
-		GlobalType getNumRows() const {
+		GlobalType getNumRows() const
+		{
 			return numRows;
 		}
 
@@ -301,7 +318,8 @@ namespace nvgraph {
 		 * Getter for BlockRows
 		 * @return The number of blocks in a row in the decomposition.
 		 */
-		GlobalType getBlockRows() const {
+		GlobalType getBlockRows() const
+		{
 			return blockRows;
 		}
 
@@ -309,7 +327,8 @@ namespace nvgraph {
 		 * Getter for BlockCols
 		 * @return The number of blocks in a column in the decomposition.
 		 */
-		GlobalType getBlockCols() const {
+		GlobalType getBlockCols() const
+		{
 			return blockCols;
 		}
 
@@ -318,7 +337,8 @@ namespace nvgraph {
 		 * @param bId The block ID
 		 * @return The row number
 		 */
-		int32_t getBlockRow(int32_t bId) const {
+		int32_t getBlockRow(int32_t bId) const
+		{
 			return bId / blockCols;
 		}
 
@@ -327,7 +347,8 @@ namespace nvgraph {
 		 * @param bId The block ID
 		 * @return The column number
 		 */
-		int32_t getBlockCol(int32_t bId) const {
+		int32_t getBlockCol(int32_t bId) const
+		{
 			return bId % blockCols;
 		}
 
@@ -340,10 +361,11 @@ namespace nvgraph {
 		 * @param blockId The block ID (return)
 		 */
 		void convertGlobaltoLocalRow(GlobalType globalRow,
-												GlobalType globalCol,
-												LocalType& localRow,
-												LocalType& localCol,
-												int32_t& blockId) const {
+									 GlobalType globalCol,
+									 LocalType &localRow,
+									 LocalType &localCol,
+									 int32_t &blockId) const
+		{
 			int32_t rowId = getRowId(globalRow);
 			int32_t colId = getColId(globalCol);
 			blockId = rowId * blockCols + colId;
@@ -357,18 +379,21 @@ namespace nvgraph {
 		 * @param colId The column ID
 		 * @return The ID of the corresponding block
 		 */
-		int32_t getBlockId(int32_t rowId, int32_t colId) const {
+		int32_t getBlockId(int32_t rowId, int32_t colId) const
+		{
 			return rowId * blockCols + colId;
 		}
 
 		/**
 		 * Helper method to synchronize all streams after operations are issued.
 		 */
-		void syncAllStreams() const {
+		void syncAllStreams() const
+		{
 			int32_t numBlocks = getNumBlocks();
 			int32_t current_device;
 			hipGetDevice(&current_device);
-			for (int32_t i = 0; i < numBlocks; i++) {
+			for (int32_t i = 0; i < numBlocks; i++)
+			{
 				hipSetDevice(deviceAssignments[i]);
 				hipStreamSynchronize(blockStreams[i]);
 			}
@@ -379,89 +404,99 @@ namespace nvgraph {
 		 * This method is only for testing and debugging use.
 		 * @return A human readable string representation of the object
 		 */
-		std::string toString() const {
+		std::string toString() const
+		{
 			std::stringstream ss;
 			ss << "Global Info:\n\tnumRows: " << numRows << ", numCols: " << numCols << ", nnz: "
-					<< nnz;
+			   << nnz;
 			ss << "\n";
 			ss << "Block Info:\n\tblockRows: " << blockRows << ", blockCols: " << blockCols;
 			ss << "\n";
 			ss << "rowOffsets: [";
-			for (int i = 0; i < (int) rowOffsets.size(); i++)
-				ss << rowOffsets[i] << (i == (int) rowOffsets.size() - 1 ? "]\n" : ", ");
+			for (int i = 0; i < (int)rowOffsets.size(); i++)
+				ss << rowOffsets[i] << (i == (int)rowOffsets.size() - 1 ? "]\n" : ", ");
 			ss << "colOffsets: [";
-			for (int i = 0; i < (int) colOffsets.size(); i++)
-				ss << colOffsets[i] << (i == (int) colOffsets.size() - 1 ? "]\n" : ", ");
+			for (int i = 0; i < (int)colOffsets.size(); i++)
+				ss << colOffsets[i] << (i == (int)colOffsets.size() - 1 ? "]\n" : ", ");
 			ss << "deviceAssignments: [";
-			for (int i = 0; i < (int) deviceAssignments.size(); i++)
-				ss << deviceAssignments[i] << (i == (int) deviceAssignments.size() - 1 ? "]\n" : ", ");
+			for (int i = 0; i < (int)deviceAssignments.size(); i++)
+				ss << deviceAssignments[i] << (i == (int)deviceAssignments.size() - 1 ? "]\n" : ", ");
 			return ss.str();
 		}
 	};
 
-	template<typename GlobalType, typename LocalType, typename ValueType>
-	class Matrix2d {
+	template <typename GlobalType, typename LocalType, typename ValueType>
+	class Matrix2d
+	{
 	protected:
 		// Description of the matrix decomposition
 		MatrixDecompositionDescription<GlobalType, LocalType> description;
 
 		// Array of block matrices forming the decomposition
-		std::vector<MultiValuedCsrGraph<LocalType, ValueType>*> blocks;
-		public:
-		Matrix2d() {
+		std::vector<MultiValuedCsrGraph<LocalType, ValueType> *> blocks;
+
+	public:
+		Matrix2d()
+		{
 		}
 		Matrix2d(MatrixDecompositionDescription<GlobalType, LocalType> descr,
-					std::vector<MultiValuedCsrGraph<LocalType, ValueType>*> blocks) :
-				description(descr), blocks(blocks) {
+				 std::vector<MultiValuedCsrGraph<LocalType, ValueType> *> blocks) : description(descr), blocks(blocks)
+		{
 		}
 
-		const MatrixDecompositionDescription<GlobalType, LocalType>& getMatrixDecompositionDescription() {
+		const MatrixDecompositionDescription<GlobalType, LocalType> &getMatrixDecompositionDescription()
+		{
 			return description;
 		}
 
-		MultiValuedCsrGraph<LocalType, ValueType>* getBlockMatrix(int32_t bId) {
+		MultiValuedCsrGraph<LocalType, ValueType> *getBlockMatrix(int32_t bId)
+		{
 			return blocks[bId];
 		}
 
-		std::string toString() {
+		std::string toString()
+		{
 			std::stringstream ss;
-			ss << "MatrixDecompositionDescription:\n" << description.toString();
-			for (int i = 0; i < (int) blocks.size(); i++) {
+			ss << "MatrixDecompositionDescription:\n"
+			   << description.toString();
+			for (int i = 0; i < (int)blocks.size(); i++)
+			{
 				ss << "Block " << i << ":\n";
 				size_t numVerts = blocks[i]->get_num_vertices();
 				size_t numEdges = blocks[i]->get_num_edges();
 				size_t numValues = blocks[i]->getNumValues();
 				ss << "numVerts: " << numVerts << ", numEdges: " << numEdges << "\n";
-				LocalType* rowOffsets = (LocalType*) malloc((numVerts + 1) * sizeof(LocalType));
-				LocalType* colIndices = (LocalType*) malloc(numEdges * sizeof(LocalType));
-				ValueType* values = NULL;
+				LocalType *rowOffsets = (LocalType *)malloc((numVerts + 1) * sizeof(LocalType));
+				LocalType *colIndices = (LocalType *)malloc(numEdges * sizeof(LocalType));
+				ValueType *values = NULL;
 				if (numValues > 0)
-					values = (ValueType*) malloc(numEdges * sizeof(ValueType));
+					values = (ValueType *)malloc(numEdges * sizeof(ValueType));
 				hipMemcpy(rowOffsets,
-								blocks[i]->get_raw_row_offsets(),
-								(numVerts + 1) * sizeof(LocalType),
-								hipMemcpyDefault);
+						  blocks[i]->get_raw_row_offsets(),
+						  (numVerts + 1) * sizeof(LocalType),
+						  hipMemcpyDefault);
 				hipMemcpy(colIndices,
-								blocks[i]->get_raw_column_indices(),
-								numEdges * sizeof(LocalType),
-								hipMemcpyDefault);
+						  blocks[i]->get_raw_column_indices(),
+						  numEdges * sizeof(LocalType),
+						  hipMemcpyDefault);
 				if (values)
 					hipMemcpy(values,
-									blocks[i]->get_raw_edge_dim(0),
-									numEdges * sizeof(ValueType),
-									hipMemcpyDefault);
+							  blocks[i]->get_raw_edge_dim(0),
+							  numEdges * sizeof(ValueType),
+							  hipMemcpyDefault);
 				int idxCount = numEdges >= (numVerts + 1) ? numEdges : (numVerts + 1);
 				ss << "Idx\tOffset\tColInd\tValue\n";
-				for (int j = 0; j < idxCount; j++) {
-					if (j < (int) numVerts + 1 && j < (int) numEdges)
+				for (int j = 0; j < idxCount; j++)
+				{
+					if (j < (int)numVerts + 1 && j < (int)numEdges)
 						ss << j << ":\t" << rowOffsets[j] << "\t" << colIndices[j] << "\t"
-								<< (values ? values[j] : 0)
-								<< "\n";
-					else if (j < (int) numVerts + 1 && j >= (int) numEdges)
+						   << (values ? values[j] : 0)
+						   << "\n";
+					else if (j < (int)numVerts + 1 && j >= (int)numEdges)
 						ss << j << ":\t" << rowOffsets[j] << "\n";
-					else if (j >= (int) numVerts + 1 && j < (int) numEdges)
+					else if (j >= (int)numVerts + 1 && j < (int)numEdges)
 						ss << j << ":\t" << "\t" << colIndices[j] << "\t" << (values ? values[j] : 0)
-								<< "\n";
+						   << "\n";
 				}
 				free(rowOffsets);
 				free(colIndices);
@@ -471,20 +506,22 @@ namespace nvgraph {
 		}
 	};
 
-	template<typename GlobalType, typename LocalType, typename ValueType>
-	class VertexData2D {
-		const MatrixDecompositionDescription<GlobalType, LocalType>* description;
+	template <typename GlobalType, typename LocalType, typename ValueType>
+	class VertexData2D
+	{
+		const MatrixDecompositionDescription<GlobalType, LocalType> *description;
 		int32_t n;
-		std::vector<hipcub::DoubleBuffer<ValueType> > values;
-		public:
+		std::vector<hipcub::DoubleBuffer<ValueType>> values;
+
+	public:
 		/**
 		 * Creates a VertexData2D object given a pointer to a MatrixDecompositionDescription
 		 * object which describes the matrix the data is attached to. Data buffers are
 		 * allocated for each block using the offset from the description to size the
 		 * buffers, and to locate the buffers on the same GPU as the matrix block.
 		 */
-		VertexData2D(const MatrixDecompositionDescription<GlobalType, LocalType>* descr) :
-				description(descr) {
+		VertexData2D(const MatrixDecompositionDescription<GlobalType, LocalType> *descr) : description(descr)
+		{
 			// Resize the values array to be the same size as number of blocks
 			values.resize(descr->getNumBlocks());
 
@@ -494,10 +531,11 @@ namespace nvgraph {
 			LocalType allocSize = descr->getOffset();
 			n = allocSize;
 			// Allocate the data for each block
-			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++) {
+			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++)
+			{
 				int device = descr->getDeviceAssignments()[i];
 				hipSetDevice(device);
-				ValueType* d_current, *d_alternate;
+				ValueType *d_current, *d_alternate;
 				hipMalloc(&d_current, sizeof(ValueType) * n);
 				hipMalloc(&d_alternate, sizeof(ValueType) * n);
 				values[i].d_buffers[0] = d_current;
@@ -515,8 +553,8 @@ namespace nvgraph {
 		 * for each block using the offset from the description to size the buffers, and to locate
 		 * the buffers on the same GPU as the matrix block.
 		 */
-		VertexData2D(const MatrixDecompositionDescription<GlobalType, LocalType>* descr, size_t _n) :
-				description(descr) {
+		VertexData2D(const MatrixDecompositionDescription<GlobalType, LocalType> *descr, size_t _n) : description(descr)
+		{
 			// Resize the values array to be the same size as number of blocks
 			values.resize(descr->getNumBlocks());
 
@@ -526,10 +564,11 @@ namespace nvgraph {
 			LocalType allocSize = _n;
 			n = allocSize;
 			// Allocate the data for each block
-			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++) {
+			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++)
+			{
 				int device = descr->getDeviceAssignments()[i];
 				hipSetDevice(device);
-				ValueType* d_current, *d_alternate;
+				ValueType *d_current, *d_alternate;
 				hipMalloc(&d_current, sizeof(ValueType) * n);
 				hipMalloc(&d_alternate, sizeof(ValueType) * n);
 				values[i].d_buffers[0] = d_current;
@@ -540,8 +579,10 @@ namespace nvgraph {
 			hipSetDevice(current_device);
 		}
 
-		~VertexData2D() {
-			for (size_t i = 0; i < values.size(); i++) {
+		~VertexData2D()
+		{
+			for (size_t i = 0; i < values.size(); i++)
+			{
 				if (values[i].Current())
 					hipFree(values[i].Current());
 				if (values[i].Alternate())
@@ -553,7 +594,8 @@ namespace nvgraph {
 		 * Getter for n the size of each block's allocation in elements.
 		 * @return The value of n
 		 */
-		int32_t getN() {
+		int32_t getN()
+		{
 			return n;
 		}
 
@@ -561,28 +603,32 @@ namespace nvgraph {
 		 * Getter for the MatrixDecompositionDescription associated with this VertexData2D
 		 * @return Pointer to the MatrixDecompositionDescription for this VertexData2D
 		 */
-		const MatrixDecompositionDescription<GlobalType, LocalType>* getDescription() {
+		const MatrixDecompositionDescription<GlobalType, LocalType> *getDescription()
+		{
 			return description;
 		}
 
 		/**
 		 * Gets the current buffer corresponding to the given block ID
 		 */
-		ValueType* getCurrent(int bId) {
+		ValueType *getCurrent(int bId)
+		{
 			return values[bId].Current();
 		}
 
 		/**
 		 * Gets the alternate buffer corresponding to the given block ID
 		 */
-		ValueType* getAlternate(int bId) {
+		ValueType *getAlternate(int bId)
+		{
 			return values[bId].Alternate();
 		}
 
 		/**
 		 * Swaps the current and alternate buffers for all block IDs
 		 */
-		void swapBuffers() {
+		void swapBuffers()
+		{
 			for (size_t i = 0; i < values.size(); i++)
 				values[i].selector ^= 1;
 		}
@@ -592,11 +638,12 @@ namespace nvgraph {
 		 * valid and in the diagonal blocks. After calling this method either columnScatter
 		 * or rowScatter should be called to propagate the change to all blocks.
 		 */
-		void setElement(GlobalType globalIndex, ValueType val) {
+		void setElement(GlobalType globalIndex, ValueType val)
+		{
 			LocalType blockId = globalIndex / n;
 			LocalType blockOffset = globalIndex % n;
 			int32_t bId = description->getBlockId(blockId, blockId);
-			ValueType* copyTo = values[bId].Current() + blockOffset;
+			ValueType *copyTo = values[bId].Current() + blockOffset;
 			hipMemcpy(copyTo, &val, sizeof(ValueType), hipMemcpyDefault);
 		}
 
@@ -606,14 +653,16 @@ namespace nvgraph {
 		 * to propogate to all blocks.
 		 * @param vals Pointer to an array with the values to be set.
 		 */
-		void setElements(ValueType* vals) {
+		void setElements(ValueType *vals)
+		{
 			LocalType offset = description->getOffset();
 			int32_t numRows = description->getBlockRows();
-			for (int i = 0; i < numRows; i++) {
+			for (int i = 0; i < numRows; i++)
+			{
 				int32_t id = description->getBlockId(i, i);
 				hipStream_t stream = description->getBlockStreams()[id];
-				ValueType* copyFrom = vals + i * n;
-				ValueType* copyTo = values[id].Current();
+				ValueType *copyFrom = vals + i * n;
+				ValueType *copyTo = values[id].Current();
 				hipMemcpyAsync(copyTo, copyFrom, sizeof(ValueType) * n, hipMemcpyDefault, stream);
 			}
 			description->syncAllStreams();
@@ -626,13 +675,15 @@ namespace nvgraph {
 		 * either the rows or columns depending on the use.
 		 * @param val The value to fill the array with
 		 */
-		void fillElements(ValueType val) {
+		void fillElements(ValueType val)
+		{
 			int current_device;
 			hipGetDevice(&current_device);
 			int32_t numRows = description->getBlockRows();
-			for (int32_t i = 0; i < numRows; i++) {
+			for (int32_t i = 0; i < numRows; i++)
+			{
 				int32_t blockId = description->getBlockId(i, i);
-				ValueType* vals = getCurrent(blockId);
+				ValueType *vals = getCurrent(blockId);
 				int deviceId = description->getDeviceAssignments()[blockId];
 				hipStream_t stream = description->getBlockStreams()[blockId];
 				hipSetDevice(deviceId);
@@ -647,21 +698,25 @@ namespace nvgraph {
 		 * VertexData2D specified.
 		 * @param other Pointer to the VertexData2D to copy into
 		 */
-		void copyTo(VertexData2D<GlobalType, LocalType, ValueType>* other) {
-			const MatrixDecompositionDescription<GlobalType, LocalType>* otherDescr =
-					other->getDescription();
+		void copyTo(VertexData2D<GlobalType, LocalType, ValueType> *other)
+		{
+			const MatrixDecompositionDescription<GlobalType, LocalType> *otherDescr =
+				other->getDescription();
 			// Do a quick check that the sizes of both block arrays are the same.
-			if (description->getBlockRows() == otherDescr->getBlockRows() && n == other->getN()) {
+			if (description->getBlockRows() == otherDescr->getBlockRows() && n == other->getN())
+			{
 				// Issue asynchronous copies for each block's data
-				for (int i = 0; i < description->getBlockRows(); i++) {
+				for (int i = 0; i < description->getBlockRows(); i++)
+				{
 					int32_t bId = description->getBlockId(i, i);
-					ValueType* copyFrom = getCurrent(bId);
-					ValueType* copyTo = other->getCurrent(bId);
+					ValueType *copyFrom = getCurrent(bId);
+					ValueType *copyTo = other->getCurrent(bId);
 					hipStream_t stream = description->getBlockStreams()[bId];
 					hipMemcpyAsync(copyTo, copyFrom, n * sizeof(ValueType), hipMemcpyDefault, stream);
 				}
 				// Synchronize the streams after the copies are done
-				for (int i = 0; i < description->getBlockRows(); i++) {
+				for (int i = 0; i < description->getBlockRows(); i++)
+				{
 					int32_t bId = description->getBlockId(i, i);
 					hipStream_t stream = description->getBlockStreams()[bId];
 					hipStreamSynchronize(stream);
@@ -673,8 +728,9 @@ namespace nvgraph {
 		 * This method implements a row-wise reduction of each blocks data into a
 		 * single array for each row. The block on the diagonal will have the result.
 		 */
-		template<typename Operator>
-		void rowReduce() {
+		template <typename Operator>
+		void rowReduce()
+		{
 			int current_device;
 			hipGetDevice(&current_device);
 			Operator op;
@@ -682,16 +738,20 @@ namespace nvgraph {
 			// For each row in the decomposition:
 			int32_t numRows = description->getBlockRows();
 			std::vector<int32_t> blockIds;
-			for (int32_t i = 0; i < numRows; i++) {
+			for (int32_t i = 0; i < numRows; i++)
+			{
 				// Put all the block ids for the row into a vector, with the ID of the diagonal block
 				// at index 0.
 				std::vector<int32_t> blockIds;
 				blockIds.push_back(-1);
-				for (int32_t j = 0; j < numRows; j++) {
-					if (i == j) {
+				for (int32_t j = 0; j < numRows; j++)
+				{
+					if (i == j)
+					{
 						blockIds[0] = description->getBlockId(i, j);
 					}
-					else {
+					else
+					{
 						blockIds.push_back(description->getBlockId(i, j));
 					}
 				}
@@ -700,9 +760,12 @@ namespace nvgraph {
 				// copied into the secondary buffer of the receiver. After the copy is done
 				// each receiver performs the reduction operator and stores the result in it's
 				// primary buffer.
-				for (int32_t j = 2; (j / 2) < numRows; j *= 2) {
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+				for (int32_t j = 2; (j / 2) < numRows; j *= 2)
+				{
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id] is the receiver
 							int32_t receiverId = blockIds[id];
 
@@ -714,26 +777,28 @@ namespace nvgraph {
 
 							// Copy from the sender to the receiver (use stream associated with receiver)
 							hipMemcpyAsync(values[receiverId].Alternate(),
-													values[senderId].Current(),
-													sizeof(ValueType) * n,
-													hipMemcpyDefault,
-													stream);
+										   values[senderId].Current(),
+										   sizeof(ValueType) * n,
+										   hipMemcpyDefault,
+										   stream);
 
 							// Invoke the reduction operator on the receiver's GPU and values arrays.
 							hipSetDevice(description->getDeviceAssignments()[receiverId]);
-							ValueType* input1 = values[receiverId].Alternate();
-							ValueType* input2 = values[receiverId].Current();
+							ValueType *input1 = values[receiverId].Alternate();
+							ValueType *input2 = values[receiverId].Current();
 							thrust::transform(thrust::cuda::par.on(stream),
-													input1,
-													input1 + n,
-													input2,
-													input2,
-													op);
+											  input1,
+											  input1 + n,
+											  input2,
+											  input2,
+											  op);
 						}
 					}
 					// Sync all active streams before next step
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id] is the receiver
 							int32_t receiverId = blockIds[id];
 
@@ -752,8 +817,9 @@ namespace nvgraph {
 		 * This method implements a column-wise reduction of each blocks data into a
 		 * single array for each column. The block on the diagonal will have the result.
 		 */
-		template<typename Operator>
-		void columnReduce() {
+		template <typename Operator>
+		void columnReduce()
+		{
 			int current_device;
 			hipGetDevice(&current_device);
 			Operator op;
@@ -761,16 +827,20 @@ namespace nvgraph {
 			// For each column in the decomposition:
 			int32_t numRows = description->getBlockRows();
 			std::vector<int32_t> blockIds;
-			for (int32_t i = 0; i < numRows; i++) {
+			for (int32_t i = 0; i < numRows; i++)
+			{
 				// Put all the block ids for the row into a vector, with the ID of the diagonal block
 				// at index 0.
 				std::vector<int32_t> blockIds;
 				blockIds.push_back(-1);
-				for (int32_t j = 0; j < numRows; j++) {
-					if (i == j) {
+				for (int32_t j = 0; j < numRows; j++)
+				{
+					if (i == j)
+					{
 						blockIds[0] = description->getBlockId(j, i);
 					}
-					else {
+					else
+					{
 						blockIds.push_back(description->getBlockId(j, i));
 					}
 				}
@@ -779,9 +849,12 @@ namespace nvgraph {
 				// copied into the secondary buffer of the receiver. After the copy is done
 				// each receiver performs the reduction operator and stores the result in it's
 				// primary buffer.
-				for (int32_t j = 2; (j / 2) < numRows; j *= 2) {
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+				for (int32_t j = 2; (j / 2) < numRows; j *= 2)
+				{
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id] is the receiver
 							int32_t receiverId = blockIds[id];
 
@@ -793,26 +866,28 @@ namespace nvgraph {
 
 							// Copy from the sender to the receiver (use stream associated with receiver)
 							hipMemcpyAsync(values[receiverId].Alternate(),
-													values[senderId].Current(),
-													sizeof(ValueType) * n,
-													hipMemcpyDefault,
-													stream);
+										   values[senderId].Current(),
+										   sizeof(ValueType) * n,
+										   hipMemcpyDefault,
+										   stream);
 
 							// Invoke the reduction operator on the receiver's GPU and values arrays.
 							hipSetDevice(description->getDeviceAssignments()[receiverId]);
-							ValueType* input1 = values[receiverId].Alternate();
-							ValueType* input2 = values[receiverId].Current();
+							ValueType *input1 = values[receiverId].Alternate();
+							ValueType *input2 = values[receiverId].Current();
 							thrust::transform(thrust::cuda::par.on(stream),
-													input1,
-													input1 + n,
-													input2,
-													input2,
-													op);
+											  input1,
+											  input1 + n,
+											  input2,
+											  input2,
+											  op);
 						}
 					}
 					// Sync all active streams before next step
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id] is the receiver
 							int32_t receiverId = blockIds[id];
 
@@ -833,23 +908,28 @@ namespace nvgraph {
 		 * column 1. It is assumed that the data to broadcast is located in the block on
 		 * the diagonal.
 		 */
-		void columnScatter() {
+		void columnScatter()
+		{
 			int current_device;
 			hipGetDevice(&current_device);
 
 			// For each column in the decomposition:
 			int32_t numRows = description->getBlockRows();
 			std::vector<int32_t> blockIds;
-			for (int32_t i = 0; i < numRows; i++) {
+			for (int32_t i = 0; i < numRows; i++)
+			{
 				// Put all the block ids for the column into a vector, with the ID of the diagonal block
 				// at index 0.
 				std::vector<int32_t> blockIds;
 				blockIds.push_back(-1);
-				for (int32_t j = 0; j < numRows; j++) {
-					if (i == j) {
+				for (int32_t j = 0; j < numRows; j++)
+				{
+					if (i == j)
+					{
 						blockIds[0] = description->getBlockId(j, i);
 					}
-					else {
+					else
+					{
 						blockIds.push_back(description->getBlockId(j, i));
 					}
 				}
@@ -857,12 +937,16 @@ namespace nvgraph {
 				// Do a binary tree scatter. At each step the primary buffer of the sender is
 				// copied into the primary buffer of the receiver.
 				int32_t max2pow = 2;
-				while (max2pow < numRows) {
+				while (max2pow < numRows)
+				{
 					max2pow *= 2;
 				}
-				for (int32_t j = max2pow; j >= 2; j /= 2) {
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+				for (int32_t j = max2pow; j >= 2; j /= 2)
+				{
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id] is the sender
 							int32_t senderId = blockIds[id];
 
@@ -874,15 +958,17 @@ namespace nvgraph {
 
 							// Copy from the sender to the receiver (use stream associated with receiver)
 							hipMemcpyAsync(values[receiverId].Current(),
-													values[senderId].Current(),
-													sizeof(ValueType) * n,
-													hipMemcpyDefault,
-													stream);
+										   values[senderId].Current(),
+										   sizeof(ValueType) * n,
+										   hipMemcpyDefault,
+										   stream);
 						}
 					}
 					// Synchronize all the active streams before next step.
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id + j/2] is the sender
 							int32_t receiverId = blockIds[id + j / 2];
 
@@ -903,23 +989,28 @@ namespace nvgraph {
 		 * row 1. It is assumed that the data to broadcast is located in the block on
 		 * the diagonal.
 		 */
-		void rowScatter() {
+		void rowScatter()
+		{
 			int current_device;
 			hipGetDevice(&current_device);
 
 			// For each row in the decomposition:
 			int32_t numRows = description->getBlockRows();
 			std::vector<int32_t> blockIds;
-			for (int32_t i = 0; i < numRows; i++) {
+			for (int32_t i = 0; i < numRows; i++)
+			{
 				// Put all the block ids for the column into a vector, with the ID of the diagonal block
 				// at index 0.
 				std::vector<int32_t> blockIds;
 				blockIds.push_back(-1);
-				for (int32_t j = 0; j < numRows; j++) {
-					if (i == j) {
+				for (int32_t j = 0; j < numRows; j++)
+				{
+					if (i == j)
+					{
 						blockIds[0] = description->getBlockId(i, j);
 					}
-					else {
+					else
+					{
 						blockIds.push_back(description->getBlockId(i, j));
 					}
 				}
@@ -927,12 +1018,16 @@ namespace nvgraph {
 				// Do a binary tree scatter. At each step the primary buffer of the sender is
 				// copied into the primary buffer of the receiver.
 				int32_t max2pow = 2;
-				while (max2pow < numRows) {
+				while (max2pow < numRows)
+				{
 					max2pow *= 2;
 				}
-				for (int32_t j = max2pow; j >= 2; j /= 2) {
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+				for (int32_t j = max2pow; j >= 2; j /= 2)
+				{
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id] is the sender
 							int32_t senderId = blockIds[id];
 
@@ -944,15 +1039,17 @@ namespace nvgraph {
 
 							// Copy from the sender to the receiver (use stream associated with receiver)
 							hipMemcpyAsync(values[receiverId].Current(),
-													values[senderId].Current(),
-													sizeof(ValueType) * n,
-													hipMemcpyDefault,
-													stream);
+										   values[senderId].Current(),
+										   sizeof(ValueType) * n,
+										   hipMemcpyDefault,
+										   stream);
 						}
 					}
 					// Sync all the active streams before next step
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id + j/2] is the receiver
 							int32_t receiverId = blockIds[id + j / 2];
 
@@ -972,20 +1069,23 @@ namespace nvgraph {
 		 * intended to be used for de-bugging.
 		 * @return Human readable string representation
 		 */
-		std::string toString() {
+		std::string toString()
+		{
 			std::stringstream ss;
-			ValueType* c = (ValueType*) malloc(sizeof(ValueType) * n);
-			ValueType* a = (ValueType*) malloc(sizeof(ValueType) * n);
+			ValueType *c = (ValueType *)malloc(sizeof(ValueType) * n);
+			ValueType *a = (ValueType *)malloc(sizeof(ValueType) * n);
 
 			int32_t numBlocks = description->getNumBlocks();
 
 			ss << "Vertex2d:\n";
-			for (int32_t i = 0; i < numBlocks; i++) {
+			for (int32_t i = 0; i < numBlocks; i++)
+			{
 				ss << "Block " << i << ":\n";
 				ss << "Idx\tCur\tAlt\n";
 				hipMemcpy(c, values[i].Current(), sizeof(ValueType) * n, hipMemcpyDefault);
 				hipMemcpy(a, values[i].Alternate(), sizeof(ValueType) * n, hipMemcpyDefault);
-				for (int32_t j = 0; j < n; j++) {
+				for (int32_t j = 0; j < n; j++)
+				{
 					ss << j << ":\t" << c[j] << "\t" << a[j] << "\n";
 				}
 			}
@@ -997,11 +1097,12 @@ namespace nvgraph {
 		}
 	};
 
-	template<typename GlobalType, typename LocalType, typename ValueType>
-	class VertexData2D_Unbuffered {
-		const MatrixDecompositionDescription<GlobalType, LocalType>* description;
+	template <typename GlobalType, typename LocalType, typename ValueType>
+	class VertexData2D_Unbuffered
+	{
+		const MatrixDecompositionDescription<GlobalType, LocalType> *description;
 		int32_t n;
-		std::vector<ValueType*> values;
+		std::vector<ValueType *> values;
 
 	public:
 		/**
@@ -1010,8 +1111,8 @@ namespace nvgraph {
 		 * @param descr Pointer to a MatrixDecompositionDescription object describing the layout
 		 * of the 2D blocks.
 		 */
-		VertexData2D_Unbuffered(const MatrixDecompositionDescription<GlobalType, LocalType>* descr) :
-				description(descr) {
+		VertexData2D_Unbuffered(const MatrixDecompositionDescription<GlobalType, LocalType> *descr) : description(descr)
+		{
 			// Resize the values array to be the same size as number of blocks
 			values.resize(descr->getNumBlocks());
 
@@ -1021,7 +1122,8 @@ namespace nvgraph {
 			LocalType allocSize = descr->getOffset();
 			n = allocSize;
 			// Allocate the data for each block
-			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++) {
+			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++)
+			{
 				int device = descr->getDeviceAssignments()[i];
 				hipSetDevice(device);
 				hipMalloc(&(values[i]), sizeof(ValueType) * n);
@@ -1037,9 +1139,9 @@ namespace nvgraph {
 		 * of the 2D blocks.
 		 * @param _n The number of elements to allocate per block.
 		 */
-		VertexData2D_Unbuffered(const MatrixDecompositionDescription<GlobalType, LocalType>* descr,
-										size_t _n) :
-				description(descr), n(_n) {
+		VertexData2D_Unbuffered(const MatrixDecompositionDescription<GlobalType, LocalType> *descr,
+								size_t _n) : description(descr), n(_n)
+		{
 			// Resize the values array to be the same size as number of blocks
 			values.resize(descr->getNumBlocks());
 
@@ -1047,7 +1149,8 @@ namespace nvgraph {
 			int current_device;
 			hipGetDevice(&current_device);
 			// Allocate the data for each block
-			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++) {
+			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++)
+			{
 				int device = descr->getDeviceAssignments()[i];
 				hipSetDevice(device);
 				hipMalloc(&(values[i]), sizeof(ValueType) * n);
@@ -1060,9 +1163,12 @@ namespace nvgraph {
 		/**
 		 * Destructor. Frees all allocated memory.
 		 */
-		~VertexData2D_Unbuffered() {
-			for (size_t i = 0; i < values.size(); i++) {
-				if (values[i]) {
+		~VertexData2D_Unbuffered()
+		{
+			for (size_t i = 0; i < values.size(); i++)
+			{
+				if (values[i])
+				{
 					hipFree(values[i]);
 				}
 			}
@@ -1075,13 +1181,15 @@ namespace nvgraph {
 		 * either the rows or columns depending on the use.
 		 * @param val The value to fill the array with
 		 */
-		void fillElements(ValueType val) {
+		void fillElements(ValueType val)
+		{
 			int current_device;
 			hipGetDevice(&current_device);
 			int32_t numRows = description->getBlockRows();
-			for (int32_t i = 0; i < numRows; i++) {
+			for (int32_t i = 0; i < numRows; i++)
+			{
 				int32_t blockId = description->getBlockId(i, i);
-				ValueType* vals = get(blockId);
+				ValueType *vals = get(blockId);
 				int deviceId = description->getDeviceAssignments()[blockId];
 				hipStream_t stream = description->getBlockStreams()[blockId];
 				hipSetDevice(deviceId);
@@ -1097,23 +1205,28 @@ namespace nvgraph {
 		 * column 1. It is assumed that the data to broadcast is located in the block on
 		 * the diagonal.
 		 */
-		void columnScatter() {
+		void columnScatter()
+		{
 			int current_device;
 			hipGetDevice(&current_device);
 
 			// For each column in the decomposition:
 			int32_t numRows = description->getBlockRows();
 			std::vector<int32_t> blockIds;
-			for (int32_t i = 0; i < numRows; i++) {
+			for (int32_t i = 0; i < numRows; i++)
+			{
 				// Put all the block ids for the column into a vector, with the ID of the diagonal block
 				// at index 0.
 				std::vector<int32_t> blockIds;
 				blockIds.push_back(-1);
-				for (int32_t j = 0; j < numRows; j++) {
-					if (i == j) {
+				for (int32_t j = 0; j < numRows; j++)
+				{
+					if (i == j)
+					{
 						blockIds[0] = description->getBlockId(j, i);
 					}
-					else {
+					else
+					{
 						blockIds.push_back(description->getBlockId(j, i));
 					}
 				}
@@ -1121,12 +1234,16 @@ namespace nvgraph {
 				// Do a binary tree scatter. At each step the primary buffer of the sender is
 				// copied into the primary buffer of the receiver.
 				int32_t max2pow = 2;
-				while (max2pow < numRows) {
+				while (max2pow < numRows)
+				{
 					max2pow *= 2;
 				}
-				for (int32_t j = max2pow; j >= 2; j /= 2) {
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+				for (int32_t j = max2pow; j >= 2; j /= 2)
+				{
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id] is the sender
 							int32_t senderId = blockIds[id];
 
@@ -1138,15 +1255,17 @@ namespace nvgraph {
 
 							// Copy from the sender to the receiver (use stream associated with receiver)
 							hipMemcpyAsync(values[receiverId],
-													values[senderId],
-													sizeof(ValueType) * n,
-													hipMemcpyDefault,
-													stream);
+										   values[senderId],
+										   sizeof(ValueType) * n,
+										   hipMemcpyDefault,
+										   stream);
 						}
 					}
 					// Synchronize all the active streams before next step.
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id + j/2] is the sender
 							int32_t receiverId = blockIds[id + j / 2];
 
@@ -1167,23 +1286,28 @@ namespace nvgraph {
 		 * row 1. It is assumed that the data to broadcast is located in the block on
 		 * the diagonal.
 		 */
-		void rowScatter() {
+		void rowScatter()
+		{
 			int current_device;
 			hipGetDevice(&current_device);
 
 			// For each row in the decomposition:
 			int32_t numRows = description->getBlockRows();
 			std::vector<int32_t> blockIds;
-			for (int32_t i = 0; i < numRows; i++) {
+			for (int32_t i = 0; i < numRows; i++)
+			{
 				// Put all the block ids for the column into a vector, with the ID of the diagonal block
 				// at index 0.
 				std::vector<int32_t> blockIds;
 				blockIds.push_back(-1);
-				for (int32_t j = 0; j < numRows; j++) {
-					if (i == j) {
+				for (int32_t j = 0; j < numRows; j++)
+				{
+					if (i == j)
+					{
 						blockIds[0] = description->getBlockId(i, j);
 					}
-					else {
+					else
+					{
 						blockIds.push_back(description->getBlockId(i, j));
 					}
 				}
@@ -1191,12 +1315,16 @@ namespace nvgraph {
 				// Do a binary tree scatter. At each step the primary buffer of the sender is
 				// copied into the primary buffer of the receiver.
 				int32_t max2pow = 2;
-				while (max2pow < numRows) {
+				while (max2pow < numRows)
+				{
 					max2pow *= 2;
 				}
-				for (int32_t j = max2pow; j >= 2; j /= 2) {
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+				for (int32_t j = max2pow; j >= 2; j /= 2)
+				{
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id] is the sender
 							int32_t senderId = blockIds[id];
 
@@ -1208,15 +1336,17 @@ namespace nvgraph {
 
 							// Copy from the sender to the receiver (use stream associated with receiver)
 							hipMemcpyAsync(values[receiverId],
-													values[senderId],
-													sizeof(ValueType) * n,
-													hipMemcpyDefault,
-													stream);
+										   values[senderId],
+										   sizeof(ValueType) * n,
+										   hipMemcpyDefault,
+										   stream);
 						}
 					}
 					// Sync all the active streams before next step
-					for (int32_t id = 0; id < numRows; id++) {
-						if (id % j == 0 && id + j / 2 < numRows) {
+					for (int32_t id = 0; id < numRows; id++)
+					{
+						if (id % j == 0 && id + j / 2 < numRows)
+						{
 							// blockIds[id + j/2] is the receiver
 							int32_t receiverId = blockIds[id + j / 2];
 
@@ -1235,7 +1365,8 @@ namespace nvgraph {
 		 * Getter for n
 		 * @return The value of n
 		 */
-		int32_t getN() {
+		int32_t getN()
+		{
 			return n;
 		}
 
@@ -1244,7 +1375,8 @@ namespace nvgraph {
 		 * @param bId The block id to get the memory for.
 		 * @return A pointer to the allocated memory for the given block.
 		 */
-		ValueType* get(int32_t bId) {
+		ValueType *get(int32_t bId)
+		{
 			return values[bId];
 		}
 	};
@@ -1253,12 +1385,14 @@ namespace nvgraph {
 	 * This method takes in COO format matrix data and a MatrixDecompositionDescription and
 	 * returns a Matrix2d object containing the given data.
 	 */
-	template<typename GlobalType, typename LocalType, typename ValueType>
+	template <typename GlobalType, typename LocalType, typename ValueType>
 	Matrix2d<GlobalType, LocalType, ValueType> COOto2d(MatrixDecompositionDescription<GlobalType,
-																				LocalType> descr,
-																		GlobalType* rowIds,
-																		GlobalType* colIds,
-																		ValueType* values) {
+																					  LocalType>
+														   descr,
+													   GlobalType *rowIds,
+													   GlobalType *colIds,
+													   ValueType *values)
+	{
 		// Grab the current device id to switch back after allocations are done
 		int current_device;
 		hipGetDevice(&current_device);
@@ -1266,13 +1400,14 @@ namespace nvgraph {
 		int32_t blockCount = descr.getNumBlocks();
 
 		// Allocate array of size global nnz to hold the block labels
-		int32_t* blockLabels = (int32_t*) malloc(descr.getNnz() * sizeof(int32_t));
+		int32_t *blockLabels = (int32_t *)malloc(descr.getNnz() * sizeof(int32_t));
 
 		// Allocate array to contain row counts for each block and initialize to zero
 		// Allocate array to contain position offsets for writing each blocks data
-		LocalType* blockCounts = (LocalType*) malloc(blockCount * sizeof(LocalType));
-		LocalType* blockPos = (LocalType*) malloc(blockCount * sizeof(LocalType));
-		for (int i = 0; i < blockCount; i++) {
+		LocalType *blockCounts = (LocalType *)malloc(blockCount * sizeof(LocalType));
+		LocalType *blockPos = (LocalType *)malloc(blockCount * sizeof(LocalType));
+		for (int i = 0; i < blockCount; i++)
+		{
 			blockCounts[i] = 0;
 			blockPos[i] = 0;
 		}
@@ -1281,27 +1416,30 @@ namespace nvgraph {
 		int32_t blockId;
 		LocalType localRow;
 		LocalType localCol;
-		for (int i = 0; i < descr.getNnz(); i++) {
+		for (int i = 0; i < descr.getNnz(); i++)
+		{
 			descr.convertGlobaltoLocalRow(rowIds[i], colIds[i], localRow, localCol, blockId);
 			blockLabels[i] = blockId;
 			blockCounts[blockId]++;
 		}
 
 		// Allocate arrays for putting each blocks data into
-		LocalType** blockRowIds = (LocalType**) malloc(blockCount * sizeof(LocalType*));
-		LocalType** blockColIds = (LocalType**) malloc(blockCount * sizeof(LocalType*));
-		ValueType** blockValues = NULL;
+		LocalType **blockRowIds = (LocalType **)malloc(blockCount * sizeof(LocalType *));
+		LocalType **blockColIds = (LocalType **)malloc(blockCount * sizeof(LocalType *));
+		ValueType **blockValues = NULL;
 		if (values)
-			blockValues = (ValueType**) malloc(blockCount * sizeof(ValueType*));
-		for (int i = 0; i < blockCount; i++) {
-			blockRowIds[i] = (LocalType*) malloc(blockCounts[i] * sizeof(LocalType));
-			blockColIds[i] = (LocalType*) malloc(blockCounts[i] * sizeof(LocalType));
+			blockValues = (ValueType **)malloc(blockCount * sizeof(ValueType *));
+		for (int i = 0; i < blockCount; i++)
+		{
+			blockRowIds[i] = (LocalType *)malloc(blockCounts[i] * sizeof(LocalType));
+			blockColIds[i] = (LocalType *)malloc(blockCounts[i] * sizeof(LocalType));
 			if (values)
-				blockValues[i] = (ValueType*) malloc(blockCounts[i] * sizeof(ValueType));
+				blockValues[i] = (ValueType *)malloc(blockCounts[i] * sizeof(ValueType));
 		}
 
 		// Convert each blocks global rows to local ids and copy into block arrays
-		for (int i = 0; i < descr.getNnz(); i++) {
+		for (int i = 0; i < descr.getNnz(); i++)
+		{
 			descr.convertGlobaltoLocalRow(rowIds[i], colIds[i], localRow, localCol, blockId);
 			blockRowIds[blockId][blockPos[blockId]] = localRow;
 			blockColIds[blockId][blockPos[blockId]] = localCol;
@@ -1311,54 +1449,58 @@ namespace nvgraph {
 		}
 
 		// Allocate the result blocks vector
-		std::vector<MultiValuedCsrGraph<LocalType, ValueType>*> blockVector(blockCount);
+		std::vector<MultiValuedCsrGraph<LocalType, ValueType> *> blockVector(blockCount);
 
 		// Convert each blocks COO rows into CSR and create it's graph object.
-		for (int i = 0; i < blockCount; i++) {
+		for (int i = 0; i < blockCount; i++)
+		{
 			// Set the device as indicated so the data ends up on the right GPU
 			hipSetDevice(descr.getDeviceAssignments()[i]);
 			hipStream_t stream = descr.getBlockStreams()[i];
 
-			if (blockCounts[i] > 0) {
+			if (blockCounts[i] > 0)
+			{
 				CSR_Result_Weighted<LocalType, ValueType> result;
 				ConvertCOOtoCSR_weighted(blockRowIds[i],
-													blockColIds[i],
-													values ? blockValues[i] : NULL,
-													(int64_t) blockCounts[i],
-													(descr.getOffset() - 1),
-													result);
-				MultiValuedCsrGraph<LocalType, ValueType>* csrGraph = new MultiValuedCsrGraph<LocalType,
-						ValueType>((size_t) result.size, (size_t) result.nnz, stream);
+										 blockColIds[i],
+										 values ? blockValues[i] : NULL,
+										 (int64_t)blockCounts[i],
+										 (descr.getOffset() - 1),
+										 result);
+				MultiValuedCsrGraph<LocalType, ValueType> *csrGraph = new MultiValuedCsrGraph<LocalType,
+																							  ValueType>((size_t)result.size, (size_t)result.nnz, stream);
 				if (values)
 					csrGraph->allocateEdgeData(1, NULL);
 				hipMemcpy(csrGraph->get_raw_row_offsets(),
-								result.rowOffsets,
-								(result.size + 1) * sizeof(LocalType),
-								hipMemcpyDefault);
+						  result.rowOffsets,
+						  (result.size + 1) * sizeof(LocalType),
+						  hipMemcpyDefault);
 				hipMemcpy(csrGraph->get_raw_column_indices(),
-								result.colIndices,
-								result.nnz * sizeof(LocalType),
-								hipMemcpyDefault);
+						  result.colIndices,
+						  result.nnz * sizeof(LocalType),
+						  hipMemcpyDefault);
 				if (values)
 					hipMemcpy(csrGraph->get_raw_edge_dim(0),
-									result.edgeWeights,
-									result.nnz * sizeof(LocalType),
-									hipMemcpyDefault);
+							  result.edgeWeights,
+							  result.nnz * sizeof(LocalType),
+							  hipMemcpyDefault);
 				blockVector[i] = csrGraph;
 				result.Destroy();
 			}
-			else {
-				MultiValuedCsrGraph<LocalType, ValueType>* csrGraph = new MultiValuedCsrGraph<LocalType,
-						ValueType>((size_t) descr.getOffset(), (size_t) 0, stream);
-				hipMemset(	csrGraph->get_raw_row_offsets(),
-								0,
-								sizeof(LocalType) * (descr.getOffset() + 1));
+			else
+			{
+				MultiValuedCsrGraph<LocalType, ValueType> *csrGraph = new MultiValuedCsrGraph<LocalType,
+																							  ValueType>((size_t)descr.getOffset(), (size_t)0, stream);
+				hipMemset(csrGraph->get_raw_row_offsets(),
+						  0,
+						  sizeof(LocalType) * (descr.getOffset() + 1));
 				blockVector[i] = csrGraph;
 			}
 		}
 
 		// Free temporary memory
-		for (int i = 0; i < blockCount; i++) {
+		for (int i = 0; i < blockCount; i++)
+		{
 			free(blockRowIds[i]);
 			free(blockColIds[i]);
 			if (values)

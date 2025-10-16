@@ -30,6 +30,7 @@ fi
 # Set up environment variables
 export PATH="$DTK_ROOT/bin:$PATH"
 export LD_LIBRARY_PATH="$DTK_ROOT/lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH=/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
 export HIP_PATH="$DTK_ROOT"
 
 # Set compiler paths
