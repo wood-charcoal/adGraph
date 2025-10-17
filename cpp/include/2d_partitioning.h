@@ -687,7 +687,7 @@ namespace nvgraph
 				int deviceId = description->getDeviceAssignments()[blockId];
 				hipStream_t stream = description->getBlockStreams()[blockId];
 				hipSetDevice(deviceId);
-				thrust::fill(thrust::cuda::par.on(stream), vals, vals + n, val);
+				thrust::fill(thrust::hip::par.on(stream), vals, vals + n, val);
 			}
 			description->syncAllStreams();
 			hipSetDevice(current_device);
@@ -786,7 +786,7 @@ namespace nvgraph
 							hipSetDevice(description->getDeviceAssignments()[receiverId]);
 							ValueType *input1 = values[receiverId].Alternate();
 							ValueType *input2 = values[receiverId].Current();
-							thrust::transform(thrust::cuda::par.on(stream),
+							thrust::transform(thrust::hip::par.on(stream),
 											  input1,
 											  input1 + n,
 											  input2,
@@ -875,7 +875,7 @@ namespace nvgraph
 							hipSetDevice(description->getDeviceAssignments()[receiverId]);
 							ValueType *input1 = values[receiverId].Alternate();
 							ValueType *input2 = values[receiverId].Current();
-							thrust::transform(thrust::cuda::par.on(stream),
+							thrust::transform(thrust::hip::par.on(stream),
 											  input1,
 											  input1 + n,
 											  input2,
@@ -1193,7 +1193,7 @@ namespace nvgraph
 				int deviceId = description->getDeviceAssignments()[blockId];
 				hipStream_t stream = description->getBlockStreams()[blockId];
 				hipSetDevice(deviceId);
-				thrust::fill(thrust::cuda::par.on(stream), vals, vals + n, val);
+				thrust::fill(thrust::hip::par.on(stream), vals, vals + n, val);
 			}
 			description->syncAllStreams();
 			hipSetDevice(current_device);

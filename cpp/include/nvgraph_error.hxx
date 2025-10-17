@@ -187,7 +187,7 @@ namespace nvgraph
 #define CHECK_CUSOLVER(call)                              \
   {                                                       \
     hipsolverStatus_t _e = (call);                        \
-    if (_e != CUSOLVER_STATUS_SUCCESS)                    \
+    if (_e != HIPSOLVER_STATUS_SUCCESS)                    \
     {                                                     \
       std::stringstream _error;                           \
       _error << "CURAND failure: '#" << _e << "'";        \

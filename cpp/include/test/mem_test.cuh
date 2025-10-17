@@ -32,68 +32,56 @@
 #include <thrust/functional.h>
 #include <thrust/memory.h>
 
-
-
-template<typename IdxType=int, typename ValType=double>
+template <typename IdxType = int, typename ValType = double>
 __global__ void
-kernel_local_mem(const int n_vertex ){
+kernel_local_mem(const int n_vertex)
+{
 
   thrust::device_system_tag device_sys;
-  thrust::pointer<ValType,thrust::device_system_tag> temp_i = thrust::malloc<ValType>(device_sys, n_vertex); // for weight on i and for sum_k
-  thrust::pointer<IdxType,thrust::device_system_tag> temp_idx = thrust::malloc<IdxType>(device_sys, n_vertex); // for weight on i and for sum_k
-
-  
+  thrust::pointer<ValType, thrust::device_system_tag> temp_i = thrust::malloc<ValType>(device_sys, n_vertex);   // for weight on i and for sum_k
+  thrust::pointer<IdxType, thrust::device_system_tag> temp_idx = thrust::malloc<IdxType>(device_sys, n_vertex); // for weight on i and for sum_k
 
   *temp_i = 10.0;
-  *(temp_i + n_vertex-1) = 100.5;
-  
+  *(temp_i + n_vertex - 1) = 100.5;
+
   thrust::return_temporary_buffer(device_sys, temp_idx);
   thrust::return_temporary_buffer(device_sys, temp_i);
 }
 
-template<typename IdxType=int, typename ValType=double>
+template <typename IdxType = int, typename ValType = double>
 __global__ void
-kernel_local_mem_new(const int n_vertex ){
+kernel_local_mem_new(const int n_vertex)
+{
 
-  ValType * temp_i = new ValType[n_vertex];
-  IdxType * temp_idx = new IdxType[n_vertex];
- 
+  ValType *temp_i = new ValType[n_vertex];
+  IdxType *temp_idx = new IdxType[n_vertex];
 
   *temp_i = 10.0;
-  *(temp_i + n_vertex-1) = 100.5;
-  thrust::sequence(thrust::cuda::par, temp_idx, temp_idx + n_vertex);
-  printf("%d %d %d ... %d\n",*temp_idx, *(temp_idx+1), *(temp_idx+2), *(temp_idx + n_vertex - 1) );
+  *(temp_i + n_vertex - 1) = 100.5;
+  thrust::sequence(thrust::hip::par, temp_idx, temp_idx + n_vertex);
+  printf("%d %d %d ... %d\n", *temp_idx, *(temp_idx + 1), *(temp_idx + 2), *(temp_idx + n_vertex - 1));
 
-  delete [] temp_i;    
-  delete [] temp_idx;
+  delete[] temp_i;
+  delete[] temp_idx;
 }
 
+void mem_allocate_test(const int size)
+{
 
-
-
-void mem_allocate_test(const int size){
- 
- 
   HighResClock hr_clock;
   double timed;
 
- 
-  dim3 block_size((size + BLOCK_SIZE_1D -1)/ BLOCK_SIZE_1D, 1, 1);
+  dim3 block_size((size + BLOCK_SIZE_1D - 1) / BLOCK_SIZE_1D, 1, 1);
   dim3 grid_size(BLOCK_SIZE_1D, 1, 1);
   hr_clock.start();
 
-  kernel_local_mem<<<block_size,grid_size>>>(30000);
+  kernel_local_mem<<<block_size, grid_size>>>(30000);
 
-  kernel_local_mem_new<<<block_size,grid_size>>>(30000);
-
+  kernel_local_mem_new<<<block_size, grid_size>>>(30000);
 
   CUDA_CALL(hipDeviceSynchronize());
-  hr_clock.stop(&timed); 
-  double raw_ptr_time(timed);  
+  hr_clock.stop(&timed);
+  double raw_ptr_time(timed);
 
-  std::cout<<"allocate_mem_runtime: "<<raw_ptr_time<<std::endl;
-
-
- 
-   
+  std::cout << "allocate_mem_runtime: " << raw_ptr_time << std::endl;
 }

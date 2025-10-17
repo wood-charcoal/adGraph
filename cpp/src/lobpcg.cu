@@ -23,7 +23,7 @@
 
 #include <hip/hip_runtime.h>
 #include <hipblas.h>
-#include <cusolverDn.h>
+#include <hipsolver.h>
 #include <hipsparse.h>
 #include <hiprand.h>
 // #include "spectral_parameters.h"

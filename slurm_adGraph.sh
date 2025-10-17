@@ -3,8 +3,8 @@
 #SBATCH -p kshdexcluxd
 #SBATCH -N 1
 #SBATCH -n 8
-#SBATCH -o %j-%x.loop
-#SBATCH -e %j-%x.loop
+#SBATCH -o %j-%x.log
+#SBATCH -e %j-%x.log
 #SBATCH --gres=dcu:1
 
 echo "SLURM_JOB_NODELIST=${SLURM_JOB_NODELIST}"

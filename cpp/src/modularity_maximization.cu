@@ -26,6 +26,7 @@
 #include <thrust/fill.h>
 #include <thrust/reduce.h>
 #include <thrust/transform.h>
+#include <thrust/iterator/constant_iterator.h>
 
 #include "nvgraph_error.hxx"
 #include "nvgraph_vector.hxx"

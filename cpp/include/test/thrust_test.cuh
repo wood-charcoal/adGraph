@@ -29,50 +29,43 @@
 #include <thrust/reduce.h>
 #include <thrust/functional.h>
 
-
-
-
-template<typename iter, typename ptr >
-__global__ void test_sum(iter begin, iter end, ptr sum){
+template <typename iter, typename ptr>
+__global__ void test_sum(iter begin, iter end, ptr sum)
+{
 
   thrust::plus<T> op;
-  *sum = thrust::reduce(thrust::cuda::par, begin, end, 0.0, op);
-  
+  *sum = thrust::reduce(thrust::hip::par, begin, end, 0.0, op);
 }
 
-__global__ void test_sum_cast(T* vec, size_t size, T* sum){
+__global__ void test_sum_cast(T *vec, size_t size, T *sum)
+{
 
   thrust::plus<T> op;
-  *sum = thrust::reduce(thrust::cuda::par, vec, vec+size, 0.0, op);
-  
+  *sum = thrust::reduce(thrust::hip::par, vec, vec + size, 0.0, op);
 }
 
-
-void thrust_passing_arg_test( thrust::host_vector<int> &csr_ptr_h, 
-                              thrust::host_vector<int> &csr_ind_h,
-                              thrust::host_vector<T> &csr_val_h,
-                              thrust::device_vector<int> &csr_ptr_d, 
-                              thrust::device_vector<int> &csr_ind_d, 
-                              thrust::device_vector<T> &csr_val_d){
+void thrust_passing_arg_test(thrust::host_vector<int> &csr_ptr_h,
+                             thrust::host_vector<int> &csr_ind_h,
+                             thrust::host_vector<T> &csr_val_h,
+                             thrust::device_vector<int> &csr_ptr_d,
+                             thrust::device_vector<int> &csr_ind_d,
+                             thrust::device_vector<T> &csr_val_d)
+{
 
   HighResClock hr_clock;
   double timed;
-  
+
   thrust::plus<T> binary_op;
   hr_clock.start();
-  T sum_h = thrust::reduce(csr_val_h.begin(), csr_val_h.end(), 0.0, binary_op); 
+  T sum_h = thrust::reduce(csr_val_h.begin(), csr_val_h.end(), 0.0, binary_op);
   hr_clock.stop(&timed);
   double cpu_time(timed);
- 
-  
-  
-  thrust::copy(csr_val_d.begin(), csr_val_d.end(), std::ostream_iterator<float>(std::cout, " "));
-  std::cout<<std::endl;
 
+  thrust::copy(csr_val_d.begin(), csr_val_d.end(), std::ostream_iterator<float>(std::cout, " "));
+  std::cout << std::endl;
 
   dim3 block_size(1, 1, 1);
   dim3 grid_size(1, 1, 1);
-  
 
   hr_clock.start();
   T sum_r = thrust::reduce(csr_val_d.begin(), csr_val_d.end(), 0.0, binary_op);
@@ -80,46 +73,37 @@ void thrust_passing_arg_test( thrust::host_vector<int> &csr_ptr_h,
   hr_clock.stop(&timed);
   double r_time(timed);
 
-
-
   hr_clock.start();
   thrust::device_vector<T> sum_d(1, 0.0);
-  test_sum<<<block_size,grid_size>>>( csr_val_d.begin(),csr_val_d.end(), sum_d.data());
+  test_sum<<<block_size, grid_size>>>(csr_val_d.begin(), csr_val_d.end(), sum_d.data());
   CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed);
   double cuda_time(timed);
 
-  
   hr_clock.start();
   hipStream_t s;
   thrust::device_vector<T> sum_a(1, 0.0);
   hipStreamCreate(&s);
-  test_sum<<<1,1,0,s>>>(csr_val_d.begin(),csr_val_d.end(), sum_a.data());
+  test_sum<<<1, 1, 0, s>>>(csr_val_d.begin(), csr_val_d.end(), sum_a.data());
   hipStreamSynchronize(s);
   hr_clock.stop(&timed);
   double asyn_time(timed);
 
-
-
   hr_clock.start();
-  T* csr_val_ptr = thrust::raw_pointer_cast(csr_val_d.data());
-  double* raw_sum;  
+  T *csr_val_ptr = thrust::raw_pointer_cast(csr_val_d.data());
+  double *raw_sum;
   double sum_cast;
-  hipMalloc((void **) &raw_sum, sizeof(double));
-  test_sum_cast<<<block_size,grid_size>>>( csr_val_ptr, csr_val_d.size(), raw_sum);
-  hipMemcpy(&sum_cast, raw_sum, sizeof(double),hipMemcpyDeviceToHost);
+  hipMalloc((void **)&raw_sum, sizeof(double));
+  test_sum_cast<<<block_size, grid_size>>>(csr_val_ptr, csr_val_d.size(), raw_sum);
+  hipMemcpy(&sum_cast, raw_sum, sizeof(double), hipMemcpyDeviceToHost);
   CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed);
   double cast_time(timed);
   hipFree(raw_sum);
 
-
-
-  
-  std::cout<<"cpu    sum of val: "<< sum_h <<" runtime: "<<cpu_time<<std::endl;
-  std::cout<<"device sum of val: "<< sum_r <<" runtime: "<<r_time<<std::endl;
-  std::cout<<"kernel sum of val: "<< sum_d[0] <<" runtime: "<<cuda_time<<std::endl;
-  std::cout<<"async  sum of val: "<< sum_a[0] <<" runtime: "<<asyn_time<<std::endl;
-  std::cout<<"cast:  sum of val: "<< sum_cast <<" runtime: "<<cast_time<<std::endl;
-
-} 
+  std::cout << "cpu    sum of val: " << sum_h << " runtime: " << cpu_time << std::endl;
+  std::cout << "device sum of val: " << sum_r << " runtime: " << r_time << std::endl;
+  std::cout << "kernel sum of val: " << sum_d[0] << " runtime: " << cuda_time << std::endl;
+  std::cout << "async  sum of val: " << sum_a[0] << " runtime: " << asyn_time << std::endl;
+  std::cout << "cast:  sum of val: " << sum_cast << " runtime: " << cast_time << std::endl;
+}

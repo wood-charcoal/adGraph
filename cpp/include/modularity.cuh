@@ -19,11 +19,12 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime.h>
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/random.h>
 #include <thrust/generate.h>
 #include <thrust/transform.h>
+#include <thrust/sequence.h>
+#include <thrust/iterator/counting_iterator.h>
 
 #include "util.cuh"
 #include "graph_utils.cuh"
@@ -197,7 +198,7 @@ modularity(const int n_vertex, int n_edges, const int n_clusters, ValType m2,
 
   CUDA_CALL(hipDeviceSynchronize());
 
-  ValType Q = thrust::reduce(thrust::cuda::par, Q_arr_ptr, Q_arr_ptr + n_vertex, (ValType)(0.0)); 
+  ValType Q = thrust::reduce(thrust::hip::par, Q_arr_ptr, Q_arr_ptr + n_vertex, (ValType)(0.0)); 
 
   return -Q;
 
@@ -232,7 +233,7 @@ generate_cluster_inv(const int n_vertex, const int c_size,
 
   int nthreads = min(n_vertex,CUDA_MAX_KERNEL_THREADS); 
   int nblocks = min((n_vertex + nthreads - 1)/nthreads,CUDA_MAX_BLOCKS); 
-  thrust::fill(thrust::cuda::par, cluster_inv_ptr.begin(), cluster_inv_ptr.end(), 0);
+  thrust::fill(thrust::hip::par, cluster_inv_ptr.begin(), cluster_inv_ptr.end(), 0);
   cudaCheckError();
   IdxType* cluster_inv_ptr_ptr = thrust::raw_pointer_cast(cluster_inv_ptr.data());
 
