@@ -370,9 +370,10 @@ unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, int last_lane, unsig
  */
 __device__ __forceinline__ float FMUL_RZ(float a, float b)
 {
-    float d;
-    asm ("mul.rz.f32 %0, %1, %2;" : "=f"(d) : "f"(a), "f"(b));
-    return d;
+    // float d;
+    // asm ("mul.rz.f32 %0, %1, %2;" : "=f"(d) : "f"(a), "f"(b));
+    // return d;
+    return __hip_fmul_rz(a, b);
 }
 
 
@@ -381,9 +382,10 @@ __device__ __forceinline__ float FMUL_RZ(float a, float b)
  */
 __device__ __forceinline__ float FFMA_RZ(float a, float b, float c)
 {
-    float d;
-    asm ("fma.rz.f32 %0, %1, %2, %3;" : "=f"(d) : "f"(a), "f"(b), "f"(c));
-    return d;
+    // float d;
+    // asm ("fma.rz.f32 %0, %1, %2, %3;" : "=f"(d) : "f"(a), "f"(b), "f"(c));
+    // return d;
+    return __hip_fmaf_rz(a, b, c);
 }
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS

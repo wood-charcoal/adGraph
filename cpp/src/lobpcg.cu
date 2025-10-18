@@ -442,8 +442,8 @@ namespace nvgraph
         //     CHECK_CUBLAS(magmablasSetKernelStream(s_alg));    //returns hipblasStatus_t
         // }
         // else {
-        CHECK_CUSOLVER(cusolverDnGetStream(cusolverHandle, &s_cusolver));
-        CHECK_CUSOLVER(cusolverDnSetStream(cusolverHandle, s_alg));
+        CHECK_CUSOLVER(hipsolverDnGetStream(cusolverHandle, &s_cusolver));
+        CHECK_CUSOLVER(hipsolverDnSetStream(cusolverHandle, s_alg));
         //}
         // save and set streams in Laplacian/CUSPARSE
         L->getCUDAStream(&s_cusparse);

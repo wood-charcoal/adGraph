@@ -18,6 +18,8 @@
 #include <iostream>
 
 #include <sm_utils.h>
+#include <hip/hip_runtime.h>
+#include <hip/device_functions.h>
 #include <hipcub/hipcub.hpp>
 #include <nvgraph_error.hxx>
 

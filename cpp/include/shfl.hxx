@@ -15,6 +15,9 @@
  */
 #include "sm_utils.h"
 
+#include <hip/hip_runtime.h>
+#include <hip/device_functions.h>
+
 namespace nvgraph{
 
     __device__ __forceinline__ float shflFPAdd(
@@ -23,32 +26,40 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        float output;
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
-            "  @p add.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input), "r"(mask));
+//         float output;
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
+//             "  @p add.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input), "r"(mask));
 
-#else
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.up.b32 r0|p, %1, %2, %3;"
-            "  @p add.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input));
-#endif
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.up.b32 r0|p, %1, %2, %3;"
+//             "  @p add.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input));
+// #endif
 
- 		return output;
+//  		return output;
+
+        float shuffled_val = __shfl_up_sync(mask, input, offset);
+
+        if (hipThreadIdx_x >= offset) {
+            return shuffled_val + input;
+        } else {
+            return shuffled_val;
+        }
 
     }
 
@@ -60,46 +71,53 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        double output;
+//         double output;
 
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
-            "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p add.f64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.up.b32 lo|p, lo, %2, %3;"
-            "    shfl.up.b32 hi|p, hi, %2, %3;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p add.f64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input));
-#endif
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
+//             "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p add.f64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.up.b32 lo|p, lo, %2, %3;"
+//             "    shfl.up.b32 hi|p, hi, %2, %3;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p add.f64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input));
+// #endif
 
-        return output;
+//         return output;
+
+        double shuffled_val = __shfl_up_sync(mask, input, offset);
+        if (hipThreadIdx_x >= offset) {
+            return shuffled_val + input;
+        } else {
+            return shuffled_val;
+        }
     }
 
     __device__ __forceinline__ float shflFPMin(
@@ -108,31 +126,38 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        float output;
-        //if (threadIdx.x + blockDim.x*blockIdx.x < 4)device_printf("Thread = %d %f\n", threadIdx.x + blockDim.x*blockIdx.x, input);
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
-            "  @p min.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.up.b32 r0|p, %1, %2, %3;"
-            "  @p min.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input));
-#endif
-        return output;
+//         float output;
+//         //if (threadIdx.x + blockDim.x*blockIdx.x < 4)device_printf("Thread = %d %f\n", threadIdx.x + blockDim.x*blockIdx.x, input);
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
+//             "  @p min.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.up.b32 r0|p, %1, %2, %3;"
+//             "  @p min.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input));
+// #endif
+//         return output;
+
+        float shuffled_val = __shfl_up_sync(mask, input, offset);
+        if (hipThreadIdx_x >= offset) {
+            return __hip_fminf(shuffled_val, input);
+        } else {
+            return shuffled_val;
+        }
     }
 
     //incorporate into cusparse and try to remove
@@ -143,46 +168,53 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        double output;
+//         double output;
 
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
-            "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p min.f64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.up.b32 lo|p, lo, %2, %3;"
-            "    shfl.up.b32 hi|p, hi, %2, %3;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p min.f64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input));
-#endif
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
+//             "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p min.f64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.up.b32 lo|p, lo, %2, %3;"
+//             "    shfl.up.b32 hi|p, hi, %2, %3;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p min.f64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input));
+// #endif
 
-        return output;
+//         return output;
+
+        double shuffled_val = __shfl_up_sync(mask, input, offset);
+        if (hipThreadIdx_x >= offset) {
+            return __hip_fmin(shuffled_val, input);
+        } else {
+            return shuffled_val;
+        }
     }
 
     __device__ __forceinline__ float shflFPMax(
@@ -191,33 +223,39 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        float output;
-        //if (threadIdx.x + blockDim.x*blockIdx.x < 4)device_printf("Thread = %d %f\n", threadIdx.x + blockDim.x*blockIdx.x, input);
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
-            "  @p max.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.up.b32 r0|p, %1, %2, %3;"
-            "  @p max.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input));
-#endif
-        return output;
+//         float output;
+//         //if (threadIdx.x + blockDim.x*blockIdx.x < 4)device_printf("Thread = %d %f\n", threadIdx.x + blockDim.x*blockIdx.x, input);
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
+//             "  @p max.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.up.b32 r0|p, %1, %2, %3;"
+//             "  @p max.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input));
+// #endif
+//         return output;
+
+        float shuffled_val = __shfl_up_sync(mask, input, offset);
+        if (hipThreadIdx_x >= offset) {
+            return __hip_fmaxf(shuffled_val, input);
+        } else {
+            return shuffled_val;
+        }
    
-        //return output;
     }
 
     //incorporate into cusparse and try to remove
@@ -228,46 +266,53 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        double output;
+//         double output;
 
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
-            "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p max.f64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.up.b32 lo|p, lo, %2, %3;"
-            "    shfl.up.b32 hi|p, hi, %2, %3;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p max.f64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input));
-#endif
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
+//             "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p max.f64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.up.b32 lo|p, lo, %2, %3;"
+//             "    shfl.up.b32 hi|p, hi, %2, %3;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p max.f64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input));
+// #endif
 
-        return output;
+//         return output;
+
+        double shuffled_val = __shfl_up_sync(mask, input, offset);
+        if (hipThreadIdx_x >= offset) {
+            return __hip_fmax(shuffled_val, input);
+        } else {
+            return shuffled_val;
+        }
     }
 
     __device__ __forceinline__ float shflFPOr(
@@ -276,32 +321,39 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        float output;
-        //if (threadIdx.x + blockDim.x*blockIdx.x < 4)device_printf("Thread = %d %f\n", threadIdx.x + blockDim.x*blockIdx.x, input);
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
-            "  @p or.b32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.up.b32 r0|p, %1, %2, %3;"
-            "  @p or.b32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input));
-#endif
+//         float output;
+//         //if (threadIdx.x + blockDim.x*blockIdx.x < 4)device_printf("Thread = %d %f\n", threadIdx.x + blockDim.x*blockIdx.x, input);
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
+//             "  @p or.b32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.up.b32 r0|p, %1, %2, %3;"
+//             "  @p or.b32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(firstLane), "f"(input));
+// #endif
    
-        return output;
+//         return output;
+
+        float shuffled_val = __shfl_up_sync(mask, input, offset);
+        if (hipThreadIdx_x >= offset) {
+            return __hip_orf(shuffled_val, input);
+        } else {
+            return shuffled_val;
+        }
     }
 
     __device__ __forceinline__ double shflFPOr(
@@ -310,46 +362,53 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        double output;
+//         double output;
 
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
-            "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p or.b64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.up.b32 lo|p, lo, %2, %3;"
-            "    shfl.up.b32 hi|p, hi, %2, %3;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p or.b64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input));
-#endif
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
+//             "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p or.b64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.up.b32 lo|p, lo, %2, %3;"
+//             "    shfl.up.b32 hi|p, hi, %2, %3;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p or.b64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(firstLane), "d"(input));
+// #endif
 
-        return output;
+//         return output;
+
+        double shuffled_val = __shfl_up_sync(mask, input, offset);
+        if (hipThreadIdx_x >= offset) {
+            return __hip_or(shuffled_val, input);
+        } else {
+            return shuffled_val;
+        }
     }
 //Need to write correct instructions in asm for the operation -log(exp(-x) + exp(-y))
  __device__ __forceinline__ float shflFPLog(
@@ -358,38 +417,55 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        float output;
-        float expinput = expf(-input); //this must be shuffled and adding
-        float baseChange = log2(expf(1.0)); //for change of base formaula
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
-            "  @p add.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "  @p lg2.approx.f32  %0, r0;" //convert to natural logarithm!!
-            //add another variable for e in change of base compute log_e(x) = log_2(x) / log_2(e) 
-            "  @p neg.f32  %0, r0;"
-            "}"
-            : "=f"(output) : "f"(expinput), "r"(offset), "r"(firstLane), "f"(expinput), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.up.b32 r0|p, %1, %2, %3;"
-            "  @p add.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "  @p lg2.approx.f32  %0, r0;" //convert to natural logarithm!!
-            //add another variable for e in change of base compute log_e(x) = log_2(x) / log_2(e) 
-            "  @p neg.f32  %0, r0;"
-            "}"
-            : "=f"(output) : "f"(expinput), "r"(offset), "r"(firstLane), "f"(expinput));
-#endif
-        return output;
+//         float output;
+//         float expinput = expf(-input); //this must be shuffled and adding
+//         float baseChange = log2(expf(1.0)); //for change of base formaula
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.sync.up.b32 r0|p, %1, %2, %3, %5;"
+//             "  @p add.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "  @p lg2.approx.f32  %0, r0;" //convert to natural logarithm!!
+//             //add another variable for e in change of base compute log_e(x) = log_2(x) / log_2(e) 
+//             "  @p neg.f32  %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(expinput), "r"(offset), "r"(firstLane), "f"(expinput), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.up.b32 r0|p, %1, %2, %3;"
+//             "  @p add.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "  @p lg2.approx.f32  %0, r0;" //convert to natural logarithm!!
+//             //add another variable for e in change of base compute log_e(x) = log_2(x) / log_2(e) 
+//             "  @p neg.f32  %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(expinput), "r"(offset), "r"(firstLane), "f"(expinput));
+// #endif
+//         return output;
+
+    float expinput = __hip_expf(-input);
+
+    float shuffled_val = __shfl_up_sync(mask, expinput, offset);
+    float sum_result;
+
+    if (hipThreadIdx_x >= offset) {
+        sum_result = shuffled_val + expinput;
+    } else {
+        sum_result = shuffled_val;
+    }
+
+    float log_result = __hip_logf(sum_result);
+    
+    float output = -log_result; 
+
+    return output;
     }
 //check this!!
     __device__ __forceinline__ double shflFPLog(
@@ -398,50 +474,67 @@ namespace nvgraph{
         int             offset,             //Upstream offset to pull from
         int             mask = DEFAULT_MASK) // lane mask for operation
     {
-        double output;
-        double expinput = exp(-input);
-        double baseChange = log2(exp(1.0));//divide byt his
+//         double output;
+//         double expinput = exp(-input);
+//         double baseChange = log2(exp(1.0));//divide byt his
 
-        // Use predicate set from SHFL to guard against invalid peers
-#if USE_CG
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"        
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
-            "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p add.f64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-           // "  @p lg2.approx.f32  %0, r0;" //f64 not supported!!
-            "  @p neg.f64  %0, r0;"
-            "}"
-            : "=d"(output) : "d"(expinput), "r"(offset), "r"(firstLane), "d"(expinput), "r"(mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f64 r0;"
-            "  .reg .pred p;"        
-            "  {"
-            "    .reg .u32 lo;"
-            "    .reg .u32 hi;"
-            "    mov.b64 {lo, hi}, %1;"
-            "    shfl.up.b32 lo|p, lo, %2, %3;"
-            "    shfl.up.b32 hi|p, hi, %2, %3;"
-            "    mov.b64 r0, {lo, hi};"
-            "  }"
-            "  @p add.f64 r0, r0, %4;"
-            "  mov.f64 %0, r0;"
-           // "  @p lg2.approx.f32  %0, r0;" //f64 not supported!!
-            "  @p neg.f64  %0, r0;"
-            "}"
-            : "=d"(output) : "d"(expinput), "r"(offset), "r"(firstLane), "d"(expinput));
-#endif
+//         // Use predicate set from SHFL to guard against invalid peers
+// #if USE_CG
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"        
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.sync.up.b32 lo|p, lo, %2, %3, %5;"
+//             "    shfl.sync.up.b32 hi|p, hi, %2, %3, %5;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p add.f64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//            // "  @p lg2.approx.f32  %0, r0;" //f64 not supported!!
+//             "  @p neg.f64  %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(expinput), "r"(offset), "r"(firstLane), "d"(expinput), "r"(mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f64 r0;"
+//             "  .reg .pred p;"        
+//             "  {"
+//             "    .reg .u32 lo;"
+//             "    .reg .u32 hi;"
+//             "    mov.b64 {lo, hi}, %1;"
+//             "    shfl.up.b32 lo|p, lo, %2, %3;"
+//             "    shfl.up.b32 hi|p, hi, %2, %3;"
+//             "    mov.b64 r0, {lo, hi};"
+//             "  }"
+//             "  @p add.f64 r0, r0, %4;"
+//             "  mov.f64 %0, r0;"
+//            // "  @p lg2.approx.f32  %0, r0;" //f64 not supported!!
+//             "  @p neg.f64  %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(expinput), "r"(offset), "r"(firstLane), "d"(expinput));
+// #endif
+
+//         return output;
+
+        double expinput = __hip_exp(-input);
+
+        double shuffled_val = __shfl_up_sync(mask, expinput, offset);
+        double sum_result;
+
+        if (hipThreadIdx_x >= offset) {
+            sum_result = shuffled_val + expinput;
+        } else {
+            sum_result = shuffled_val;
+        }
+
+        double log_result = __hip_log(sum_result);
+        
+        double output = -log_result; 
 
         return output;
     }
