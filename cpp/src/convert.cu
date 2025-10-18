@@ -38,23 +38,99 @@ namespace nvgraph
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipDataType *dataType)
   {
-    CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
-                                       m, n, nnz,
-                                       csrVal, *dataType, csrRowPtr, csrColInd,
-                                       cscVal, *dataType, cscRowInd, cscColPtr,
-                                       copyValues, idxBase, *dataType));
+    // CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
+    //                                    m, n, nnz,
+    //                                    csrVal, *dataType, csrRowPtr, csrColInd,
+    //                                    cscVal, *dataType, cscRowInd, cscColPtr,
+    //                                    copyValues, idxBase, *dataType));
+    
+    hipsparseHandle_t handle = Cusparse::get_handle();
+    hipDataType valType = *dataType;
+    
+    size_t buffer_size = 0;
+    hipsparseCsr2CscAlg_t alg = HIPSPARSE_CSR2CSC_ALG1; 
+    
+    CHECK_CUSPARSE(hipsparseCsr2cscEx2_bufferSize(
+        handle,
+        m, n, nnz,
+        csrVal, csrRowPtr, csrColInd,
+        cscVal, cscColPtr, cscRowInd,
+        valType, copyValues, idxBase,
+        alg,
+        &buffer_size));
+
+    void *buffer = nullptr;
+    if (buffer_size > 0) {
+        hipError_t hip_status = hipMalloc(&buffer, buffer_size);
+        if (hip_status != hipSuccess) {
+            CHECK_CUDA(hip_status); 
+        }
+    }
+
+    CHECK_CUSPARSE(hipsparseCsr2cscEx2(
+        handle,
+        m, n, nnz,
+        csrVal, csrRowPtr, csrColInd,
+        cscVal, cscColPtr, cscRowInd,
+        valType,
+        copyValues, idxBase,
+        alg,
+        buffer));
+
+    if (buffer) {
+        CHECK_CUDA(hipFree(buffer));
+    }
   }
+
   void csc2csr(int m, int n, int nnz,
                const void *cscVal, const int *cscRowInd, const int *cscColPtr,
                void *csrVal, int *csrRowPtr, int *csrColInd,
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipDataType *dataType)
   {
-    CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
-                                       m, n, nnz,
-                                       cscVal, *dataType, cscColPtr, cscRowInd,
-                                       csrVal, *dataType, csrColInd, csrRowPtr,
-                                       copyValues, idxBase, *dataType));
+    // CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
+    //                                    m, n, nnz,
+    //                                    cscVal, *dataType, cscColPtr, cscRowInd,
+    //                                    csrVal, *dataType, csrColInd, csrRowPtr,
+    //                                    copyValues, idxBase, *dataType));
+    
+    hipsparseHandle_t handle = Cusparse::get_handle();
+    hipDataType valType = *dataType;
+    
+    int m_csc = n;
+    int n_csc = m;
+
+    size_t buffer_size = 0;
+    hipsparseCsr2CscAlg_t alg = HIPSPARSE_CSR2CSC_ALG1;
+  
+    CHECK_CUSPARSE(hipsparseCsr2cscEx2_bufferSize(
+        handle,
+        m_csc, n_csc, nnz,
+        cscVal, cscColPtr, cscRowInd,
+        csrVal, csrRowPtr, csrColInd,
+        valType, copyValues, idxBase,
+        alg,
+        &buffer_size));
+
+    void *buffer = nullptr;
+    if (buffer_size > 0) {
+        hipError_t hip_status = hipMalloc(&buffer, buffer_size);
+        CHECK_CUDA(hip_status); 
+    }
+
+    CHECK_CUSPARSE(hipsparseCsr2cscEx2(
+        handle,
+        m_csc, n_csc, nnz,
+        cscVal, cscColPtr, cscRowInd,
+        csrVal, csrRowPtr, csrColInd,
+        valType, 
+        copyValues, idxBase,
+        alg,
+        buffer));
+
+    if (buffer) {
+        CHECK_CUDA(hipFree(buffer));
+    }
   }
 
   void cooSortByDestination(int m, int n, int nnz,

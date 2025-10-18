@@ -289,7 +289,7 @@ namespace nvlouvain
         end_idx = *(csr_ptr_iter + wid + 1);
         degree = end_idx - start_idx;
       }
-      __syncwarp();
+      __threadfence();
       // find the max elements
       for (unsigned xid = 0; xid + tid < (degree); xid += WARP_SIZE)
       {
@@ -308,7 +308,7 @@ namespace nvlouvain
 
           stride /= 2; // stride /=2
         }
-        __syncwarp();
+        __threadfence();
 
         if (tid == 0 && warp_max_val < local_max[0])
         {
@@ -316,7 +316,7 @@ namespace nvlouvain
         }
       }
 
-      __syncwarp();
+      __threadfence();
       // zero out non-max elements
       for (unsigned xid = 0; xid + tid < (degree); xid += WARP_SIZE)
       {

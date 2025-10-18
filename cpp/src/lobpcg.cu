@@ -489,7 +489,7 @@ namespace nvgraph
 
         if (use_throttle)
         {
-            hipHostAlloc(&h_nrmR, 2 * sizeof(h_nrmR[0]), hipHostMallocDefault); // pinned memory
+            hipHostAlloc((void**)&h_nrmR, 2 * sizeof(h_nrmR[0]), hipHostMallocDefault); // pinned memory
             cudaCheckError();
         }
         else
@@ -1024,7 +1024,7 @@ namespace nvgraph
         //     CHECK_CUBLAS(magmablasSetKernelStream(s_magma)); //returns hipblasStatus_t
         // }
         // else {
-        CHECK_CUSOLVER(cusolverDnSetStream(cusolverHandle, s_cusolver));
+        CHECK_CUSOLVER(hipsolverDnSetStream(cusolverHandle, s_cusolver));
         //}
         // revert Laplacian/CUSPARSE streams
         L->setCUDAStream(s_cusparse);

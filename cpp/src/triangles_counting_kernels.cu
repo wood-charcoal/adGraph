@@ -1119,9 +1119,7 @@ namespace nvgraph
     template<typename T>
     void tricnt_thr(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, ihipStream_t* stream) {
 
-      hipFuncSetCacheConfig(tricnt_thr_k<THREADS, TH_CENT_K_LOCLEN, typename type_utils<T>::LOCINT,
-                                 typename type_utils<T>::LOCINT, uint64_t>,
-                             hipFuncCachePreferL1);
+      hipFuncSetCacheConfig(reinterpret_cast<const void*>(tricnt_thr_k<THREADS, TH_CENT_K_LOCLEN, typename type_utils<T>::LOCINT, typename type_utils<T>::LOCINT, uint64_t>), hipFuncCachePreferL1);
 
       tricnt_thr_k<THREADS, TH_CENT_K_LOCLEN> <<<nblock, THREADS, 0, stream>>>(m->nrows, m->rows_d,
                                                                                m->roff_d,

@@ -224,27 +224,17 @@ struct WarpScanShfl
 
 //         return output;
 
-        #ifdef CUB_USE_COOPERATIVE_GROUPS
-            #ifndef FULL_MASK 
-                #define FULL_MASK 0xffffffff 
-            #endif
-            int member_mask = FULL_MASK;
+        float shuffled = __shfl_up(input, offset, first_lane);
 
-            unsigned int sync_mask = (unsigned int)member_mask;
-
-        #else
-            #ifndef FULL_MASK 
-                #define FULL_MASK 0xffffffff 
-            #endif
-            unsigned int sync_mask = FULL_MASK;
-        #endif
-
-        float shuffled_val = __shfl_up_sync(sync_mask, input, offset);
-
-        if (hipThreadIdx_x >= offset) {
-            return input + shuffled_val;
-        } else {
-            return shuffled_val;
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return input + shuffled;
+        }
+        else
+        {
+            return input;
         }
     }
 
@@ -294,24 +284,17 @@ struct WarpScanShfl
 
 //         return output;
 
-        #ifdef CUB_USE_COOPERATIVE_GROUPS
-            #ifndef FULL_MASK 
-                #define FULL_MASK 0xffffffff 
-            #endif
-            unsigned int sync_mask = FULL_MASK;
-        #else
-            #ifndef FULL_MASK 
-                #define FULL_MASK 0xffffffff 
-            #endif
-            unsigned int sync_mask = FULL_MASK;
-        #endif
+        unsigned long long shuffled = __shfl_up(input, offset, first_lane);
 
-        unsigned long long shuffled_val = __shfl_up_sync(sync_mask, input, offset);
-
-        if (hipThreadIdx_x >= offset) {
-            return input + shuffled_val;
-        } else {
-            return shuffled_val;
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return input + shuffled;
+        }
+        else
+        {
+            return input;
         }
     }
 
@@ -361,24 +344,17 @@ struct WarpScanShfl
 
 //         return output;
 
-        #ifdef CUB_USE_COOPERATIVE_GROUPS
-            #ifndef FULL_MASK 
-                #define FULL_MASK 0xffffffff 
-            #endif
-            unsigned int sync_mask = FULL_MASK;
-        #else
-            #ifndef FULL_MASK 
-                #define FULL_MASK 0xffffffff 
-            #endif
-            unsigned int sync_mask = FULL_MASK;
-        #endif
+        long long shuffled = __shfl_up(input, offset, first_lane);
 
-        long long shuffled_val = __shfl_up_sync(sync_mask, input, offset);
-
-        if (hipThreadIdx_x >= offset) {
-            return input + shuffled_val;
-        } else {
-            return shuffled_val;
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return input + shuffled;
+        }
+        else
+        {
+            return input;
         }
     }
 
@@ -428,24 +404,17 @@ struct WarpScanShfl
 
 //         return output;
 
-        #ifdef CUB_USE_COOPERATIVE_GROUPS
-            #ifndef FULL_MASK 
-                #define FULL_MASK 0xffffffff 
-            #endif
-            unsigned int sync_mask = FULL_MASK;
-        #else
-            #ifndef FULL_MASK 
-                #define FULL_MASK 0xffffffff 
-            #endif
-            unsigned int sync_mask = FULL_MASK;
-        #endif
+        double shuffled = __shfl_up(input, offset, first_lane);
 
-        double shuffled_val = __shfl_up_sync(sync_mask, input, offset);
-
-        if (hipThreadIdx_x >= offset) {
-            return input + shuffled_val;
-        } else {
-            return shuffled_val;
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return input + shuffled;
+        }
+        else
+        {
+            return input;
         }
     }
 

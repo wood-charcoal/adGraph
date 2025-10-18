@@ -142,7 +142,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
         ones.fill(1.0);
         ValueType alpha = 1.0, beta =0.0;
         Cusparse::csrmv(false, false, n, n, nnz,&alpha,A_nonzero_values_ptr, A_row_offsets_ptr, A_column_indices_ptr, ones.raw(),&beta, row_sum.raw());
-        hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType),ValueType,float>,hipFuncCachePreferL1);
+        hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType, ValueType, float>), hipFuncCachePreferL1);
         computeEdgeWeights_simple<<<num_blocks_V2,threads_per_block,0,this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_row_sum_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, this->m_weight_formula);
         cudaCheckError();  
         break; 
@@ -156,7 +156,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
        computeDiagonalKernelCSR<<<num_blocks,threads_per_block,0,this->m_stream>>>(n, A.get_raw_row_offsets(), A.get_raw_column_indices(), diag_idx.raw());
        cudaCheckError();
 
-       hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType),ValueType,float>,hipFuncCachePreferL1);
+       hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType, ValueType, float>), hipFuncCachePreferL1);
        computeEdgeWeightsBlockDiaCsr_V2<<<num_blocks_V2,threads_per_block,0,this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_dia_idx_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, bsize,this->m_aggregation_edge_weight_component, this->m_weight_formula);
        cudaCheckError();  
        break; 

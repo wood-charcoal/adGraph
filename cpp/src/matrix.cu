@@ -21,6 +21,7 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
+#include <thrust/iterator/constant_iterator.h>
 
 #include "nvgraph_error.hxx"
 #include "nvgraph_vector.hxx"
@@ -278,17 +279,17 @@ namespace nvgraph {
       //printf("CsrMatrix prec_setup dispacthed\n");
       if (!factored) {
           //analyse lower triangular factor
-          CHECK_CUSPARSE(cusparseCreateSolveAnalysisInfo(&info_l));
+          // CHECK_CUSPARSE(cusparseCreateSolveAnalysisInfo(&info_l));
           CHECK_CUSPARSE(hipsparseSetMatFillMode(descrA,HIPSPARSE_FILL_MODE_LOWER));
           CHECK_CUSPARSE(hipsparseSetMatDiagType(descrA,HIPSPARSE_DIAG_TYPE_UNIT));
-          CHECK_CUSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,info_l));
+          // CHECK_CUSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,info_l));
           //analyse upper triangular factor
-          CHECK_CUSPARSE(cusparseCreateSolveAnalysisInfo(&info_u));
+          // CHECK_CUSPARSE(cusparseCreateSolveAnalysisInfo(&info_u));
           CHECK_CUSPARSE(hipsparseSetMatFillMode(descrA,HIPSPARSE_FILL_MODE_UPPER));
           CHECK_CUSPARSE(hipsparseSetMatDiagType(descrA,HIPSPARSE_DIAG_TYPE_NON_UNIT));
-          CHECK_CUSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,info_u));
+          // CHECK_CUSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,nnz,descrA,csrValA,csrRowPtrA,csrColIndA,info_u));
           //perform csrilu0 (should be slightly faster than csric0)
-          CHECK_CUSPARSE(cusparseXcsrilu0(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,descrA,csrValA,csrRowPtrA,csrColIndA,info_l));
+          // CHECK_CUSPARSE(cusparseXcsrilu0(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,descrA,csrValA,csrRowPtrA,csrColIndA,info_l));
           //set factored flag to true
           factored=true;
       }
@@ -303,11 +304,11 @@ namespace nvgraph {
       //solve lower triangular factor
       CHECK_CUSPARSE(hipsparseSetMatFillMode(descrA,HIPSPARSE_FILL_MODE_LOWER));
       CHECK_CUSPARSE(hipsparseSetMatDiagType(descrA,HIPSPARSE_DIAG_TYPE_UNIT));
-      CHECK_CUSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,k,alpha,descrA,csrValA,csrRowPtrA,csrColIndA,info_l,fx,this->m,t,this->m));
+      // CHECK_CUSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,k,alpha,descrA,csrValA,csrRowPtrA,csrColIndA,info_l,fx,this->m,t,this->m));
       //solve upper triangular factor
       CHECK_CUSPARSE(hipsparseSetMatFillMode(descrA,HIPSPARSE_FILL_MODE_UPPER));
       CHECK_CUSPARSE(hipsparseSetMatDiagType(descrA,HIPSPARSE_DIAG_TYPE_NON_UNIT));
-      CHECK_CUSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,k,alpha,descrA,csrValA,csrRowPtrA,csrColIndA,info_u,t,this->m,fx,this->m));
+      // CHECK_CUSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(),HIPSPARSE_OPERATION_NON_TRANSPOSE,this->m,k,alpha,descrA,csrValA,csrRowPtrA,csrColIndA,info_u,t,this->m,fx,this->m));
       
   } 
 

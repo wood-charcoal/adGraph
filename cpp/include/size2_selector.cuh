@@ -229,7 +229,7 @@ Vector<IndexType> &aggregates, int &num_aggregates)
        computeDiagonalKernelCSR<<<num_blocks,threads_per_block,0,this->m_stream>>>(n, csr_ptr, csr_ind, diag_idx.raw());
        cudaCheckError();
 
-       hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType),ValueType,float>,hipFuncCachePreferL1);
+       hipFuncSetCacheConfig(reinterpret_cast<const void*>(computeEdgeWeightsBlockDiaCsr_V2<IndexType, ValueType, float>), hipFuncCachePreferL1);
        computeEdgeWeightsBlockDiaCsr_V2<<<num_blocks_V2,threads_per_block,0,this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_dia_idx_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, bsize,this->m_aggregation_edge_weight_component, this->m_weight_formula);
        cudaCheckError();  
        break; 

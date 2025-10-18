@@ -180,32 +180,42 @@ struct WarpReduceShfl
         int             last_lane,          ///< [in] Index of last lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
-        float output;
+//         float output;
 
-        // Use predicate set from SHFL to guard against invalid peers
-#ifdef CUB_USE_COOPERATIVE_GROUPS
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.sync.down.b32 r0|p, %1, %2, %3, %5;"
-            "  @p add.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(last_lane), "f"(input), "r"(member_mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .f32 r0;"
-            "  .reg .pred p;"
-            "  shfl.down.b32 r0|p, %1, %2, %3;"
-            "  @p add.f32 r0, r0, %4;"
-            "  mov.f32 %0, r0;"
-            "}"
-            : "=f"(output) : "f"(input), "r"(offset), "r"(last_lane), "f"(input));
-#endif
+//         // Use predicate set from SHFL to guard against invalid peers
+// #ifdef CUB_USE_COOPERATIVE_GROUPS
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.sync.down.b32 r0|p, %1, %2, %3, %5;"
+//             "  @p add.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(last_lane), "f"(input), "r"(member_mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .f32 r0;"
+//             "  .reg .pred p;"
+//             "  shfl.down.b32 r0|p, %1, %2, %3;"
+//             "  @p add.f32 r0, r0, %4;"
+//             "  mov.f32 %0, r0;"
+//             "}"
+//             : "=f"(output) : "f"(input), "r"(offset), "r"(last_lane), "f"(input));
+// #endif
 
-        return output;
+//         return output;
+
+        float peer_value = __shfl_down(input, offset, last_lane);
+
+        int lane_id = threadIdx.x & (warpSize - 1); 
+        
+        if (lane_id < (last_lane - offset)) {
+            input += peer_value;
+        }
+        
+        return input;
     }
 
 
@@ -216,37 +226,47 @@ struct WarpReduceShfl
         int                 last_lane,          ///< [in] Index of last lane in segment
         int                 offset)             ///< [in] Up-offset to pull from
     {
-        unsigned long long output;
+//         unsigned long long output;
 
-#ifdef CUB_USE_COOPERATIVE_GROUPS
-        asm volatile(
-            "{"
-            "  .reg .u32 lo;"
-            "  .reg .u32 hi;"
-            "  .reg .pred p;"
-            "  mov.b64 {lo, hi}, %1;"
-            "  shfl.sync.down.b32 lo|p, lo, %2, %3, %4;"
-            "  shfl.sync.down.b32 hi|p, hi, %2, %3, %4;"
-            "  mov.b64 %0, {lo, hi};"
-            "  @p add.u64 %0, %0, %1;"
-            "}"
-            : "=l"(output) : "l"(input), "r"(offset), "r"(last_lane), "r"(member_mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .u32 lo;"
-            "  .reg .u32 hi;"
-            "  .reg .pred p;"
-            "  mov.b64 {lo, hi}, %1;"
-            "  shfl.down.b32 lo|p, lo, %2, %3;"
-            "  shfl.down.b32 hi|p, hi, %2, %3;"
-            "  mov.b64 %0, {lo, hi};"
-            "  @p add.u64 %0, %0, %1;"
-            "}"
-            : "=l"(output) : "l"(input), "r"(offset), "r"(last_lane));
-#endif
+// #ifdef CUB_USE_COOPERATIVE_GROUPS
+//         asm volatile(
+//             "{"
+//             "  .reg .u32 lo;"
+//             "  .reg .u32 hi;"
+//             "  .reg .pred p;"
+//             "  mov.b64 {lo, hi}, %1;"
+//             "  shfl.sync.down.b32 lo|p, lo, %2, %3, %4;"
+//             "  shfl.sync.down.b32 hi|p, hi, %2, %3, %4;"
+//             "  mov.b64 %0, {lo, hi};"
+//             "  @p add.u64 %0, %0, %1;"
+//             "}"
+//             : "=l"(output) : "l"(input), "r"(offset), "r"(last_lane), "r"(member_mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .u32 lo;"
+//             "  .reg .u32 hi;"
+//             "  .reg .pred p;"
+//             "  mov.b64 {lo, hi}, %1;"
+//             "  shfl.down.b32 lo|p, lo, %2, %3;"
+//             "  shfl.down.b32 hi|p, hi, %2, %3;"
+//             "  mov.b64 %0, {lo, hi};"
+//             "  @p add.u64 %0, %0, %1;"
+//             "}"
+//             : "=l"(output) : "l"(input), "r"(offset), "r"(last_lane));
+// #endif
 
-        return output;
+//         return output;
+
+    unsigned long long peer_value = __shfl_down(input, offset, last_lane);
+
+    int lane_id = threadIdx.x & (warpSize - 1); 
+    
+    if (lane_id < (last_lane - offset)) {
+        input += peer_value;
+    }
+    
+    return input;
     }
 
 
@@ -257,38 +277,48 @@ struct WarpReduceShfl
         int                 last_lane,          ///< [in] Index of last lane in segment
         int                 offset)             ///< [in] Up-offset to pull from
     {
-        long long output;
+//         long long output;
 
-        // Use predicate set from SHFL to guard against invalid peers
-#ifdef CUB_USE_COOPERATIVE_GROUPS
-        asm volatile(
-            "{"
-            "  .reg .u32 lo;"
-            "  .reg .u32 hi;"
-            "  .reg .pred p;"
-            "  mov.b64 {lo, hi}, %1;"
-            "  shfl.sync.down.b32 lo|p, lo, %2, %3, %4;"
-            "  shfl.sync.down.b32 hi|p, hi, %2, %3, %4;"
-            "  mov.b64 %0, {lo, hi};"
-            "  @p add.s64 %0, %0, %1;"
-            "}"
-            : "=l"(output) : "l"(input), "r"(offset), "r"(last_lane), "r"(member_mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .u32 lo;"
-            "  .reg .u32 hi;"
-            "  .reg .pred p;"
-            "  mov.b64 {lo, hi}, %1;"
-            "  shfl.down.b32 lo|p, lo, %2, %3;"
-            "  shfl.down.b32 hi|p, hi, %2, %3;"
-            "  mov.b64 %0, {lo, hi};"
-            "  @p add.s64 %0, %0, %1;"
-            "}"
-            : "=l"(output) : "l"(input), "r"(offset), "r"(last_lane));
-#endif
+//         // Use predicate set from SHFL to guard against invalid peers
+// #ifdef CUB_USE_COOPERATIVE_GROUPS
+//         asm volatile(
+//             "{"
+//             "  .reg .u32 lo;"
+//             "  .reg .u32 hi;"
+//             "  .reg .pred p;"
+//             "  mov.b64 {lo, hi}, %1;"
+//             "  shfl.sync.down.b32 lo|p, lo, %2, %3, %4;"
+//             "  shfl.sync.down.b32 hi|p, hi, %2, %3, %4;"
+//             "  mov.b64 %0, {lo, hi};"
+//             "  @p add.s64 %0, %0, %1;"
+//             "}"
+//             : "=l"(output) : "l"(input), "r"(offset), "r"(last_lane), "r"(member_mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .u32 lo;"
+//             "  .reg .u32 hi;"
+//             "  .reg .pred p;"
+//             "  mov.b64 {lo, hi}, %1;"
+//             "  shfl.down.b32 lo|p, lo, %2, %3;"
+//             "  shfl.down.b32 hi|p, hi, %2, %3;"
+//             "  mov.b64 %0, {lo, hi};"
+//             "  @p add.s64 %0, %0, %1;"
+//             "}"
+//             : "=l"(output) : "l"(input), "r"(offset), "r"(last_lane));
+// #endif
 
-        return output;
+//         return output;
+
+    long long peer_value = __shfl_down(input, offset, last_lane);
+    
+    int lane_id = threadIdx.x & (warpSize - 1); 
+    
+    if (lane_id < (last_lane - offset)) {
+        input += peer_value;
+    }
+    
+    return input;
     }
 
 
@@ -299,42 +329,52 @@ struct WarpReduceShfl
         int                 last_lane,          ///< [in] Index of last lane in segment
         int                 offset)             ///< [in] Up-offset to pull from
     {
-        double output;
+//         double output;
 
-        // Use predicate set from SHFL to guard against invalid peers
-#ifdef CUB_USE_COOPERATIVE_GROUPS
-        asm volatile(
-            "{"
-            "  .reg .u32 lo;"
-            "  .reg .u32 hi;"
-            "  .reg .pred p;"
-            "  .reg .f64 r0;"
-            "  mov.b64 %0, %1;"
-            "  mov.b64 {lo, hi}, %1;"
-            "  shfl.sync.down.b32 lo|p, lo, %2, %3, %4;"
-            "  shfl.sync.down.b32 hi|p, hi, %2, %3, %4;"
-            "  mov.b64 r0, {lo, hi};"
-            "  @p add.f64 %0, %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(last_lane), "r"(member_mask));
-#else
-        asm volatile(
-            "{"
-            "  .reg .u32 lo;"
-            "  .reg .u32 hi;"
-            "  .reg .pred p;"
-            "  .reg .f64 r0;"
-            "  mov.b64 %0, %1;"
-            "  mov.b64 {lo, hi}, %1;"
-            "  shfl.down.b32 lo|p, lo, %2, %3;"
-            "  shfl.down.b32 hi|p, hi, %2, %3;"
-            "  mov.b64 r0, {lo, hi};"
-            "  @p add.f64 %0, %0, r0;"
-            "}"
-            : "=d"(output) : "d"(input), "r"(offset), "r"(last_lane));
-#endif
+//         // Use predicate set from SHFL to guard against invalid peers
+// #ifdef CUB_USE_COOPERATIVE_GROUPS
+//         asm volatile(
+//             "{"
+//             "  .reg .u32 lo;"
+//             "  .reg .u32 hi;"
+//             "  .reg .pred p;"
+//             "  .reg .f64 r0;"
+//             "  mov.b64 %0, %1;"
+//             "  mov.b64 {lo, hi}, %1;"
+//             "  shfl.sync.down.b32 lo|p, lo, %2, %3, %4;"
+//             "  shfl.sync.down.b32 hi|p, hi, %2, %3, %4;"
+//             "  mov.b64 r0, {lo, hi};"
+//             "  @p add.f64 %0, %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(last_lane), "r"(member_mask));
+// #else
+//         asm volatile(
+//             "{"
+//             "  .reg .u32 lo;"
+//             "  .reg .u32 hi;"
+//             "  .reg .pred p;"
+//             "  .reg .f64 r0;"
+//             "  mov.b64 %0, %1;"
+//             "  mov.b64 {lo, hi}, %1;"
+//             "  shfl.down.b32 lo|p, lo, %2, %3;"
+//             "  shfl.down.b32 hi|p, hi, %2, %3;"
+//             "  mov.b64 r0, {lo, hi};"
+//             "  @p add.f64 %0, %0, r0;"
+//             "}"
+//             : "=d"(output) : "d"(input), "r"(offset), "r"(last_lane));
+// #endif
 
-        return output;
+//         return output;
+
+    double peer_value = __shfl_down(input, offset, last_lane);
+
+    int lane_id = threadIdx.x & (warpSize - 1); 
+    
+    if (lane_id < (last_lane - offset)) {
+        input += peer_value;
+    }
+    
+    return input;
     }
 
 

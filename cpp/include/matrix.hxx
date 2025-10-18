@@ -146,8 +146,8 @@ namespace nvgraph
     /// Column index of each matrix entry (device memory)
     const IndexType_ *csrColIndA;
     /// Analysis info (pointer to opaque CUSPARSE struct)
-    cusparseSolveAnalysisInfo_t info_l;
-    cusparseSolveAnalysisInfo_t info_u;
+    // cusparseSolveAnalysisInfo_t info_l;
+    // cusparseSolveAnalysisInfo_t info_u;
     /// factored flag (originally set to false, then reset to true after factorization),
     /// notice we only want to factor once
     bool factored;
@@ -728,77 +728,77 @@ namespace nvgraph
   }
 
   // ILU0, incomplete-LU with 0 threshhold (CUSPARSE)
-  inline hipsparseStatus_t cusparseXcsrilu0(hipsparseHandle_t handle,
-                                            hipsparseOperation_t trans,
-                                            int m,
-                                            const hipsparseMatDescr_t descrA,
-                                            float *csrValM,
-                                            const int *csrRowPtrA,
-                                            const int *csrColIndA,
-                                            cusparseSolveAnalysisInfo_t info)
-  {
-    return cusparseScsrilu0(handle, trans, m, descrA, csrValM, csrRowPtrA, csrColIndA, info);
-  }
+  // inline hipsparseStatus_t cusparseXcsrilu0(hipsparseHandle_t handle,
+  //                                           hipsparseOperation_t trans,
+  //                                           int m,
+  //                                           const hipsparseMatDescr_t descrA,
+  //                                           float *csrValM,
+  //                                           const int *csrRowPtrA,
+  //                                           const int *csrColIndA,
+  //                                           cusparseSolveAnalysisInfo_t info)
+  // {
+  //   return cusparseScsrilu0(handle, trans, m, descrA, csrValM, csrRowPtrA, csrColIndA, info);
+  // }
 
-  inline hipsparseStatus_t cusparseXcsrilu0(hipsparseHandle_t handle,
-                                            hipsparseOperation_t trans,
-                                            int m,
-                                            const hipsparseMatDescr_t descrA,
-                                            double *csrValM,
-                                            const int *csrRowPtrA,
-                                            const int *csrColIndA,
-                                            cusparseSolveAnalysisInfo_t info)
-  {
-    return cusparseDcsrilu0(handle, trans, m, descrA, csrValM, csrRowPtrA, csrColIndA, info);
-  }
+  // inline hipsparseStatus_t cusparseXcsrilu0(hipsparseHandle_t handle,
+  //                                           hipsparseOperation_t trans,
+  //                                           int m,
+  //                                           const hipsparseMatDescr_t descrA,
+  //                                           double *csrValM,
+  //                                           const int *csrRowPtrA,
+  //                                           const int *csrColIndA,
+  //                                           cusparseSolveAnalysisInfo_t info)
+  // {
+  //   return cusparseDcsrilu0(handle, trans, m, descrA, csrValM, csrRowPtrA, csrColIndA, info);
+  // }
 
   // IC0, incomplete-Cholesky with 0 threshhold (CUSPARSE)
-  inline hipsparseStatus_t cusparseXcsric0(hipsparseHandle_t handle,
-                                           hipsparseOperation_t trans,
-                                           int m,
-                                           const hipsparseMatDescr_t descrA,
-                                           float *csrValM,
-                                           const int *csrRowPtrA,
-                                           const int *csrColIndA,
-                                           cusparseSolveAnalysisInfo_t info)
-  {
-    return cusparseScsric0(handle, trans, m, descrA, csrValM, csrRowPtrA, csrColIndA, info);
-  }
-  inline hipsparseStatus_t cusparseXcsric0(hipsparseHandle_t handle,
-                                           hipsparseOperation_t trans,
-                                           int m,
-                                           const hipsparseMatDescr_t descrA,
-                                           double *csrValM,
-                                           const int *csrRowPtrA,
-                                           const int *csrColIndA,
-                                           cusparseSolveAnalysisInfo_t info)
-  {
-    return cusparseDcsric0(handle, trans, m, descrA, csrValM, csrRowPtrA, csrColIndA, info);
-  }
+  // inline hipsparseStatus_t cusparseXcsric0(hipsparseHandle_t handle,
+  //                                          hipsparseOperation_t trans,
+  //                                          int m,
+  //                                          const hipsparseMatDescr_t descrA,
+  //                                          float *csrValM,
+  //                                          const int *csrRowPtrA,
+  //                                          const int *csrColIndA,
+  //                                          cusparseSolveAnalysisInfo_t info)
+  // {
+  //   return cusparseScsric0(handle, trans, m, descrA, csrValM, csrRowPtrA, csrColIndA, info);
+  // }
+  // inline hipsparseStatus_t cusparseXcsric0(hipsparseHandle_t handle,
+  //                                          hipsparseOperation_t trans,
+  //                                          int m,
+  //                                          const hipsparseMatDescr_t descrA,
+  //                                          double *csrValM,
+  //                                          const int *csrRowPtrA,
+  //                                          const int *csrColIndA,
+  //                                          cusparseSolveAnalysisInfo_t info)
+  // {
+  //   return cusparseDcsric0(handle, trans, m, descrA, csrValM, csrRowPtrA, csrColIndA, info);
+  // }
 
   // sparse triangular solve (CUSPARSE)
   // analysis phase
-  inline hipsparseStatus_t cusparseXcsrsm_analysis(hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int nnz, const hipsparseMatDescr_t descra,
-                                                   const float *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info)
-  {
-    return cusparseScsrsm_analysis(handle, transa, m, nnz, descra, a, ia, ja, info);
-  }
-  inline hipsparseStatus_t cusparseXcsrsm_analysis(hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int nnz, const hipsparseMatDescr_t descra,
-                                                   const double *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info)
-  {
-    return cusparseDcsrsm_analysis(handle, transa, m, nnz, descra, a, ia, ja, info);
-  }
+  // inline hipsparseStatus_t cusparseXcsrsm_analysis(hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int nnz, const hipsparseMatDescr_t descra,
+  //                                                  const float *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info)
+  // {
+  //   return cusparseScsrsm_analysis(handle, transa, m, nnz, descra, a, ia, ja, info);
+  // }
+  // inline hipsparseStatus_t cusparseXcsrsm_analysis(hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int nnz, const hipsparseMatDescr_t descra,
+  //                                                  const double *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info)
+  // {
+  //   return cusparseDcsrsm_analysis(handle, transa, m, nnz, descra, a, ia, ja, info);
+  // }
   // solve phase
-  inline hipsparseStatus_t cusparseXcsrsm_solve(hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int k, float alpha, const hipsparseMatDescr_t descra,
-                                                const float *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info, const float *x, int ldx, float *y, int ldy)
-  {
-    return cusparseScsrsm_solve(handle, transa, m, k, &alpha, descra, a, ia, ja, info, x, ldx, y, ldy);
-  }
-  inline hipsparseStatus_t cusparseXcsrsm_solve(hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int k, double alpha, const hipsparseMatDescr_t descra,
-                                                const double *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info, const double *x, int ldx, double *y, int ldy)
-  {
-    return cusparseDcsrsm_solve(handle, transa, m, k, &alpha, descra, a, ia, ja, info, x, ldx, y, ldy);
-  }
+  // inline hipsparseStatus_t cusparseXcsrsm_solve(hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int k, float alpha, const hipsparseMatDescr_t descra,
+  //                                               const float *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info, const float *x, int ldx, float *y, int ldy)
+  // {
+  //   return cusparseScsrsm_solve(handle, transa, m, k, &alpha, descra, a, ia, ja, info, x, ldx, y, ldy);
+  // }
+  // inline hipsparseStatus_t cusparseXcsrsm_solve(hipsparseHandle_t handle, hipsparseOperation_t transa, int m, int k, double alpha, const hipsparseMatDescr_t descra,
+  //                                               const double *a, const int *ia, const int *ja, cusparseSolveAnalysisInfo_t info, const double *x, int ldx, double *y, int ldy)
+  // {
+  //   return cusparseDcsrsm_solve(handle, transa, m, k, &alpha, descra, a, ia, ja, info, x, ldx, y, ldy);
+  // }
 
   inline hipsparseStatus_t cusparseXcsrcolor(hipsparseHandle_t handle, int m, int nnz, const hipsparseMatDescr_t descrA, const float *csrValA, const int *csrRowPtrA, const int *csrColIndA, const float *fractionToColor, int *ncolors, int *coloring, int *reordering, hipsparseColorInfo_t info)
   {

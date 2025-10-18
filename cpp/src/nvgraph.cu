@@ -21,7 +21,7 @@
 #include <vector>
 #include <nvlouvain.cuh>
 #include <jaccard_gpu.cuh>
-#include <cusolverDn.h>
+#include <hipsolver.h>
 
 #include <nvgraph_error.hxx>
 #include <cnmem_shared_ptr.hxx>
