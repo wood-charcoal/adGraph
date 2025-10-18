@@ -53,12 +53,22 @@ namespace nvgraph{
 
 //  		return output;
 
-        float shuffled_val = __shfl_up_sync(mask, input, offset);
+        float shuffled = __shfl_up(input, offset, firstLane);
 
-        if (hipThreadIdx_x >= offset) {
-            return shuffled_val + input;
-        } else {
-            return shuffled_val;
+        int laneId = (threadIdx.x % warpSize);
+        
+        // Check if the source lane (laneId - offset) is valid (>= 0).
+        // The conditional addition in the original PTX essentially guards against this.
+        if (laneId >= offset)
+        {
+            // If the source is valid, add the retrieved value.
+            return input + shuffled;
+        }
+        else
+        {
+            // If the source is invalid, the original PTX skipped the add, 
+            // returning the original 'input' value.
+            return input;
         }
 
     }
@@ -112,11 +122,17 @@ namespace nvgraph{
 
 //         return output;
 
-        double shuffled_val = __shfl_up_sync(mask, input, offset);
-        if (hipThreadIdx_x >= offset) {
-            return shuffled_val + input;
-        } else {
-            return shuffled_val;
+        double shuffled = __shfl_up(input, offset, firstLane);
+
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return input + shuffled;
+        }
+        else
+        {
+            return input;
         }
     }
 
@@ -152,11 +168,17 @@ namespace nvgraph{
 // #endif
 //         return output;
 
-        float shuffled_val = __shfl_up_sync(mask, input, offset);
-        if (hipThreadIdx_x >= offset) {
-            return __hip_fminf(shuffled_val, input);
-        } else {
-            return shuffled_val;
+        float shuffled = __shfl_up(input, offset, firstLane);
+
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return fminf(input, shuffled);
+        }
+        else
+        {
+            return input;
         }
     }
 
@@ -209,11 +231,17 @@ namespace nvgraph{
 
 //         return output;
 
-        double shuffled_val = __shfl_up_sync(mask, input, offset);
-        if (hipThreadIdx_x >= offset) {
-            return __hip_fmin(shuffled_val, input);
-        } else {
-            return shuffled_val;
+        double shuffled = __shfl_up(input, offset, firstLane);
+
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return fminf(input, shuffled);
+        }
+        else
+        {
+            return input;
         }
     }
 
@@ -249,13 +277,18 @@ namespace nvgraph{
 // #endif
 //         return output;
 
-        float shuffled_val = __shfl_up_sync(mask, input, offset);
-        if (hipThreadIdx_x >= offset) {
-            return __hip_fmaxf(shuffled_val, input);
-        } else {
-            return shuffled_val;
+        float shuffled = __shfl_up(input, offset, firstLane);
+
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return fmaxf(input, shuffled);
         }
-   
+        else
+        {
+            return input;
+        }
     }
 
     //incorporate into cusparse and try to remove
@@ -307,11 +340,17 @@ namespace nvgraph{
 
 //         return output;
 
-        double shuffled_val = __shfl_up_sync(mask, input, offset);
-        if (hipThreadIdx_x >= offset) {
-            return __hip_fmax(shuffled_val, input);
-        } else {
-            return shuffled_val;
+        double shuffled = __shfl_up(input, offset, firstLane);
+
+        int laneId = (threadIdx.x % warpSize);
+        
+        if (laneId >= offset)
+        {
+            return fmaxf(input, shuffled);
+        }
+        else
+        {
+            return input;
         }
     }
 
@@ -348,12 +387,32 @@ namespace nvgraph{
    
 //         return output;
 
-        float shuffled_val = __shfl_up_sync(mask, input, offset);
-        if (hipThreadIdx_x >= offset) {
-            return __hip_orf(shuffled_val, input);
-        } else {
-            return shuffled_val;
+        union FloatBits {
+            float f;
+            uint32_t u;
+        };
+        
+        FloatBits converter;
+        converter.f = input;
+        uint32_t input_bits = converter.u;
+
+        uint32_t shuffled_bits = __shfl_up(input_bits, offset, firstLane);
+
+        int laneId = (threadIdx.x % warpSize);
+        uint32_t output_bits;
+        
+        if (laneId >= offset)
+        {
+            output_bits = input_bits | shuffled_bits;
         }
+        else
+        {
+            output_bits = input_bits;
+        }
+        
+        converter.u = output_bits;
+        
+        return converter.f;
     }
 
     __device__ __forceinline__ double shflFPOr(
@@ -403,15 +462,36 @@ namespace nvgraph{
 
 //         return output;
 
-        double shuffled_val = __shfl_up_sync(mask, input, offset);
-        if (hipThreadIdx_x >= offset) {
-            return __hip_or(shuffled_val, input);
-        } else {
-            return shuffled_val;
+        union DoubleBits {
+            double d;
+            uint64_t u;
+        };
+        
+        DoubleBits converter;
+        converter.d = input;
+        uint64_t input_bits = converter.u;
+
+        uint64_t shuffled_bits = __shfl_up(input_bits, offset, firstLane);
+
+        int laneId = (threadIdx.x % warpSize);
+        uint64_t output_bits;
+        
+        if (laneId >= offset)
+        {
+            output_bits = input_bits | shuffled_bits;
         }
+        else
+        {
+            output_bits = input_bits;
+        }
+        
+        converter.u = output_bits;
+        
+        return converter.d;
     }
+
 //Need to write correct instructions in asm for the operation -log(exp(-x) + exp(-y))
- __device__ __forceinline__ float shflFPLog(
+__device__ __forceinline__ float shflFPLog(
         float           input,              //Calling thread's input item.
         int             firstLane,         //Index of first lane in segment
         int             offset,             //Upstream offset to pull from
@@ -450,22 +530,25 @@ namespace nvgraph{
 // #endif
 //         return output;
 
-    float expinput = __hip_expf(-input);
+        float expinput = __expf(-input);
 
-    float shuffled_val = __shfl_up_sync(mask, expinput, offset);
-    float sum_result;
+        float shuffled = __shfl_up(expinput, offset, firstLane);
 
-    if (hipThreadIdx_x >= offset) {
-        sum_result = shuffled_val + expinput;
-    } else {
-        sum_result = shuffled_val;
-    }
+        int laneId = (threadIdx.x % warpSize);
+        float shuffled_sum;
 
-    float log_result = __hip_logf(sum_result);
-    
-    float output = -log_result; 
+        if (laneId >= offset)
+        {
+            shuffled_sum = expinput + shuffled;
+        }
+        else
+        {
+            shuffled_sum = expinput;
+        }
+        
+        float output = -__logf(shuffled_sum);
 
-    return output;
+        return output;
     }
 //check this!!
     __device__ __forceinline__ double shflFPLog(
@@ -521,20 +604,23 @@ namespace nvgraph{
 
 //         return output;
 
-        double expinput = __hip_exp(-input);
+        double expinput = exp(-input);
 
-        double shuffled_val = __shfl_up_sync(mask, expinput, offset);
-        double sum_result;
+        double shuffled = __shfl_up(expinput, offset, firstLane);
 
-        if (hipThreadIdx_x >= offset) {
-            sum_result = shuffled_val + expinput;
-        } else {
-            sum_result = shuffled_val;
+        int laneId = (threadIdx.x % warpSize);
+        double shuffled_sum_result;
+
+        if (laneId >= offset)
+        {
+            shuffled_sum_result = expinput + shuffled;
         }
-
-        double log_result = __hip_log(sum_result);
+        else
+        {
+            shuffled_sum_result = expinput;
+        }
         
-        double output = -log_result; 
+        double output = -shuffled_sum_result;
 
         return output;
     }

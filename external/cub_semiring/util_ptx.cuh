@@ -1,4 +1,6 @@
 #include "hip/hip_runtime.h"
+#include <hip/device_functions.h>
+#include <cmath>
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2017, NVIDIA CORPORATION.  All rights reserved.
@@ -373,7 +375,9 @@ __device__ __forceinline__ float FMUL_RZ(float a, float b)
     // float d;
     // asm ("mul.rz.f32 %0, %1, %2;" : "=f"(d) : "f"(a), "f"(b));
     // return d;
-    return __hip_fmul_rz(a, b);
+
+    float product = a * b;
+    return truncf(product);
 }
 
 
@@ -385,7 +389,9 @@ __device__ __forceinline__ float FFMA_RZ(float a, float b, float c)
     // float d;
     // asm ("fma.rz.f32 %0, %1, %2, %3;" : "=f"(d) : "f"(a), "f"(b), "f"(c));
     // return d;
-    return __hip_fmaf_rz(a, b, c);
+
+    float product_sum = fmaf(a, b, c);
+    return truncf(product_sum);
 }
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS

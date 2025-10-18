@@ -85,12 +85,6 @@
 //Finite machine described in http://parlab.eecs.berkeley.edu/sites/all/parlab/files/main.pdf 
 //
 
-#ifndef FULL_WAVEFRONT_MASK
-#define FULL_WAVEFRONT_MASK 0xFFFFFFFFFFFFFFFFULL
-#endif
-
-#define ACTIVE_MASK_HIP ( (uint64_t)__ballot_sync(FULL_WAVEFRONT_MASK, 1) )
-
 using namespace nvgraph;
 
 namespace bfs_kernels {
@@ -620,7 +614,7 @@ namespace bfs_kernels {
 				IndexType last_v = nvgraph::utils::shfl(	unvisited_vertex,
 																		laneid_max,
 																		WARP_SIZE,
-																		ACTIVE_MASK_HIP);
+																		__ballot(1));
 
 				if (is_last_head_in_warp)
 				{
