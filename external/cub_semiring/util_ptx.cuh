@@ -428,9 +428,10 @@ __device__ __forceinline__ int RowMajorTid(int block_dim_x, int block_dim_y, int
  */
 __device__ __forceinline__ unsigned int LaneId()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%laneid;" : "=r"(ret) );
-    return ret;
+    // unsigned int ret;
+    // asm ("mov.u32 %0, %%laneid;" : "=r"(ret) );
+    // return ret;
+    return (unsigned int)__lane_id();
 }
 
 
@@ -439,9 +440,15 @@ __device__ __forceinline__ unsigned int LaneId()
  */
 __device__ __forceinline__ unsigned int WarpId()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%warpid;" : "=r"(ret) );
-    return ret;
+    // unsigned int ret;
+    // asm ("mov.u32 %0, %%warpid;" : "=r"(ret) );
+    // return ret;
+
+    unsigned int local_warp_id = threadIdx.x >> 5; 
+    unsigned int global_block_id = blockIdx.x;
+    unsigned int warps_per_block = blockDim.x >> 5;
+    unsigned int global_warp_id = (blockIdx.x * warps_per_block) + local_warp_id;
+    return global_warp_id;
 }
 
 /**
@@ -449,9 +456,12 @@ __device__ __forceinline__ unsigned int WarpId()
  */
 __device__ __forceinline__ unsigned int LaneMaskLt()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%lanemask_lt;" : "=r"(ret) );
-    return ret;
+    // unsigned int ret;
+    // asm ("mov.u32 %0, %%lanemask_lt;" : "=r"(ret) );
+    // return ret;
+
+    unsigned int lane_id = (unsigned int)__lane_id();
+    return (1u << lane_id) - 1u;
 }
 
 /**
@@ -459,9 +469,12 @@ __device__ __forceinline__ unsigned int LaneMaskLt()
  */
 __device__ __forceinline__ unsigned int LaneMaskLe()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%lanemask_le;" : "=r"(ret) );
-    return ret;
+    // unsigned int ret;
+    // asm ("mov.u32 %0, %%lanemask_le;" : "=r"(ret) );
+    // return ret;
+
+    unsigned int lane_id = (unsigned int)__lane_id();
+    return (1u << (lane_id + 1u)) - 1u;
 }
 
 /**
@@ -469,9 +482,12 @@ __device__ __forceinline__ unsigned int LaneMaskLe()
  */
 __device__ __forceinline__ unsigned int LaneMaskGt()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%lanemask_gt;" : "=r"(ret) );
-    return ret;
+    // unsigned int ret;
+    // asm ("mov.u32 %0, %%lanemask_gt;" : "=r"(ret) );
+    // return ret;
+
+    unsigned int mask_le = (1u << ((unsigned int)__lane_id() + 1u)) - 1u;
+    return (~mask_le);
 }
 
 /**
@@ -479,10 +495,14 @@ __device__ __forceinline__ unsigned int LaneMaskGt()
  */
 __device__ __forceinline__ unsigned int LaneMaskGe()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%lanemask_ge;" : "=r"(ret) );
-    return ret;
+    // unsigned int ret;
+    // asm ("mov.u32 %0, %%lanemask_ge;" : "=r"(ret) );
+    // return ret;
+
+    unsigned int mask_lt = (1u << (unsigned int)__lane_id()) - 1u;
+    return (~mask_lt);
 }
+
 
 /** @} */       // end group UtilPtx
 
@@ -716,23 +736,5 @@ inline __device__ unsigned int MatchAny(unsigned int label)
 //    return retval;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }               // CUB namespace
 CUB_NS_POSTFIX  // Optional outer namespace(s)

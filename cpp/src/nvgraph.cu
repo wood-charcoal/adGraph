@@ -166,12 +166,12 @@ extern "C"
 														   int *pV,
 														   size_t n,
 														   hipStream_t stream);
-		extern MultiValuedCsrGraph<int, float> *extract_subgraph_by_vertices(MultiValuedCsrGraph<int,
+		extern MultiValuedCsrGraph<int, float> *extract_f_subgraph_by_vertices(MultiValuedCsrGraph<int,
 																								 float> &graph,
 																			 int *pV,
 																			 size_t n,
 																			 hipStream_t stream);
-		extern MultiValuedCsrGraph<int, double> *extract_subgraph_by_vertices(MultiValuedCsrGraph<int,
+		extern MultiValuedCsrGraph<int, double> *extract_d_subgraph_by_vertices(MultiValuedCsrGraph<int,
 																								  double> &graph,
 																			  int *pV,
 																			  size_t n,
@@ -181,11 +181,11 @@ extern "C"
 														int *pV,
 														size_t n,
 														hipStream_t stream);
-		extern MultiValuedCsrGraph<int, float> *extract_subgraph_by_edges(MultiValuedCsrGraph<int, float> &graph,
+		extern MultiValuedCsrGraph<int, float> *extract_f_subgraph_by_edges(MultiValuedCsrGraph<int, float> &graph,
 																		  int *pV,
 																		  size_t n,
 																		  hipStream_t stream);
-		extern MultiValuedCsrGraph<int, double> *extract_subgraph_by_edges(MultiValuedCsrGraph<int,
+		extern MultiValuedCsrGraph<int, double> *extract_d_subgraph_by_edges(MultiValuedCsrGraph<int,
 																							   double> &graph,
 																		   int *pV,
 																		   size_t n,
@@ -2302,7 +2302,7 @@ extern "C"
 							static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 
 						MultiValuedCsrGraph<int, float> *subgraph =
-							extract_subgraph_by_vertices(*MCSRG,
+							extract_f_subgraph_by_vertices(*MCSRG,
 														 subvertices,
 														 numvertices,
 														 handle->stream);
@@ -2316,7 +2316,7 @@ extern "C"
 							static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 
 						MultiValuedCsrGraph<int, double> *subgraph =
-							extract_subgraph_by_vertices(*MCSRG,
+							extract_d_subgraph_by_vertices(*MCSRG,
 														 subvertices,
 														 numvertices,
 														 handle->stream);
@@ -2385,7 +2385,7 @@ extern "C"
 							static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 
 						MultiValuedCsrGraph<int, float> *subgraph =
-							extract_subgraph_by_edges(*MCSRG, subedges, numedges, handle->stream);
+							extract_f_subgraph_by_edges(*MCSRG, subedges, numedges, handle->stream);
 
 						subdescrG->graph_handle = subgraph;
 						subdescrG->graphStatus = HAS_VALUES;
@@ -2396,7 +2396,7 @@ extern "C"
 							static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 
 						MultiValuedCsrGraph<int, double> *subgraph =
-							extract_subgraph_by_edges(*MCSRG, subedges, numedges, handle->stream);
+							extract_d_subgraph_by_edges(*MCSRG, subedges, numedges, handle->stream);
 
 						subdescrG->graph_handle = subgraph;
 						subdescrG->graphStatus = HAS_VALUES;

@@ -28,13 +28,13 @@ namespace nvgraph
 	return extract_from_vertex_subset<int, double>(graph, pV, n, stream);
   }
 
-  MultiValuedCsrGraph<int, float>* extract_subgraph_by_vertices(MultiValuedCsrGraph<int, float>& graph, 
+  MultiValuedCsrGraph<int, float>* extract_f_subgraph_by_vertices(MultiValuedCsrGraph<int, float>& graph, 
 																int* pV, size_t n, hipStream_t stream)
   {
 	return static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(extract_from_vertex_subset<int, float>(graph, pV, n, stream));
   }
 
-  MultiValuedCsrGraph<int, double>* extract_subgraph_by_vertices(MultiValuedCsrGraph<int, double>& graph, 
+  MultiValuedCsrGraph<int, double>* extract_d_subgraph_by_vertices(MultiValuedCsrGraph<int, double>& graph, 
 																int* pV, size_t n, hipStream_t stream)
   {
 	return static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(extract_from_vertex_subset<int, double>(graph, pV, n, stream));
@@ -46,13 +46,13 @@ namespace nvgraph
 	return extract_from_edge_subset<int, double>(graph, pV, n, stream);
   }
 
-  MultiValuedCsrGraph<int, float>* extract_subgraph_by_edges(MultiValuedCsrGraph<int, float>& graph,
+  MultiValuedCsrGraph<int, float>* extract_f_subgraph_by_edges(MultiValuedCsrGraph<int, float>& graph,
 															 int* pV, size_t n, hipStream_t stream)
   {
 	return static_cast<nvgraph::MultiValuedCsrGraph<int, float>*>(extract_from_edge_subset<int, float>(graph, pV, n, stream));
   }
 
-  MultiValuedCsrGraph<int, double>* extract_subgraph_by_edges(MultiValuedCsrGraph<int, double>& graph,
+  MultiValuedCsrGraph<int, double>* extract_d_subgraph_by_edges(MultiValuedCsrGraph<int, double>& graph,
 															 int* pV, size_t n, hipStream_t stream)
   {
 	return static_cast<nvgraph::MultiValuedCsrGraph<int, double>*>(extract_from_edge_subset<int, double>(graph, pV, n, stream));

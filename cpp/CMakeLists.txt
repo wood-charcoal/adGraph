@@ -382,7 +382,7 @@ endif(NVGRAPH_LIGHT MATCHES True)
 target_link_libraries(nvgraph 
     PRIVATE
     -Wl,--start-group 
-    hipblas rocsparse rocrand rocsolver amdhip64 hipsparse hip::host
+    hipblas hipsparse hiprand hipsolver amdhip64 hip::host
     -Wl,--end-group
 )
 # target_link_libraries(nvgraph 
