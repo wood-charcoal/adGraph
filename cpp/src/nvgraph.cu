@@ -22,6 +22,7 @@
 #include <nvlouvain.cuh>
 #include <jaccard_gpu.cuh>
 #include <hipsolver.h>
+#include <hip/hip_runtime.h>
 
 #include <nvgraph_error.hxx>
 #include <cnmem_shared_ptr.hxx>
@@ -2513,7 +2514,7 @@ extern "C"
 					else
 					{
 						hipsolverDnHandle_t cusolverHandle;
-						cusolverDnCreate(&cusolverHandle);
+						hipsolverDnCreate(&cusolverHandle);
 						rc = partition_lobpcg<int, float>(network,
 														  NULL, // preconditioner
 														  cusolverHandle,
@@ -2579,7 +2580,7 @@ extern "C"
 					else
 					{
 						hipsolverDnHandle_t cusolverHandle;
-						cusolverDnCreate(&cusolverHandle);
+						hipsolverDnCreate(&cusolverHandle);
 						rc = partition_lobpcg<int, double>(network,
 														   NULL, // preconditioner
 														   cusolverHandle,
@@ -3378,13 +3379,13 @@ extern "C"
 	{
 		switch (type)
 		{
-		case MAJOR_VERSION:
-			*value = CUDART_VERSION / 1000;
+		case HIP_VERSION_MAJOR:
+			*value = HIP_VERSION / 1000;
 			break;
-		case MINOR_VERSION:
-			*value = (CUDART_VERSION % 1000) / 10;
+		case HIP_VERSION_MINOR:
+			*value = (HIP_VERSION % 1000) / 10;
 			break;
-		case PATCH_LEVEL:
+		case HIP_VERSION_PATCH:
 			*value = 0;
 			break;
 		default:

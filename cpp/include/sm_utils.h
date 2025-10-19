@@ -34,9 +34,10 @@ namespace utils
 {
     static __device__ __forceinline__ int lane_id()
     {
-        int id;
-        asm ( "mov.u32 %0, %%laneid;" : "=r"(id) );
-        return id;
+        // int id;
+        // asm ( "mov.u32 %0, %%laneid;" : "=r"(id) );
+        // return id;
+        return __lane_id();
     }
 
     static __device__ __forceinline__ int lane_mask_lt()
@@ -44,6 +45,7 @@ namespace utils
         int mask;
         asm ( "mov.u32 %0, %%lanemask_lt;" : "=r"(mask) );
         return mask;
+        // return __lanemask_lt();
     }
 
     static __device__ __forceinline__ int lane_mask_le()

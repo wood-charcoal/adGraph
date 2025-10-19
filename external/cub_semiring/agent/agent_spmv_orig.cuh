@@ -34,6 +34,7 @@
 #pragma once
 
 #include <iterator>
+#include <hipcub/hipcub.hpp>
 
 #include "../util_type.cuh"
 #include "../block/block_reduce.cuh"
@@ -109,7 +110,7 @@ struct SpmvParams
     ValueT          alpha;               ///< Alpha multiplicand
     ValueT          beta;                ///< Beta addend-multiplicand
 
-    TexRefInputIterator<ValueT, 66778899, OffsetT>  t_vector_x;
+    hipcub::TexRefInputIterator<ValueT, 66778899, OffsetT>  t_vector_x;
 };
 
 

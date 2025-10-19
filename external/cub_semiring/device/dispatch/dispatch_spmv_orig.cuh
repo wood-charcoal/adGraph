@@ -243,7 +243,7 @@ __global__ void DeviceSegmentFixupKernel(
     __shared__ typename AgentSegmentFixupT::TempStorage temp_storage;
 
     // Process tiles
-    AgentSegmentFixupT(temp_storage, d_pairs_in, d_aggregates_out, hipcub::Equality(), SemiringT::SumOp()).ConsumeRange(
+    AgentSegmentFixupT(temp_storage, d_pairs_in, d_aggregates_out, hipcub::Equality(), typename SemiringT::SumOp()).ConsumeRange(
         max_items,
         num_items,
         num_tiles,
