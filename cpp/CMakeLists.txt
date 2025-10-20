@@ -192,6 +192,11 @@ if(NOT DEFINED NVGRAPH_LIGHT)
 endif(NOT DEFINED NVGRAPH_LIGHT)
 
 ###################################################################################################
+# - lapack modules ---------------------------------------------------------------------------------
+
+set(LAPACK_INSTALL_ROOT "$ENV{HOME}/projects/lapack-3.12.0/install")
+
+###################################################################################################
 # - cmake modules ---------------------------------------------------------------------------------
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
@@ -227,6 +232,7 @@ include_directories(
                     "${CMAKE_SOURCE_DIR}/../external/cusp"
                     "$ENV{DTK_ROOT}/include"
                     "$ENV{DTK_ROOT}/include/hip"
+                    "${LAPACK_INSTALL_ROOT}/include"
                    )
 
 ###################################################################################################
@@ -235,7 +241,9 @@ include_directories(
 link_directories("$ENV{DTK_ROOT}/lib"
                  "$ENV{DTK_ROOT}/lib64"
                  "${CMAKE_BINARY_DIR}/lib"
-                 "${GTEST_LIBRARY_DIR}")
+                 "${GTEST_LIBRARY_DIR}"
+                 "${LAPACK_INSTALL_ROOT}/lib64"
+                 )
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
@@ -382,7 +390,7 @@ endif(NVGRAPH_LIGHT MATCHES True)
 target_link_libraries(nvgraph 
     PRIVATE
     -Wl,--start-group 
-    hipblas hipsparse hiprand hipsolver amdhip64 hip::host
+    hipblas hipsparse hiprand hipsolver amdhip64 hip::host cblas blas lapack
     -Wl,--end-group
 )
 # target_link_libraries(nvgraph 

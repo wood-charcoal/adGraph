@@ -15,6 +15,7 @@
  */
 
 #include <nvgraph_lapack.hxx>
+#include <cblas.h>
 // #include <f2c.h>
 // #include <complex>
 
@@ -84,56 +85,74 @@ namespace nvgraph
         //        const double *b, const int *ldb,
         //        const double *beta, double *c, const int *ldc);
 
-        extern "C" hipsolverStatus_t cusolverDnSgemmHost(
-            hipblasOperation_t transa,
-            hipblasOperation_t transb,
-            int m,
-            int n,
-            int k,
-            const float *alpha,
-            const float *A,
-            int lda,
-            const float *B,
-            int ldb,
-            const float *beta,
-            float *C,
-            int ldc);
+        // extern "C" hipsolverStatus_t cusolverDnSgemmHost(
+        //     hipblasOperation_t transa,
+        //     hipblasOperation_t transb,
+        //     int m,
+        //     int n,
+        //     int k,
+        //     const float *alpha,
+        //     const float *A,
+        //     int lda,
+        //     const float *B,
+        //     int ldb,
+        //     const float *beta,
+        //     float *C,
+        //     int ldc);
 
         void lapack_gemm(const char transa, const char transb, int m, int n, int k,
                          float alpha, const float *a, int lda,
                          const float *b, int ldb,
                          float beta, float *c, int ldc)
         {
-            hipblasOperation_t cublas_transa = (transa == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-            hipblasOperation_t cublas_transb = (transb == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-            cusolverDnSgemmHost(cublas_transa, cublas_transb, m, n, k,
-                                &alpha, (float *)a, lda, (float *)b, ldb, &beta, c, ldc);
+            // hipblasOperation_t cublas_transa = (transa == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+            // hipblasOperation_t cublas_transb = (transb == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+            // cusolverDnSgemmHost(cublas_transa, cublas_transb, m, n, k,
+            //                     &alpha, (float *)a, lda, (float *)b, ldb, &beta, c, ldc);
+
+            CBLAS_TRANSPOSE cblas_transa = (transa == 'N') ? CblasNoTrans : CblasTrans;
+            CBLAS_TRANSPOSE cblas_transb = (transb == 'N') ? CblasNoTrans : CblasTrans;
+            cblas_sgemm(CblasRowMajor,
+                        cblas_transa, cblas_transb,
+                        m, n, k,
+                        alpha, a, lda,
+                        b, ldb,
+                        beta, c, ldc);
         }
 
-        extern "C" hipsolverStatus_t cusolverDnDgemmHost(
-            hipblasOperation_t transa,
-            hipblasOperation_t transb,
-            int m,
-            int n,
-            int k,
-            const double *alpha,
-            const double *A,
-            int lda,
-            const double *B,
-            int ldb,
-            const double *beta,
-            double *C,
-            int ldc);
+        // extern "C" hipsolverStatus_t cusolverDnDgemmHost(
+        //     hipblasOperation_t transa,
+        //     hipblasOperation_t transb,
+        //     int m,
+        //     int n,
+        //     int k,
+        //     const double *alpha,
+        //     const double *A,
+        //     int lda,
+        //     const double *B,
+        //     int ldb,
+        //     const double *beta,
+        //     double *C,
+        //     int ldc);
 
-        void lapack_gemm(const signed char transa, const signed char transb, int m, int n, int k,
+        void lapack_gemm(const char transa, const char transb, int m, int n, int k,
                          double alpha, const double *a, int lda,
                          const double *b, int ldb,
                          double beta, double *c, int ldc)
         {
-            hipblasOperation_t cublas_transa = (transa == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-            hipblasOperation_t cublas_transb = (transb == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
-            cusolverDnDgemmHost(cublas_transa, cublas_transb, m, n, k,
-                                &alpha, (double *)a, lda, (double *)b, ldb, &beta, c, ldc);
+            // hipblasOperation_t cublas_transa = (transa == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+            // hipblasOperation_t cublas_transb = (transb == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+            // cusolverDnDgemmHost(cublas_transa, cublas_transb, m, n, k,
+            //                     &alpha, (double *)a, lda, (double *)b, ldb, &beta, c, ldc);
+
+            CBLAS_TRANSPOSE cblas_transa = (transa == 'N') ? CblasNoTrans : CblasTrans;
+            CBLAS_TRANSPOSE cblas_transb = (transb == 'N') ? CblasNoTrans : CblasTrans;
+            cblas_dgemm(CblasRowMajor,
+                        cblas_transa, cblas_transb,
+                        m, n, k,
+                        alpha, a, lda,
+                        b, ldb,
+                        beta, c, ldc);
         }
 
         // XSTERF
@@ -144,26 +163,31 @@ namespace nvgraph
         // void dsterf_(const int *n, double *d, double *e, int *info);
         //
 
-        extern "C" hipsolverStatus_t cusolverDnSsterfHost(
-            int n,
-            float *d,
-            float *e,
-            int *info);
+        extern "C" void ssterf_(const int *n, float *d, float *e, int *info);
+        extern "C" void dsterf_(const int *n, double *d, double *e, int *info);
+
+        // extern "C" hipsolverStatus_t cusolverDnSsterfHost(
+        //     int n,
+        //     float *d,
+        //     float *e,
+        //     int *info);
 
         void lapack_sterf(int n, float *d, float *e, int *info)
         {
-            cusolverDnSsterfHost(n, d, e, info);
+            // cusolverDnSsterfHost(n, d, e, info);
+            ssterf_(&n, d, e, info);
         }
 
-        extern "C" hipsolverStatus_t cusolverDnDsterfHost(
-            int n,
-            double *d,
-            double *e,
-            int *info);
+        // extern "C" hipsolverStatus_t cusolverDnDsterfHost(
+        //     int n,
+        //     double *d,
+        //     double *e,
+        //     int *info);
 
         void lapack_sterf(int n, double *d, double *e, int *info)
         {
-            cusolverDnDsterfHost(n, d, e, info);
+            // cusolverDnDsterfHost(n, d, e, info);
+            dsterf_(&n, d, e, info);
         }
 
         // XSTEQR
@@ -174,36 +198,41 @@ namespace nvgraph
         // void dsteqr_(const char *compz, const int *n, double *d, double *e,
         //       double *z, const int *ldz, double *work, int *info);
 
-        extern "C" hipsolverStatus_t cusolverDnSsteqrHost(
-            const signed char *compz,
-            int n,
-            float *d,
-            float *e,
-            float *z,
-            int ldz,
-            float *work,
-            int *info);
+        extern "C" void ssteqr_(const char *compz, const int *n, float *d, float *e, float *z, const int *ldz, float *work, int *info);
+        extern "C" void dsteqr_(const char *compz, const int *n, double *d, double *e, double *z, const int *ldz, double *work, int *info);
 
-        void lapack_steqr(const signed char compz, int n, float *d, float *e,
+        // extern "C" hipsolverStatus_t cusolverDnSsteqrHost(
+        //     const signed char *compz,
+        //     int n,
+        //     float *d,
+        //     float *e,
+        //     float *z,
+        //     int ldz,
+        //     float *work,
+        //     int *info);
+
+        void lapack_steqr(const char compz, int n, float *d, float *e,
                           float *z, int ldz, float *work, int *info)
         {
-            cusolverDnSsteqrHost(&compz, n, d, e, z, ldz, work, info);
+            // cusolverDnSsteqrHost(&compz, n, d, e, z, ldz, work, info);
+            ssteqr_(&compz, &n, d, e, z, &ldz, work, info);
         }
 
-        extern "C" hipsolverStatus_t cusolverDnDsteqrHost(
-            const signed char *compz,
-            int n,
-            double *d,
-            double *e,
-            double *z,
-            int ldz,
-            double *work,
-            int *info);
+        // extern "C" hipsolverStatus_t cusolverDnDsteqrHost(
+        //     const signed char *compz,
+        //     int n,
+        //     double *d,
+        //     double *e,
+        //     double *z,
+        //     int ldz,
+        //     double *work,
+        //     int *info);
 
-        void lapack_steqr(const signed char compz, int n, double *d, double *e,
+        void lapack_steqr(const char compz, int n, double *d, double *e,
                           double *z, int ldz, double *work, int *info)
         {
-            cusolverDnDsteqrHost(&compz, n, d, e, z, ldz, work, info);
+            // cusolverDnDsteqrHost(&compz, n, d, e, z, ldz, work, info);
+            dsteqr_(&compz, &n, d, e, z, &ldz, work, info);
         }
 
 #ifdef NVGRAPH_USE_LAPACK
