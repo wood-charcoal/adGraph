@@ -130,7 +130,7 @@ set_property(SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/arnoldi.cu
            PROPERTY LANGUAGE HIP)
 
 # Enable HIP language support
-enable_language(CUDA)
+# enable_language(CUDA)
 enable_language(HIP)
 
 find_package(HIP REQUIRED)
