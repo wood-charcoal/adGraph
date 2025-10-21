@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <hipblas.h>
 #include <nvgraph.h>
 #include <nvgraph_cusparse.hxx>
 #include <cnmem_shared_ptr.hxx>
@@ -34,12 +35,12 @@ namespace nvgraph
                const void *csrVal, const int *csrRowPtr, const int *csrColInd,
                void *cscVal, int *cscRowInd, int *cscColPtr,
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
-               hipDataType *dataType);
+               hipblasDatatype_t *dataType);
   void csc2csr(int m, int n, int nnz,
                const void *cscVal, const int *cscRowInd, const int *cscColPtr,
                void *csrVal, int *csrRowPtr, int *csrColInd,
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
-               hipDataType *dataType);
+               hipblasDatatype_t *dataType);
 
   void csr2cscP(int m, int n, int nnz,
                 const int *csrRowPtr, const int *csrColInd,
@@ -48,33 +49,33 @@ namespace nvgraph
   void cooSortBySource(int m, int n, int nnz,
                        const void *srcVal, const int *srcRowInd, const int *srcColInd,
                        void *dstVal, int *dstRowInd, int *dstColInd,
-                       hipsparseIndexBase_t idxBase, hipDataType *dataType);
+                       hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType);
   void cooSortByDestination(int m, int n, int nnz,
                             const void *srcVal, const int *srcRowInd, const int *srcColInd,
                             void *dstVal, int *dstRowInd, int *dstColInd,
-                            hipsparseIndexBase_t idxBase, hipDataType *dataType);
+                            hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType);
 
   void coos2csc(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowInd, int *dstColInd,
-                hipsparseIndexBase_t idxBase, hipDataType *dataType);
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType);
   void cood2csr(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowInd, int *dstColInd,
-                hipsparseIndexBase_t idxBase, hipDataType *dataType);
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType);
   void coou2csr(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowInd, int *dstColInd,
-                hipsparseIndexBase_t idxBase, hipDataType *dataType);
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType);
   void coou2csc(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowInd, int *dstColInd,
-                hipsparseIndexBase_t idxBase, hipDataType *dataType);
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType);
 
   ////////////////////////// Utility functions //////////////////////////
   void createIdentityPermutation(int n, int *p);
   void gthrX(int nnz, const void *y, void *xVal, const int *xInd,
-             hipsparseIndexBase_t idxBase, hipDataType *dataType);
+             hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType);
 
   void cooSortBufferSize(int m, int n, int nnz, const int *cooRows, const int *cooCols, size_t *pBufferSizeInBytes);
   void cooGetSourcePermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer);

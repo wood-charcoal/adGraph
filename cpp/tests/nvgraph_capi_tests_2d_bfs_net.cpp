@@ -49,6 +49,7 @@
 #include <cstdint>
 #include <math.h>
 #include "hip/hip_profile.h"
+#include <hipblas.h>
 
 // do the perf measurements, enabled by command line parameter '--perf'
 static int PERF = 0;
@@ -65,7 +66,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<int>
 {
-	static const hipDataType Type = HIPBLAS_R_32I;
+	static const hipblasDatatype_t Type = HIPBLAS_R_32I;
 	static const int inf;
 };
 const int nvgraph_Const<int>::inf = INT_MAX;

@@ -42,6 +42,7 @@
 #include <nvgraph_experimental.h> // experimental header, contains hidden API entries, can be shared only under special circumstances without reveling internal things
 
 #include "stdlib.h"
+#include <hipblas.h>
 #include <algorithm>
 #include <numeric>
 #include <queue>
@@ -61,7 +62,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<int>
 {
-    static const hipDataType Type = HIPBLAS_R_32I;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32I;
     static const int inf;
 };
 const int nvgraph_Const<int>::inf = INT_MAX;
@@ -235,8 +236,8 @@ public:
         std::vector<int> calculated_distances_res(n);
         std::vector<int> calculated_predecessors_res(n);
         // void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        hipDataType type_v[2] = {nvgraph_Const<int>::Type, nvgraph_Const<int>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<int>::Type, nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<int>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets_v, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -372,7 +373,7 @@ public:
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void *)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        hipDataType type_v[1] = {nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<int>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
@@ -500,7 +501,7 @@ public:
         status = nvgraphTraversal(handle, g1, NVGRAPH_TRAVERSAL_BFS, &source_vert, traversal_param);
         ASSERT_NE(NVGRAPH_STATUS_SUCCESS, status);
 
-        hipDataType type_v[1] = {nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<int>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
@@ -598,9 +599,9 @@ public:
         std::vector<int> calculated_res(n);
         // set up graph data
         // size_t numsets = 1;
-        // hipDataType type_v[1] = {nvgraph_Const<int>::Type};
+        // hipblasDatatype_t type_v[1] = {nvgraph_Const<int>::Type};
         size_t numsets = 2;
-        hipDataType type_v[2] = {nvgraph_Const<int>::Type, nvgraph_Const<int>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<int>::Type, nvgraph_Const<int>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);

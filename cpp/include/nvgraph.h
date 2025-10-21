@@ -17,6 +17,7 @@
 #ifndef _NVGRAPH_H_
 #define _NVGRAPH_H_
 
+#include <hipblas.h>
 #include <hip/hip_runtime.h>
 
 #include "stddef.h"
@@ -163,13 +164,13 @@ extern "C"
 	{
 		int nvertices;
 		int nedges;
-		int *source_indices;	  // Row Indices
-		int *destination_indices; // Column Indices
-		hipDataType valueType;	  // The type of values being given.
-		void *values;			  // Pointer to array of values.
-		int numDevices;			  // Gives the number of devices to be used.
-		int *devices;			  // Array of device IDs to use.
-		int blockN;				  // Specifies the value of n for an n x n matrix decomposition.
+		int *source_indices;		 // Row Indices
+		int *destination_indices;	 // Column Indices
+		hipblasDatatype_t valueType; // The type of values being given.
+		void *values;				 // Pointer to array of values.
+		int numDevices;				 // Gives the number of devices to be used.
+		int *devices;				 // Array of device IDs to use.
+		int blockN;					 // Specifies the value of n for an n x n matrix decomposition.
 		nvgraphTag_t tag;
 	};
 	typedef struct nvgraph2dCOOTopology32I_st *nvgraph2dCOOTopology32I_t;
@@ -211,14 +212,14 @@ extern "C"
 	nvgraphStatus_t NVGRAPH_API nvgraphAllocateVertexData(nvgraphHandle_t handle,
 														  nvgraphGraphDescr_t descrG,
 														  size_t numsets,
-														  hipDataType *settypes);
+														  hipblasDatatype_t *settypes);
 
 	/* Allocate numsets vectors of size E representing Edge Data and attached them the graph.
 	 * settypes[i] is the type of vector #i, currently all Vertex and Edge data should have the same type */
 	nvgraphStatus_t NVGRAPH_API nvgraphAllocateEdgeData(nvgraphHandle_t handle,
 														nvgraphGraphDescr_t descrG,
 														size_t numsets,
-														hipDataType *settypes);
+														hipblasDatatype_t *settypes);
 
 	/* Update the vertex set #setnum with the data in *vertexData, sets have 0-based index
 	 *  Conversions are not supported so nvgraphTopologyType_t should match the graph structure */
@@ -240,7 +241,7 @@ extern "C"
 													   nvgraphTopologyType_t srcTType,
 													   void *srcTopology,
 													   void *srcEdgeData,
-													   hipDataType *dataType,
+													   hipblasDatatype_t *dataType,
 													   nvgraphTopologyType_t dstTType,
 													   void *dstTopology,
 													   void *dstEdgeData);
@@ -454,8 +455,8 @@ extern "C"
 
 	/* nvGRAPH Louvain implementation
 	 */
-	nvgraphStatus_t NVGRAPH_API nvgraphLouvain(hipDataType index_type,
-											   hipDataType val_type,
+	nvgraphStatus_t NVGRAPH_API nvgraphLouvain(hipblasDatatype_t index_type,
+											   hipblasDatatype_t val_type,
 											   const size_t num_vertex,
 											   const size_t num_edges,
 											   void *csr_ptr,
@@ -470,8 +471,8 @@ extern "C"
 
 	/* nvGRAPH Jaccard implementation
 	 */
-	nvgraphStatus_t NVGRAPH_API nvgraphJaccard(hipDataType index_type,
-											   hipDataType val_type,
+	nvgraphStatus_t NVGRAPH_API nvgraphJaccard(hipblasDatatype_t index_type,
+											   hipblasDatatype_t val_type,
 											   const size_t n,
 											   const size_t e,
 											   void *csr_ptr,
@@ -498,7 +499,7 @@ extern "C"
 	nvgraphStatus_t NVGRAPH_API nvgraphAttachVertexData(nvgraphHandle_t handle,
 														nvgraphGraphDescr_t descrG,
 														size_t setnum,
-														hipDataType settype,
+														hipblasDatatype_t settype,
 														void *vertexData);
 
 	/* nvGRAPH attach Edge Data
@@ -508,7 +509,7 @@ extern "C"
 	nvgraphStatus_t NVGRAPH_API nvgraphAttachEdgeData(nvgraphHandle_t handle,
 													  nvgraphGraphDescr_t descrG,
 													  size_t setnum,
-													  hipDataType settype,
+													  hipblasDatatype_t settype,
 													  void *edgeData);
 
 #if defined(__cplusplus)

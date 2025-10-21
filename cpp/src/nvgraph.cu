@@ -21,6 +21,7 @@
 #include <vector>
 #include <nvlouvain.cuh>
 #include <jaccard_gpu.cuh>
+#include <hipblas.h>
 #include <hipsolver.h>
 #include <hip/hip_runtime.h>
 
@@ -97,10 +98,10 @@ static inline int check_int_ptr(const int *p)
 	return ret;
 }
 
-static inline int check_uniform_type_array(const hipDataType *t, size_t sz)
+static inline int check_uniform_type_array(const hipblasDatatype_t *t, size_t sz)
 {
 	int ret = 0;
-	hipDataType uniform_type = t[0];
+	hipblasDatatype_t uniform_type = t[0];
 	for (size_t i = 1; i < sz; i++)
 	{
 		if (t[i] != uniform_type)
@@ -158,7 +159,6 @@ extern "C"
 } // extern "C"
 #endif
 
-
 namespace nvgraph
 {
 
@@ -168,14 +168,14 @@ namespace nvgraph
 	// doesn't compile because of the Thrust code;
 	//
 	extern CsrGraph<int> *extract_subgraph_by_vertices(CsrGraph<int> &graph,
-														int *pV,
-														size_t n,
-														hipStream_t stream);
+													   int *pV,
+													   size_t n,
+													   hipStream_t stream);
 	extern MultiValuedCsrGraph<int, float> *extract_f_subgraph_by_vertices(MultiValuedCsrGraph<int,
-																								float> &graph,
-																			int *pV,
-																			size_t n,
-																			hipStream_t stream);
+																							   float> &graph,
+																		   int *pV,
+																		   size_t n,
+																		   hipStream_t stream);
 	extern MultiValuedCsrGraph<int, double> *extract_d_subgraph_by_vertices(MultiValuedCsrGraph<int,
 																								double> &graph,
 																			int *pV,
@@ -191,48 +191,48 @@ namespace nvgraph
 																		size_t n,
 																		hipStream_t stream);
 	extern MultiValuedCsrGraph<int, double> *extract_d_subgraph_by_edges(MultiValuedCsrGraph<int,
-																							double> &graph,
-																		int *pV,
-																		size_t n,
-																		hipStream_t stream);
+																							 double> &graph,
+																		 int *pV,
+																		 size_t n,
+																		 hipStream_t stream);
 
 #ifndef NVGRAPH_LIGHT
 
 	extern CsrGraph<int> *contract_graph_csr_mul(CsrGraph<int> &graph,
-													int *pV,
-													size_t n,
-													hipStream_t stream,
-													const int &VCombine,
-													const int &VReduce,
-													const int &ECombine,
-													const int &EReduce);
+												 int *pV,
+												 size_t n,
+												 hipStream_t stream,
+												 const int &VCombine,
+												 const int &VReduce,
+												 const int &ECombine,
+												 const int &EReduce);
 
 	extern CsrGraph<int> *contract_graph_csr_sum(CsrGraph<int> &graph,
-													int *pV,
-													size_t n,
-													hipStream_t stream,
-													const int &VCombine,
-													const int &VReduce,
-													const int &ECombine,
-													const int &EReduce);
+												 int *pV,
+												 size_t n,
+												 hipStream_t stream,
+												 const int &VCombine,
+												 const int &VReduce,
+												 const int &ECombine,
+												 const int &EReduce);
 
 	extern CsrGraph<int> *contract_graph_csr_min(CsrGraph<int> &graph,
-													int *pV,
-													size_t n,
-													hipStream_t stream,
-													const int &VCombine,
-													const int &VReduce,
-													const int &ECombine,
-													const int &EReduce);
+												 int *pV,
+												 size_t n,
+												 hipStream_t stream,
+												 const int &VCombine,
+												 const int &VReduce,
+												 const int &ECombine,
+												 const int &EReduce);
 
 	extern CsrGraph<int> *contract_graph_csr_max(CsrGraph<int> &graph,
-													int *pV,
-													size_t n,
-													hipStream_t stream,
-													const int &VCombine,
-													const int &VReduce,
-													const int &ECombine,
-													const int &EReduce);
+												 int *pV,
+												 size_t n,
+												 hipStream_t stream,
+												 const int &VCombine,
+												 const int &VReduce,
+												 const int &ECombine,
+												 const int &EReduce);
 
 	extern MultiValuedCsrGraph<int, float> *contract_graph_mv_float_mul(MultiValuedCsrGraph<int,
 																							float> &graph,
@@ -275,44 +275,44 @@ namespace nvgraph
 																		const int &EReduce);
 
 	extern MultiValuedCsrGraph<int, double> *contract_graph_mv_double_mul(MultiValuedCsrGraph<int,
-																								double> &graph,
-																			int *pV,
-																			size_t n,
-																			hipStream_t stream,
-																			const int &VCombine,
-																			const int &VReduce,
-																			const int &ECombine,
-																			const int &EReduce);
+																							  double> &graph,
+																		  int *pV,
+																		  size_t n,
+																		  hipStream_t stream,
+																		  const int &VCombine,
+																		  const int &VReduce,
+																		  const int &ECombine,
+																		  const int &EReduce);
 
 	extern MultiValuedCsrGraph<int, double> *contract_graph_mv_double_sum(MultiValuedCsrGraph<int,
-																								double> &graph,
-																			int *pV,
-																			size_t n,
-																			hipStream_t stream,
-																			const int &VCombine,
-																			const int &VReduce,
-																			const int &ECombine,
-																			const int &EReduce);
+																							  double> &graph,
+																		  int *pV,
+																		  size_t n,
+																		  hipStream_t stream,
+																		  const int &VCombine,
+																		  const int &VReduce,
+																		  const int &ECombine,
+																		  const int &EReduce);
 
 	extern MultiValuedCsrGraph<int, double> *contract_graph_mv_double_min(MultiValuedCsrGraph<int,
-																								double> &graph,
-																			int *pV,
-																			size_t n,
-																			hipStream_t stream,
-																			const int &VCombine,
-																			const int &VReduce,
-																			const int &ECombine,
-																			const int &EReduce);
+																							  double> &graph,
+																		  int *pV,
+																		  size_t n,
+																		  hipStream_t stream,
+																		  const int &VCombine,
+																		  const int &VReduce,
+																		  const int &ECombine,
+																		  const int &EReduce);
 
 	extern MultiValuedCsrGraph<int, double> *contract_graph_mv_double_max(MultiValuedCsrGraph<int,
-																								double> &graph,
-																			int *pV,
-																			size_t n,
-																			hipStream_t stream,
-																			const int &VCombine,
-																			const int &VReduce,
-																			const int &ECombine,
-																			const int &EReduce);
+																							  double> &graph,
+																		  int *pV,
+																		  size_t n,
+																		  hipStream_t stream,
+																		  const int &VCombine,
+																		  const int &VReduce,
+																		  const int &ECombine,
+																		  const int &EReduce);
 #endif
 
 	nvgraphStatus_t getCAPIStatusForError(NVGRAPH_ERROR err)
@@ -355,8 +355,8 @@ namespace nvgraph
 	}
 
 	static nvgraphStatus_t nvgraphCreateMulti_impl(struct nvgraphContext **outCtx,
-													int numDevices,
-													int *_devices)
+												   int numDevices,
+												   int *_devices)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -488,7 +488,7 @@ namespace nvgraph
 				CERR() << "Warning: " << cnmemGetErrorString(cm_status) << std::endl;
 			}
 #else
-		cnmemFinalize();
+			cnmemFinalize();
 #endif
 			// others
 			free(handle);
@@ -525,7 +525,7 @@ namespace nvgraph
 	}
 
 	static nvgraphStatus_t nvgraphDestroyGraphDescr_impl(nvgraphHandle_t handle,
-															struct nvgraphGraphDescr *descrG)
+														 struct nvgraphGraphDescr *descrG)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -567,13 +567,13 @@ namespace nvgraph
 					}
 					case HAS_VALUES:
 					{
-						if (descrG->T == HIP_R_32F)
+						if (descrG->T == HIPBLAS_R_32F)
 						{
 							MultiValuedCsrGraph<int, float> *MCSRG =
 								static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 							delete MCSRG;
 						}
-						else if (descrG->T == HIP_R_64F)
+						else if (descrG->T == HIPBLAS_R_64F)
 						{
 							MultiValuedCsrGraph<int, double> *MCSRG =
 								static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -626,9 +626,9 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphSetGraphStructure_impl(nvgraphHandle_t handle,
-																nvgraphGraphDescr_t descrG,
-																void *topologyData,
-																nvgraphTopologyType_t TT)
+															  nvgraphGraphDescr_t descrG,
+															  void *topologyData,
+															  nvgraphTopologyType_t TT)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -677,14 +677,14 @@ namespace nvgraph
 				CsrGraph<int> *CSRG = new CsrGraph<int>(v, e, handle->stream);
 
 				CHECK_CUDA(hipMemcpy(CSRG->get_raw_row_offsets(),
-										neighborhood,
-										(size_t)((CSRG->get_num_vertices() + 1) * sizeof(int)),
-										hipMemcpyDefault));
+									 neighborhood,
+									 (size_t)((CSRG->get_num_vertices() + 1) * sizeof(int)),
+									 hipMemcpyDefault));
 
 				CHECK_CUDA(hipMemcpy(CSRG->get_raw_column_indices(),
-										edgedest,
-										(size_t)((CSRG->get_num_edges()) * sizeof(int)),
-										hipMemcpyDefault));
+									 edgedest,
+									 (size_t)((CSRG->get_num_edges()) * sizeof(int)),
+									 hipMemcpyDefault));
 
 				// Set the graph handle
 				descrG->graph_handle = CSRG;
@@ -708,15 +708,15 @@ namespace nvgraph
 					for (int32_t i = 0; i < td->numDevices; i++)
 						devices.push_back(td->devices[i]);
 					MatrixDecompositionDescription<int32_t, int32_t> description(td->nvertices,
-																					td->blockN,
-																					td->nedges,
-																					devices);
+																				 td->blockN,
+																				 td->nedges,
+																				 devices);
 					Matrix2d<int32_t, int32_t, int32_t> *m = new Matrix2d<int32_t,
-																			int32_t, int32_t>();
+																		  int32_t, int32_t>();
 					*m = COOto2d(description,
-									td->source_indices,
-									td->destination_indices,
-									(int32_t *)td->values);
+								 td->source_indices,
+								 td->destination_indices,
+								 (int32_t *)td->values);
 					descrG->graph_handle = m;
 					break;
 				}
@@ -737,9 +737,9 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphAttachGraphStructure_impl(nvgraphHandle_t handle,
-																	nvgraphGraphDescr_t descrG,
-																	void *topologyData,
-																	nvgraphTopologyType_t TT)
+																 nvgraphGraphDescr_t descrG,
+																 void *topologyData,
+																 nvgraphTopologyType_t TT)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -812,15 +812,15 @@ namespace nvgraph
 					for (int32_t i = 0; i < td->numDevices; i++)
 						devices.push_back(td->devices[i]);
 					MatrixDecompositionDescription<int32_t, int32_t> description(td->nvertices,
-																					td->blockN,
-																					td->nedges,
-																					devices);
+																				 td->blockN,
+																				 td->nedges,
+																				 devices);
 					Matrix2d<int32_t, int32_t, int32_t> *m = new Matrix2d<int32_t,
-																			int32_t, int32_t>();
+																		  int32_t, int32_t>();
 					*m = COOto2d(description,
-									td->source_indices,
-									td->destination_indices,
-									(int32_t *)td->values);
+								 td->source_indices,
+								 td->destination_indices,
+								 (int32_t *)td->values);
 					descrG->graph_handle = m;
 					break;
 				}
@@ -841,9 +841,9 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphGetGraphStructure_impl(nvgraphHandle_t handle,
-																nvgraphGraphDescr_t descrG,
-																void *topologyData,
-																nvgraphTopologyType_t *TT)
+															  nvgraphGraphDescr_t descrG,
+															  void *topologyData,
+															  nvgraphTopologyType_t *TT)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -891,17 +891,17 @@ namespace nvgraph
 				if (neighborhood != NULL)
 				{
 					CHECK_CUDA(hipMemcpy(neighborhood,
-											CSRG->get_raw_row_offsets(),
-											(size_t)((v + 1) * sizeof(int)),
-											hipMemcpyDefault));
+										 CSRG->get_raw_row_offsets(),
+										 (size_t)((v + 1) * sizeof(int)),
+										 hipMemcpyDefault));
 				}
 
 				if (edgedest != NULL)
 				{
 					CHECK_CUDA(hipMemcpy(edgedest,
-											CSRG->get_raw_column_indices(),
-											(size_t)((e) * sizeof(int)),
-											hipMemcpyDefault));
+										 CSRG->get_raw_column_indices(),
+										 (size_t)((e) * sizeof(int)),
+										 hipMemcpyDefault));
 				}
 			}
 		}
@@ -910,9 +910,9 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphAllocateVertexData_impl(nvgraphHandle_t handle,
-																nvgraphGraphDescr_t descrG,
-																size_t numsets,
-																hipDataType *settypes)
+															   nvgraphGraphDescr_t descrG,
+															   size_t numsets,
+															   hipblasDatatype_t *settypes)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -924,7 +924,7 @@ namespace nvgraph
 
 			if (descrG->graphStatus == HAS_TOPOLOGY) // need to convert CsrGraph to MultiValuedCsrGraph first
 			{
-				if (*settypes == HIP_R_32F)
+				if (*settypes == HIPBLAS_R_32F)
 				{
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
@@ -932,7 +932,7 @@ namespace nvgraph
 						int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (*settypes == HIP_R_64F)
+				else if (*settypes == HIPBLAS_R_64F)
 				{
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
@@ -945,7 +945,7 @@ namespace nvgraph
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
 					MultiValuedCsrGraph<int, int> *MCSRG = new MultiValuedCsrGraph<int,
-																					int>(*CSRG);
+																				   int>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else
@@ -962,13 +962,13 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			// Allocate and transfer
-			if (*settypes == HIP_R_32F)
+			if (*settypes == HIPBLAS_R_32F)
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				MCSRG->allocateVertexData(numsets, NULL);
 			}
-			else if (*settypes == HIP_R_64F)
+			else if (*settypes == HIPBLAS_R_64F)
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -989,10 +989,10 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphAttachVertexData_impl(nvgraphHandle_t handle,
-																nvgraphGraphDescr_t descrG,
-																size_t setnum,
-																hipDataType settype,
-																void *vertexData)
+															 nvgraphGraphDescr_t descrG,
+															 size_t setnum,
+															 hipblasDatatype_t settype,
+															 void *vertexData)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1002,7 +1002,7 @@ namespace nvgraph
 
 			if (descrG->graphStatus == HAS_TOPOLOGY) // need to convert CsrGraph to MultiValuedCsrGraph first
 			{
-				if (settype == HIP_R_32F)
+				if (settype == HIPBLAS_R_32F)
 				{
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
@@ -1010,7 +1010,7 @@ namespace nvgraph
 						int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (settype == HIP_R_64F)
+				else if (settype == HIPBLAS_R_64F)
 				{
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
@@ -1023,7 +1023,7 @@ namespace nvgraph
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
 					MultiValuedCsrGraph<int, int> *MCSRG = new MultiValuedCsrGraph<int,
-																					int>(*CSRG);
+																				   int>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else
@@ -1040,13 +1040,13 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			// transfer
-			if (settype == HIP_R_32F)
+			if (settype == HIPBLAS_R_32F)
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				MCSRG->attachVertexData(setnum, (float *)vertexData, NULL);
 			}
-			else if (settype == HIP_R_64F)
+			else if (settype == HIPBLAS_R_64F)
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -1066,9 +1066,9 @@ namespace nvgraph
 		return getCAPIStatusForError(rc);
 	}
 	nvgraphStatus_t NVGRAPH_API nvgraphAllocateEdgeData_impl(nvgraphHandle_t handle,
-																nvgraphGraphDescr_t descrG,
-																size_t numsets,
-																hipDataType *settypes)
+															 nvgraphGraphDescr_t descrG,
+															 size_t numsets,
+															 hipblasDatatype_t *settypes)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1080,7 +1080,7 @@ namespace nvgraph
 			// Look at what kind of graph we have
 			if (descrG->graphStatus == HAS_TOPOLOGY) // need to convert CsrGraph to MultiValuedCsrGraph first
 			{
-				if (*settypes == HIP_R_32F)
+				if (*settypes == HIPBLAS_R_32F)
 				{
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
@@ -1088,7 +1088,7 @@ namespace nvgraph
 						int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (*settypes == HIP_R_64F)
+				else if (*settypes == HIPBLAS_R_64F)
 				{
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
@@ -1101,7 +1101,7 @@ namespace nvgraph
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
 					MultiValuedCsrGraph<int, int> *MCSRG = new MultiValuedCsrGraph<int,
-																					int>(*CSRG);
+																				   int>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else
@@ -1118,13 +1118,13 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			// Allocate and transfer
-			if (*settypes == HIP_R_32F)
+			if (*settypes == HIPBLAS_R_32F)
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				MCSRG->allocateEdgeData(numsets, NULL);
 			}
-			else if (*settypes == HIP_R_64F)
+			else if (*settypes == HIPBLAS_R_64F)
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -1145,10 +1145,10 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphAttachEdgeData_impl(nvgraphHandle_t handle,
-															nvgraphGraphDescr_t descrG,
-															size_t setnum,
-															hipDataType settype,
-															void *edgeData)
+														   nvgraphGraphDescr_t descrG,
+														   size_t setnum,
+														   hipblasDatatype_t settype,
+														   void *edgeData)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1158,7 +1158,7 @@ namespace nvgraph
 			// Look at what kind of graph we have
 			if (descrG->graphStatus == HAS_TOPOLOGY) // need to convert CsrGraph to MultiValuedCsrGraph first
 			{
-				if (settype == HIP_R_32F)
+				if (settype == HIPBLAS_R_32F)
 				{
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
@@ -1166,7 +1166,7 @@ namespace nvgraph
 						int, float>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
-				else if (settype == HIP_R_64F)
+				else if (settype == HIPBLAS_R_64F)
 				{
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
@@ -1179,7 +1179,7 @@ namespace nvgraph
 					CsrGraph<int> *CSRG =
 						static_cast<CsrGraph<int> *>(descrG->graph_handle);
 					MultiValuedCsrGraph<int, int> *MCSRG = new MultiValuedCsrGraph<int,
-																					int>(*CSRG);
+																				   int>(*CSRG);
 					descrG->graph_handle = MCSRG;
 				}
 				else
@@ -1196,13 +1196,13 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
 			// Allocate and transfer
-			if (settype == HIP_R_32F)
+			if (settype == HIPBLAS_R_32F)
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				MCSRG->attachEdgeData(setnum, (float *)edgeData, NULL);
 			}
-			else if (settype == HIP_R_64F)
+			else if (settype == HIPBLAS_R_64F)
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -1223,9 +1223,9 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphSetVertexData_impl(nvgraphHandle_t handle,
-															nvgraphGraphDescr_t descrG,
-															void *vertexData,
-															size_t setnum)
+														  nvgraphGraphDescr_t descrG,
+														  void *vertexData,
+														  size_t setnum)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1236,27 +1236,27 @@ namespace nvgraph
 			if (descrG->graphStatus != HAS_VALUES) // need a MultiValuedCsrGraph
 				FatalError("Graph should have allocated values.", NVGRAPH_ERR_BAD_PARAMETERS);
 
-			if (descrG->T == HIP_R_32F)
+			if (descrG->T == HIPBLAS_R_32F)
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
-							(float *)vertexData,
-							(size_t)((MCSRG->get_num_vertices()) * sizeof(float)),
-							hipMemcpyDefault);
+						  (float *)vertexData,
+						  (size_t)((MCSRG->get_num_vertices()) * sizeof(float)),
+						  hipMemcpyDefault);
 			}
-			else if (descrG->T == HIP_R_64F)
+			else if (descrG->T == HIPBLAS_R_64F)
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
-							(double *)vertexData,
-							(size_t)((MCSRG->get_num_vertices()) * sizeof(double)),
-							hipMemcpyDefault);
+						  (double *)vertexData,
+						  (size_t)((MCSRG->get_num_vertices()) * sizeof(double)),
+						  hipMemcpyDefault);
 			}
 			else if (descrG->T == HIPBLAS_R_32I)
 			{
@@ -1265,9 +1265,9 @@ namespace nvgraph
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_vertex_dim(setnum),
-							(int *)vertexData,
-							(size_t)((MCSRG->get_num_vertices()) * sizeof(int)),
-							hipMemcpyDefault);
+						  (int *)vertexData,
+						  (size_t)((MCSRG->get_num_vertices()) * sizeof(int)),
+						  hipMemcpyDefault);
 			}
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1280,9 +1280,9 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphGetVertexData_impl(nvgraphHandle_t handle,
-															nvgraphGraphDescr_t descrG,
-															void *vertexData,
-															size_t setnum)
+														  nvgraphGraphDescr_t descrG,
+														  void *vertexData,
+														  size_t setnum)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1293,27 +1293,27 @@ namespace nvgraph
 			if (descrG->graphStatus != HAS_VALUES) // need a MultiValuedCsrGraph
 				FatalError("Graph should have values.", NVGRAPH_ERR_BAD_PARAMETERS);
 
-			if (descrG->T == HIP_R_32F)
+			if (descrG->T == HIPBLAS_R_32F)
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((float *)vertexData,
-							MCSRG->get_raw_vertex_dim(setnum),
-							(size_t)((MCSRG->get_num_vertices()) * sizeof(float)),
-							hipMemcpyDefault);
+						  MCSRG->get_raw_vertex_dim(setnum),
+						  (size_t)((MCSRG->get_num_vertices()) * sizeof(float)),
+						  hipMemcpyDefault);
 			}
-			else if (descrG->T == HIP_R_64F)
+			else if (descrG->T == HIPBLAS_R_64F)
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((double *)vertexData,
-							MCSRG->get_raw_vertex_dim(setnum),
-							(size_t)((MCSRG->get_num_vertices()) * sizeof(double)),
-							hipMemcpyDefault);
+						  MCSRG->get_raw_vertex_dim(setnum),
+						  (size_t)((MCSRG->get_num_vertices()) * sizeof(double)),
+						  hipMemcpyDefault);
 			}
 			else if (descrG->T == HIPBLAS_R_32I)
 			{
@@ -1322,9 +1322,9 @@ namespace nvgraph
 				if (setnum >= MCSRG->get_num_vertex_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((int *)vertexData,
-							MCSRG->get_raw_vertex_dim(setnum),
-							(size_t)((MCSRG->get_num_vertices()) * sizeof(int)),
-							hipMemcpyDefault);
+						  MCSRG->get_raw_vertex_dim(setnum),
+						  (size_t)((MCSRG->get_num_vertices()) * sizeof(int)),
+						  hipMemcpyDefault);
 			}
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1340,7 +1340,7 @@ namespace nvgraph
 															nvgraphTopologyType_t srcTType,
 															void *srcTopology,
 															void *srcEdgeData,
-															hipDataType *dataType,
+															hipblasDatatype_t *dataType,
 															nvgraphTopologyType_t dstTType,
 															void *dstTopology,
 															void *dstEdgeData)
@@ -1353,9 +1353,9 @@ namespace nvgraph
 				FatalError("Incorrect parameters.", NVGRAPH_ERR_BAD_PARAMETERS);
 
 			size_t sizeT;
-			if (*dataType == HIP_R_32F)
+			if (*dataType == HIPBLAS_R_32F)
 				sizeT = sizeof(float);
-			else if (*dataType == HIP_R_64F)
+			else if (*dataType == HIPBLAS_R_64F)
 				sizeT = sizeof(double);
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1368,17 +1368,17 @@ namespace nvgraph
 				dstT->nvertices = srcT->nvertices;
 				dstT->nedges = srcT->nedges;
 				CHECK_CUDA(hipMemcpy(dstT->source_offsets,
-										srcT->source_offsets,
-										(srcT->nvertices + 1) * sizeof(int),
-										hipMemcpyDefault));
+									 srcT->source_offsets,
+									 (srcT->nvertices + 1) * sizeof(int),
+									 hipMemcpyDefault));
 				CHECK_CUDA(hipMemcpy(dstT->destination_indices,
-										srcT->destination_indices,
-										srcT->nedges * sizeof(int),
-										hipMemcpyDefault));
+									 srcT->destination_indices,
+									 srcT->nedges * sizeof(int),
+									 hipMemcpyDefault));
 				CHECK_CUDA(hipMemcpy(dstEdgeData,
-										srcEdgeData,
-										srcT->nedges * sizeT,
-										hipMemcpyDefault));
+									 srcEdgeData,
+									 srcT->nedges * sizeT,
+									 hipMemcpyDefault));
 			}
 			else if (srcTType == NVGRAPH_CSR_32 && dstTType == NVGRAPH_CSC_32)
 			{ // CSR2CSC
@@ -1408,13 +1408,13 @@ namespace nvgraph
 							dstT->source_indices,
 							HIPSPARSE_INDEX_BASE_ZERO);
 					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
-											srcT->destination_indices,
-											srcT->nedges * sizeof(int),
-											hipMemcpyDefault));
+										 srcT->destination_indices,
+										 srcT->nedges * sizeof(int),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy(dstEdgeData,
-											srcEdgeData,
-											srcT->nedges * sizeT,
-											hipMemcpyDefault));
+										 srcEdgeData,
+										 srcT->nedges * sizeT,
+										 hipMemcpyDefault));
 				}
 				else if (dstT->tag == NVGRAPH_SORTED_BY_DESTINATION)
 				{
@@ -1426,12 +1426,12 @@ namespace nvgraph
 							HIPSPARSE_INDEX_BASE_ZERO);
 					// Step 2: Convert to COO_Destination
 					cooSortByDestination(srcT->nvertices, srcT->nvertices, srcT->nedges,
-											srcEdgeData,
-											dstT->source_indices, srcT->destination_indices,
-											dstEdgeData,
-											dstT->source_indices, dstT->destination_indices,
-											HIPSPARSE_INDEX_BASE_ZERO,
-											dataType);
+										 srcEdgeData,
+										 dstT->source_indices, srcT->destination_indices,
+										 dstEdgeData,
+										 dstT->source_indices, dstT->destination_indices,
+										 HIPSPARSE_INDEX_BASE_ZERO,
+										 dataType);
 				}
 				else
 				{
@@ -1460,17 +1460,17 @@ namespace nvgraph
 				dstT->nvertices = srcT->nvertices;
 				dstT->nedges = srcT->nedges;
 				CHECK_CUDA(hipMemcpy(dstT->destination_offsets,
-										srcT->destination_offsets,
-										(srcT->nvertices + 1) * sizeof(int),
-										hipMemcpyDefault));
+									 srcT->destination_offsets,
+									 (srcT->nvertices + 1) * sizeof(int),
+									 hipMemcpyDefault));
 				CHECK_CUDA(hipMemcpy(dstT->source_indices,
-										srcT->source_indices,
-										srcT->nedges * sizeof(int),
-										hipMemcpyDefault));
+									 srcT->source_indices,
+									 srcT->nedges * sizeof(int),
+									 hipMemcpyDefault));
 				CHECK_CUDA(hipMemcpy(dstEdgeData,
-										srcEdgeData,
-										srcT->nedges * sizeT,
-										hipMemcpyDefault));
+									 srcEdgeData,
+									 srcT->nedges * sizeT,
+									 hipMemcpyDefault));
 			}
 			else if (srcTType == NVGRAPH_CSC_32 && dstTType == NVGRAPH_COO_32)
 			{ // CSC2COO
@@ -1503,13 +1503,13 @@ namespace nvgraph
 							dstT->destination_indices,
 							HIPSPARSE_INDEX_BASE_ZERO);
 					CHECK_CUDA(hipMemcpy(dstT->source_indices,
-											srcT->source_indices,
-											srcT->nedges * sizeof(int),
-											hipMemcpyDefault));
+										 srcT->source_indices,
+										 srcT->nedges * sizeof(int),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy(dstEdgeData,
-											srcEdgeData,
-											srcT->nedges * sizeT,
-											hipMemcpyDefault));
+										 srcEdgeData,
+										 srcT->nedges * sizeT,
+										 hipMemcpyDefault));
 				}
 				else
 				{
@@ -1531,33 +1531,33 @@ namespace nvgraph
 							dstT->source_offsets,
 							HIPSPARSE_INDEX_BASE_ZERO);
 					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
-											srcT->destination_indices,
-											srcT->nedges * sizeof(int),
-											hipMemcpyDefault));
+										 srcT->destination_indices,
+										 srcT->nedges * sizeof(int),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy(dstEdgeData,
-											srcEdgeData,
-											srcT->nedges * sizeT,
-											hipMemcpyDefault));
+										 srcEdgeData,
+										 srcT->nedges * sizeT,
+										 hipMemcpyDefault));
 				}
 				else if (srcT->tag == NVGRAPH_SORTED_BY_DESTINATION)
 				{
 					cood2csr(srcT->nvertices, srcT->nvertices, srcT->nedges,
-								srcEdgeData,
-								srcT->source_indices, srcT->destination_indices,
-								dstEdgeData,
-								dstT->source_offsets, dstT->destination_indices,
-								HIPSPARSE_INDEX_BASE_ZERO,
-								dataType);
+							 srcEdgeData,
+							 srcT->source_indices, srcT->destination_indices,
+							 dstEdgeData,
+							 dstT->source_offsets, dstT->destination_indices,
+							 HIPSPARSE_INDEX_BASE_ZERO,
+							 dataType);
 				}
 				else if (srcT->tag == NVGRAPH_DEFAULT || srcT->tag == NVGRAPH_UNSORTED)
 				{
 					coou2csr(srcT->nvertices, srcT->nvertices, srcT->nedges,
-								srcEdgeData,
-								srcT->source_indices, srcT->destination_indices,
-								dstEdgeData,
-								dstT->source_offsets, dstT->destination_indices,
-								HIPSPARSE_INDEX_BASE_ZERO,
-								dataType);
+							 srcEdgeData,
+							 srcT->source_indices, srcT->destination_indices,
+							 dstEdgeData,
+							 dstT->source_offsets, dstT->destination_indices,
+							 HIPSPARSE_INDEX_BASE_ZERO,
+							 dataType);
 				}
 				else
 				{
@@ -1573,12 +1573,12 @@ namespace nvgraph
 				if (srcT->tag == NVGRAPH_SORTED_BY_SOURCE)
 				{
 					coos2csc(srcT->nvertices, srcT->nvertices, srcT->nedges,
-								srcEdgeData,
-								srcT->source_indices, srcT->destination_indices,
-								dstEdgeData,
-								dstT->source_indices, dstT->destination_offsets,
-								HIPSPARSE_INDEX_BASE_ZERO,
-								dataType);
+							 srcEdgeData,
+							 srcT->source_indices, srcT->destination_indices,
+							 dstEdgeData,
+							 dstT->source_indices, dstT->destination_offsets,
+							 HIPSPARSE_INDEX_BASE_ZERO,
+							 dataType);
 				}
 				else if (srcT->tag == NVGRAPH_SORTED_BY_DESTINATION)
 				{
@@ -1588,23 +1588,23 @@ namespace nvgraph
 							dstT->destination_offsets,
 							HIPSPARSE_INDEX_BASE_ZERO);
 					CHECK_CUDA(hipMemcpy(dstT->source_indices,
-											srcT->source_indices,
-											srcT->nedges * sizeof(int),
-											hipMemcpyDefault));
+										 srcT->source_indices,
+										 srcT->nedges * sizeof(int),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy(dstEdgeData,
-											srcEdgeData,
-											srcT->nedges * sizeT,
-											hipMemcpyDefault));
+										 srcEdgeData,
+										 srcT->nedges * sizeT,
+										 hipMemcpyDefault));
 				}
 				else if (srcT->tag == NVGRAPH_DEFAULT || srcT->tag == NVGRAPH_UNSORTED)
 				{
 					coou2csc(srcT->nvertices, srcT->nvertices, srcT->nedges,
-								srcEdgeData,
-								srcT->source_indices, srcT->destination_indices,
-								dstEdgeData,
-								dstT->source_indices, dstT->destination_offsets,
-								HIPSPARSE_INDEX_BASE_ZERO,
-								dataType);
+							 srcEdgeData,
+							 srcT->source_indices, srcT->destination_indices,
+							 dstEdgeData,
+							 dstT->source_indices, dstT->destination_offsets,
+							 HIPSPARSE_INDEX_BASE_ZERO,
+							 dataType);
 				}
 				else
 				{
@@ -1620,17 +1620,17 @@ namespace nvgraph
 				if (srcT->tag == dstT->tag || dstT->tag == NVGRAPH_DEFAULT || dstT->tag == NVGRAPH_UNSORTED)
 				{
 					CHECK_CUDA(hipMemcpy(dstT->source_indices,
-											srcT->source_indices,
-											srcT->nedges * sizeof(int),
-											hipMemcpyDefault));
+										 srcT->source_indices,
+										 srcT->nedges * sizeof(int),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
-											srcT->destination_indices,
-											srcT->nedges * sizeof(int),
-											hipMemcpyDefault));
+										 srcT->destination_indices,
+										 srcT->nedges * sizeof(int),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy(dstEdgeData,
-											srcEdgeData,
-											srcT->nedges * sizeT,
-											hipMemcpyDefault));
+										 srcEdgeData,
+										 srcT->nedges * sizeT,
+										 hipMemcpyDefault));
 				}
 				else if (dstT->tag == NVGRAPH_SORTED_BY_SOURCE)
 				{
@@ -1645,12 +1645,12 @@ namespace nvgraph
 				else if (dstT->tag == NVGRAPH_SORTED_BY_DESTINATION)
 				{
 					cooSortByDestination(srcT->nvertices, srcT->nvertices, srcT->nedges,
-											srcEdgeData,
-											srcT->source_indices, srcT->destination_indices,
-											dstEdgeData,
-											dstT->source_indices, dstT->destination_indices,
-											HIPSPARSE_INDEX_BASE_ZERO,
-											dataType);
+										 srcEdgeData,
+										 srcT->source_indices, srcT->destination_indices,
+										 dstEdgeData,
+										 dstT->source_indices, dstT->destination_indices,
+										 HIPSPARSE_INDEX_BASE_ZERO,
+										 dataType);
 				}
 				else
 				{
@@ -1682,27 +1682,27 @@ namespace nvgraph
 			if (descrG->graphStatus != HAS_VALUES) // need a MultiValuedCsrGraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
-			if (descrG->T == HIP_R_32F)
+			if (descrG->T == HIPBLAS_R_32F)
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
-							(float *)edgeData,
-							(size_t)((MCSRG->get_num_edges()) * sizeof(float)),
-							hipMemcpyDefault);
+						  (float *)edgeData,
+						  (size_t)((MCSRG->get_num_edges()) * sizeof(float)),
+						  hipMemcpyDefault);
 			}
-			else if (descrG->T == HIP_R_64F)
+			else if (descrG->T == HIPBLAS_R_64F)
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
-							(double *)edgeData,
-							(size_t)((MCSRG->get_num_edges()) * sizeof(double)),
-							hipMemcpyDefault);
+						  (double *)edgeData,
+						  (size_t)((MCSRG->get_num_edges()) * sizeof(double)),
+						  hipMemcpyDefault);
 			}
 			else if (descrG->T == HIPBLAS_R_32I)
 			{
@@ -1711,9 +1711,9 @@ namespace nvgraph
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy(MCSRG->get_raw_edge_dim(setnum),
-							(int *)edgeData,
-							(size_t)((MCSRG->get_num_edges()) * sizeof(int)),
-							hipMemcpyDefault);
+						  (int *)edgeData,
+						  (size_t)((MCSRG->get_num_edges()) * sizeof(int)),
+						  hipMemcpyDefault);
 			}
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1739,27 +1739,27 @@ namespace nvgraph
 			if (descrG->graphStatus != HAS_VALUES) // need a MultiValuedCsrGraph
 				return NVGRAPH_STATUS_INVALID_VALUE;
 
-			if (descrG->T == HIP_R_32F)
+			if (descrG->T == HIPBLAS_R_32F)
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((float *)edgeData,
-							MCSRG->get_raw_edge_dim(setnum),
-							(size_t)((MCSRG->get_num_edges()) * sizeof(float)),
-							hipMemcpyDefault);
+						  MCSRG->get_raw_edge_dim(setnum),
+						  (size_t)((MCSRG->get_num_edges()) * sizeof(float)),
+						  hipMemcpyDefault);
 			}
-			else if (descrG->T == HIP_R_64F)
+			else if (descrG->T == HIPBLAS_R_64F)
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 				if (setnum >= MCSRG->get_num_edge_dim()) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				hipMemcpy((double *)edgeData,
-							MCSRG->get_raw_edge_dim(setnum),
-							(size_t)((MCSRG->get_num_edges()) * sizeof(double)),
-							hipMemcpyDefault);
+						  MCSRG->get_raw_edge_dim(setnum),
+						  (size_t)((MCSRG->get_num_edges()) * sizeof(double)),
+						  hipMemcpyDefault);
 			}
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
@@ -1772,13 +1772,13 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphSrSpmv_impl_cub(nvgraphHandle_t handle,
-														const nvgraphGraphDescr_t descrG,
-														const size_t weight_index,
-														const void *alpha,
-														const size_t x,
-														const void *beta,
-														const size_t y,
-														const nvgraphSemiring_t SR)
+													   const nvgraphGraphDescr_t descrG,
+													   const size_t weight_index,
+													   const void *alpha,
+													   const size_t x,
+													   const void *beta,
+													   const size_t y,
+													   const nvgraphSemiring_t SR)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 
@@ -1795,10 +1795,10 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphSssp_impl(nvgraphHandle_t handle,
-													const nvgraphGraphDescr_t descrG,
-													const size_t weight_index,
-													const int *source_vert,
-													const size_t sssp)
+												 const nvgraphGraphDescr_t descrG,
+												 const size_t weight_index,
+												 const int *source_vert,
+												 const size_t sssp)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1815,7 +1815,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
@@ -1830,7 +1830,7 @@ namespace nvgraph
 				rc = sssp_solver.solve(*source_vert, co, MCSRG->get_vertex_dim(sssp));
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -1855,10 +1855,10 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphTraversal_impl(nvgraphHandle_t handle,
-														const nvgraphGraphDescr_t descrG,
-														const nvgraphTraversal_t traversalT,
-														const int *source_vertex_ptr,
-														const nvgraphTraversalParameter_t params)
+													  const nvgraphGraphDescr_t descrG,
+													  const nvgraphTraversal_t traversalT,
+													  const int *source_vertex_ptr,
+													  const nvgraphTraversalParameter_t params)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1966,10 +1966,10 @@ namespace nvgraph
 	 * @return Status code.
 	 */
 	nvgraphStatus_t NVGRAPH_API nvgraph2dBfs_impl(nvgraphHandle_t handle,
-													const nvgraphGraphDescr_t descrG,
-													const int32_t source_vert,
-													int32_t *distances,
-													int32_t *predecessors)
+												  const nvgraphGraphDescr_t descrG,
+												  const int32_t source_vert,
+												  int32_t *distances,
+												  int32_t *predecessors)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -1983,7 +1983,7 @@ namespace nvgraph
 			if (descrG->T != HIPBLAS_R_32I)
 				return NVGRAPH_STATUS_INVALID_VALUE;
 			Matrix2d<int32_t, int32_t, int32_t> *m = static_cast<Matrix2d<int32_t,
-																			int32_t, int32_t> *>(descrG->graph_handle);
+																		  int32_t, int32_t> *>(descrG->graph_handle);
 			//			std::cout << m->toString();
 			Bfs2d<int32_t, int32_t, int32_t> bfs(m, true, 0, 0);
 			rc = bfs.configure(distances, predecessors);
@@ -1995,10 +1995,10 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphWidestPath_impl(nvgraphHandle_t handle,
-														const nvgraphGraphDescr_t descrG,
-														const size_t weight_index,
-														const int *source_vert,
-														const size_t widest_path)
+													   const nvgraphGraphDescr_t descrG,
+													   const size_t weight_index,
+													   const int *source_vert,
+													   const size_t widest_path)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -2016,7 +2016,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
@@ -2031,7 +2031,7 @@ namespace nvgraph
 				rc = widest_path_solver.solve(*source_vert, co, MCSRG->get_vertex_dim(widest_path));
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -2056,14 +2056,14 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphPagerank_impl(nvgraphHandle_t handle,
-														const nvgraphGraphDescr_t descrG,
-														const size_t weight_index,
-														const void *alpha,
-														const size_t bookmark,
-														const int has_guess,
-														const size_t rank,
-														const float tolerance,
-														const int max_iter)
+													 const nvgraphGraphDescr_t descrG,
+													 const size_t weight_index,
+													 const void *alpha,
+													 const size_t bookmark,
+													 const int has_guess,
+													 const size_t rank,
+													 const float tolerance,
+													 const int max_iter)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -2097,7 +2097,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				float alphaT = *static_cast<const float *>(alpha);
 				if (alphaT <= 0.0f || alphaT >= 1.0f)
@@ -2116,11 +2116,11 @@ namespace nvgraph
 					guess.fill(static_cast<float>(1.0 / n));
 				bm.copy(MCSRG->get_vertex_dim(bookmark));
 				Pagerank<int, float> pagerank_solver(*MCSRG->get_valued_csr_graph(weight_index),
-														bm);
+													 bm);
 				rc = pagerank_solver.solve(alphaT, guess, MCSRG->get_vertex_dim(rank), tol, max_it);
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				double alphaT = *static_cast<const double *>(alpha);
 				if (alphaT <= 0.0 || alphaT >= 1.0)
@@ -2140,7 +2140,7 @@ namespace nvgraph
 				else
 					guess.fill(static_cast<float>(1.0 / n));
 				Pagerank<int, double> pagerank_solver(*MCSRG->get_valued_csr_graph(weight_index),
-														bm);
+													  bm);
 				rc = pagerank_solver.solve(alphaT, guess, MCSRG->get_vertex_dim(rank), tol, max_it);
 				break;
 			}
@@ -2154,15 +2154,15 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphKrylovPagerank_impl(nvgraphHandle_t handle,
-															const nvgraphGraphDescr_t descrG,
-															const size_t weight_index,
-															const void *alpha,
-															const size_t bookmark,
-															const float tolerance,
-															const int max_iter,
-															const int subspace_size,
-															const int has_guess,
-															const size_t rank)
+														   const nvgraphGraphDescr_t descrG,
+														   const size_t weight_index,
+														   const void *alpha,
+														   const size_t bookmark,
+														   const float tolerance,
+														   const int max_iter,
+														   const int subspace_size,
+														   const int has_guess,
+														   const size_t rank)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -2200,7 +2200,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				float alphaT = *static_cast<const float *>(alpha);
 				if (alphaT <= 0.0f || alphaT >= 1.0f)
@@ -2224,7 +2224,7 @@ namespace nvgraph
 				rc = iram_solver.solve(ss_sz, 1, guess, eigVals, MCSRG->get_vertex_dim(rank));
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				// curently iram solver accept float for alpha
 				double alphaTemp = *static_cast<const double *>(alpha);
@@ -2243,10 +2243,10 @@ namespace nvgraph
 				else
 					guess.fill(static_cast<float>(1.0 / n));
 				ImplicitArnoldi<int, double> iram_solver(*MCSRG->get_valued_csr_graph(weight_index),
-															MCSRG->get_vertex_dim(bookmark),
-															tol,
-															max_it,
-															alphaT);
+														 MCSRG->get_vertex_dim(bookmark),
+														 tol,
+														 max_it,
+														 alphaT);
 				rc = iram_solver.solve(ss_sz, 1, guess, eigVals, MCSRG->get_vertex_dim(rank));
 				break;
 			}
@@ -2291,9 +2291,9 @@ namespace nvgraph
 					static_cast<CsrGraph<IndexType> *>(descrG->graph_handle);
 
 				Graph<IndexType> *subgraph = extract_subgraph_by_vertices(*CSRG,
-																			subvertices,
-																			numvertices,
-																			handle->stream);
+																		  subvertices,
+																		  numvertices,
+																		  handle->stream);
 
 				subdescrG->graph_handle = subgraph;
 				subdescrG->graphStatus = HAS_TOPOLOGY;
@@ -2301,30 +2301,30 @@ namespace nvgraph
 			break;
 
 			case HAS_VALUES: // MultiValuedCsrGraph
-				if (descrG->T == HIP_R_32F)
+				if (descrG->T == HIPBLAS_R_32F)
 				{
 					MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
 
 					MultiValuedCsrGraph<int, float> *subgraph =
 						extract_f_subgraph_by_vertices(*MCSRG,
-														subvertices,
-														numvertices,
-														handle->stream);
+													   subvertices,
+													   numvertices,
+													   handle->stream);
 
 					subdescrG->graph_handle = subgraph;
 					subdescrG->graphStatus = HAS_VALUES;
 				}
-				else if (descrG->T == HIP_R_64F)
+				else if (descrG->T == HIPBLAS_R_64F)
 				{
 					MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
 
 					MultiValuedCsrGraph<int, double> *subgraph =
 						extract_d_subgraph_by_vertices(*MCSRG,
-														subvertices,
-														numvertices,
-														handle->stream);
+													   subvertices,
+													   numvertices,
+													   handle->stream);
 
 					subdescrG->graph_handle = subgraph;
 					subdescrG->graphStatus = HAS_VALUES;
@@ -2343,10 +2343,10 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphExtractSubgraphByEdge_impl(nvgraphHandle_t handle,
-																	nvgraphGraphDescr_t descrG,
-																	nvgraphGraphDescr_t subdescrG,
-																	int *subedges,
-																	size_t numedges)
+																  nvgraphGraphDescr_t descrG,
+																  nvgraphGraphDescr_t subdescrG,
+																  int *subedges,
+																  size_t numedges)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		// TODO: extract handle->stream info, from handler/nvgraphContext (?)
@@ -2374,9 +2374,9 @@ namespace nvgraph
 				CsrGraph<int> *CSRG =
 					static_cast<CsrGraph<int> *>(descrG->graph_handle);
 				Graph<IndexType> *subgraph = extract_subgraph_by_edges(*CSRG,
-																		subedges,
-																		numedges,
-																		handle->stream);
+																	   subedges,
+																	   numedges,
+																	   handle->stream);
 
 				subdescrG->graph_handle = subgraph;
 				subdescrG->graphStatus = HAS_TOPOLOGY;
@@ -2384,7 +2384,7 @@ namespace nvgraph
 			break;
 
 			case HAS_VALUES: // MultiValuedCsrGraph
-				if (descrG->T == HIP_R_32F)
+				if (descrG->T == HIPBLAS_R_32F)
 				{
 					MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
@@ -2395,7 +2395,7 @@ namespace nvgraph
 					subdescrG->graph_handle = subgraph;
 					subdescrG->graphStatus = HAS_VALUES;
 				}
-				else if (descrG->T == HIP_R_64F)
+				else if (descrG->T == HIPBLAS_R_64F)
 				{
 					MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -2420,18 +2420,18 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphBalancedCutClustering_impl(nvgraphHandle_t handle,
-																	const nvgraphGraphDescr_t descrG,
-																	const size_t weight_index,
-																	const int n_clusters,
-																	const int n_eig_vects,
-																	const int evs_type,
-																	const float evs_tolerance,
-																	const int evs_max_iter,
-																	const float kmean_tolerance,
-																	const int kmean_max_iter,
-																	int *clustering,
-																	void *eig_vals,
-																	void *eig_vects)
+																  const nvgraphGraphDescr_t descrG,
+																  const size_t weight_index,
+																  const int n_clusters,
+																  const int n_eig_vects,
+																  const int evs_type,
+																  const float evs_tolerance,
+																  const int evs_max_iter,
+																  const float kmean_tolerance,
+																  const int kmean_max_iter,
+																  int *clustering,
+																  void *eig_vals,
+																  void *eig_vects)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -2487,7 +2487,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
@@ -2503,58 +2503,58 @@ namespace nvgraph
 				{
 					int restartIter_lanczos = 15 + n_eig_vects;
 					rc = partition<int, float>(network,
-												n_clusters,
-												n_eig_vects,
-												evs_max_it,
-												restartIter_lanczos,
-												evs_tol,
-												kmean_max_it,
-												kmean_tol,
-												clust.raw(),
-												eigVals,
-												eigVecs,
-												iters_lanczos,
-												iters_kmeans);
+											   n_clusters,
+											   n_eig_vects,
+											   evs_max_it,
+											   restartIter_lanczos,
+											   evs_tol,
+											   kmean_max_it,
+											   kmean_tol,
+											   clust.raw(),
+											   eigVals,
+											   eigVecs,
+											   iters_lanczos,
+											   iters_kmeans);
 				}
 				else
 				{
 					hipsolverDnHandle_t cusolverHandle;
 					hipsolverDnCreate(&cusolverHandle);
 					rc = partition_lobpcg<int, float>(network,
-														NULL, // preconditioner
-														cusolverHandle,
-														n_clusters,
-														n_eig_vects,
-														evs_max_it,
-														evs_tol,
-														kmean_max_it,
-														kmean_tol,
-														clust.raw(),
-														eigVals,
-														eigVecs,
-														iters_lanczos,
-														iters_kmeans);
+													  NULL, // preconditioner
+													  cusolverHandle,
+													  n_clusters,
+													  n_eig_vects,
+													  evs_max_it,
+													  evs_tol,
+													  kmean_max_it,
+													  kmean_tol,
+													  clust.raw(),
+													  eigVals,
+													  eigVecs,
+													  iters_lanczos,
+													  iters_kmeans);
 				}
 				// give a copy of results to the user
 				if (rc == NVGRAPH_OK)
 				{
 					CHECK_CUDA(hipMemcpy((int *)clustering,
-											clust.raw(),
-											(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-											hipMemcpyDefault));
+										 clust.raw(),
+										 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy((float *)eig_vals,
-											eigVals.raw(),
-											(size_t)(n_eig_vects * sizeof(float)),
-											hipMemcpyDefault));
+										 eigVals.raw(),
+										 (size_t)(n_eig_vects * sizeof(float)),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy((float *)eig_vects,
-											eigVecs.raw(),
-											(size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(float)),
-											hipMemcpyDefault));
+										 eigVecs.raw(),
+										 (size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(float)),
+										 hipMemcpyDefault));
 				}
 
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -2587,35 +2587,35 @@ namespace nvgraph
 					hipsolverDnHandle_t cusolverHandle;
 					hipsolverDnCreate(&cusolverHandle);
 					rc = partition_lobpcg<int, double>(network,
-														NULL, // preconditioner
-														cusolverHandle,
-														n_clusters,
-														n_eig_vects,
-														evs_max_it,
-														evs_tol,
-														kmean_max_it,
-														kmean_tol,
-														clust.raw(),
-														eigVals,
-														eigVecs,
-														iters_lanczos,
-														iters_kmeans);
+													   NULL, // preconditioner
+													   cusolverHandle,
+													   n_clusters,
+													   n_eig_vects,
+													   evs_max_it,
+													   evs_tol,
+													   kmean_max_it,
+													   kmean_tol,
+													   clust.raw(),
+													   eigVals,
+													   eigVecs,
+													   iters_lanczos,
+													   iters_kmeans);
 				}
 				// give a copy of results to the user
 				if (rc == NVGRAPH_OK)
 				{
 					CHECK_CUDA(hipMemcpy((int *)clustering,
-											clust.raw(),
-											(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-											hipMemcpyDefault));
+										 clust.raw(),
+										 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy((double *)eig_vals,
-											eigVals.raw(),
-											(size_t)(n_eig_vects * sizeof(double)),
-											hipMemcpyDefault));
+										 eigVals.raw(),
+										 (size_t)(n_eig_vects * sizeof(double)),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy((double *)eig_vects,
-											eigVecs.raw(),
-											(size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(double)),
-											hipMemcpyDefault));
+										 eigVecs.raw(),
+										 (size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(double)),
+										 hipMemcpyDefault));
 				}
 				break;
 			}
@@ -2628,12 +2628,12 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphAnalyzeBalancedCut_impl(nvgraphHandle_t handle,
-																const nvgraphGraphDescr_t descrG,
-																const size_t weight_index,
-																const int n_clusters,
-																const int *clustering,
-																float *edgeCut,
-																float *ratioCut)
+															   const nvgraphGraphDescr_t descrG,
+															   const size_t weight_index,
+															   const int n_clusters,
+															   const int *clustering,
+															   float *edgeCut,
+															   float *ratioCut)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -2655,7 +2655,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				float edge_cut, ratio_cut;
 				MultiValuedCsrGraph<int, float> *MCSRG =
@@ -2666,19 +2666,19 @@ namespace nvgraph
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				CHECK_CUDA(hipMemcpy(clust.raw(),
-										(int *)clustering,
-										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										hipMemcpyDefault));
+									 (int *)clustering,
+									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									 hipMemcpyDefault));
 				rc = analyzePartition<int, float>(network,
-													n_clusters,
-													clust.raw(),
-													edge_cut,
-													ratio_cut);
+												  n_clusters,
+												  clust.raw(),
+												  edge_cut,
+												  ratio_cut);
 				*edgeCut = edge_cut;
 				*ratioCut = ratio_cut;
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				double edge_cut, ratio_cut;
 				MultiValuedCsrGraph<int, double> *MCSRG =
@@ -2689,14 +2689,14 @@ namespace nvgraph
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				CHECK_CUDA(hipMemcpy(clust.raw(),
-										(int *)clustering,
-										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										hipMemcpyDefault));
+									 (int *)clustering,
+									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									 hipMemcpyDefault));
 				rc = analyzePartition<int, double>(network,
-													n_clusters,
-													clust.raw(),
-													edge_cut,
-													ratio_cut);
+												   n_clusters,
+												   clust.raw(),
+												   edge_cut,
+												   ratio_cut);
 				*edgeCut = static_cast<float>(edge_cut);
 				*ratioCut = static_cast<float>(ratio_cut);
 				break;
@@ -2711,11 +2711,11 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphHeavyEdgeMatching_impl(nvgraphHandle_t handle,
-																const nvgraphGraphDescr_t descrG,
-																const size_t weight_index,
-																const nvgraphEdgeWeightMatching_t similarity_metric,
-																int *aggregates,
-																size_t *num_aggregates)
+															  const nvgraphGraphDescr_t descrG,
+															  const size_t weight_index,
+															  const nvgraphEdgeWeightMatching_t similarity_metric,
+															  int *aggregates,
+															  size_t *num_aggregates)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -2755,7 +2755,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
@@ -2769,12 +2769,12 @@ namespace nvgraph
 				rc = one_phase_hand_checking.setAggregates(network, agg, num_agg);
 				*num_aggregates = static_cast<size_t>(num_agg);
 				CHECK_CUDA(hipMemcpy((int *)aggregates,
-										agg.raw(),
-										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										hipMemcpyDefault));
+									 agg.raw(),
+									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									 hipMemcpyDefault));
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -2789,9 +2789,9 @@ namespace nvgraph
 				rc = one_phase_hand_checking.setAggregates(network, agg, num_agg);
 				*num_aggregates = static_cast<size_t>(num_agg);
 				CHECK_CUDA(hipMemcpy((int *)aggregates,
-										agg.raw(),
-										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										hipMemcpyDefault));
+									 agg.raw(),
+									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									 hipMemcpyDefault));
 				break;
 			}
 			default:
@@ -2803,17 +2803,17 @@ namespace nvgraph
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphSpectralModularityMaximization_impl(nvgraphHandle_t handle,
-																			const nvgraphGraphDescr_t descrG,
-																			const size_t weight_index,
-																			const int n_clusters,
-																			const int n_eig_vects,
-																			const float evs_tolerance,
-																			const int evs_max_iter,
-																			const float kmean_tolerance,
-																			const int kmean_max_iter,
-																			int *clustering,
-																			void *eig_vals,
-																			void *eig_vects)
+																		   const nvgraphGraphDescr_t descrG,
+																		   const size_t weight_index,
+																		   const int n_clusters,
+																		   const int n_eig_vects,
+																		   const float evs_tolerance,
+																		   const int evs_max_iter,
+																		   const float kmean_tolerance,
+																		   const int kmean_max_iter,
+																		   int *clustering,
+																		   void *eig_vals,
+																		   void *eig_vects)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -2866,7 +2866,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				MultiValuedCsrGraph<int, float> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
@@ -2879,39 +2879,39 @@ namespace nvgraph
 				Vector<float> eigVecs(MCSRG->get_num_vertices() * n_eig_vects, handle->stream);
 				int restartIter_lanczos = 15 + n_eig_vects;
 				rc = modularity_maximization<int, float>(network,
-															n_clusters,
-															n_eig_vects,
-															evs_max_it,
-															restartIter_lanczos,
-															evs_tol,
-															kmean_max_it,
-															kmean_tol,
-															clust.raw(),
-															eigVals,
-															eigVecs,
-															iters_lanczos,
-															iters_kmeans);
+														 n_clusters,
+														 n_eig_vects,
+														 evs_max_it,
+														 restartIter_lanczos,
+														 evs_tol,
+														 kmean_max_it,
+														 kmean_tol,
+														 clust.raw(),
+														 eigVals,
+														 eigVecs,
+														 iters_lanczos,
+														 iters_kmeans);
 
 				// give a copy of results to the user
 				if (rc == NVGRAPH_OK)
 				{
 					CHECK_CUDA(hipMemcpy((int *)clustering,
-											clust.raw(),
-											(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-											hipMemcpyDefault));
+										 clust.raw(),
+										 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy((float *)eig_vals,
-											eigVals.raw(),
-											(size_t)(n_eig_vects * sizeof(float)),
-											hipMemcpyDefault));
+										 eigVals.raw(),
+										 (size_t)(n_eig_vects * sizeof(float)),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy((float *)eig_vects,
-											eigVecs.raw(),
-											(size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(float)),
-											hipMemcpyDefault));
+										 eigVecs.raw(),
+										 (size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(float)),
+										 hipMemcpyDefault));
 				}
 
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				MultiValuedCsrGraph<int, double> *MCSRG =
 					static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -2924,33 +2924,33 @@ namespace nvgraph
 				Vector<double> eigVecs(MCSRG->get_num_vertices() * n_eig_vects, handle->stream);
 				int restartIter_lanczos = 15 + n_eig_vects;
 				rc = modularity_maximization<int, double>(network,
-															n_clusters,
-															n_eig_vects,
-															evs_max_it,
-															restartIter_lanczos,
-															evs_tol,
-															kmean_max_it,
-															kmean_tol,
-															clust.raw(),
-															eigVals,
-															eigVecs,
-															iters_lanczos,
-															iters_kmeans);
+														  n_clusters,
+														  n_eig_vects,
+														  evs_max_it,
+														  restartIter_lanczos,
+														  evs_tol,
+														  kmean_max_it,
+														  kmean_tol,
+														  clust.raw(),
+														  eigVals,
+														  eigVecs,
+														  iters_lanczos,
+														  iters_kmeans);
 				// give a copy of results to the user
 				if (rc == NVGRAPH_OK)
 				{
 					CHECK_CUDA(hipMemcpy((int *)clustering,
-											clust.raw(),
-											(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-											hipMemcpyDefault));
+										 clust.raw(),
+										 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy((double *)eig_vals,
-											eigVals.raw(),
-											(size_t)(n_eig_vects * sizeof(double)),
-											hipMemcpyDefault));
+										 eigVals.raw(),
+										 (size_t)(n_eig_vects * sizeof(double)),
+										 hipMemcpyDefault));
 					CHECK_CUDA(hipMemcpy((double *)eig_vects,
-											eigVecs.raw(),
-											(size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(double)),
-											hipMemcpyDefault));
+										 eigVecs.raw(),
+										 (size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(double)),
+										 hipMemcpyDefault));
 				}
 				break;
 			}
@@ -2989,7 +2989,7 @@ namespace nvgraph
 
 			switch (descrG->T)
 			{
-			case HIP_R_32F:
+			case HIPBLAS_R_32F:
 			{
 				float mod;
 				MultiValuedCsrGraph<int, float> *MCSRG =
@@ -3000,17 +3000,17 @@ namespace nvgraph
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				CHECK_CUDA(hipMemcpy(clust.raw(),
-										(int *)clustering,
-										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										hipMemcpyDefault));
+									 (int *)clustering,
+									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									 hipMemcpyDefault));
 				rc = analyzeModularity<int, float>(network,
-													n_clusters,
-													clust.raw(),
-													mod);
+												   n_clusters,
+												   clust.raw(),
+												   mod);
 				*modularity = mod;
 				break;
 			}
-			case HIP_R_64F:
+			case HIPBLAS_R_64F:
 			{
 				double mod;
 				MultiValuedCsrGraph<int, double> *MCSRG =
@@ -3019,9 +3019,9 @@ namespace nvgraph
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
 				CHECK_CUDA(hipMemcpy(clust.raw(),
-										(int *)clustering,
-										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										hipMemcpyDefault));
+									 (int *)clustering,
+									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									 hipMemcpyDefault));
 				ValuedCsrGraph<int, double> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				rc = analyzeModularity<int, double>(network,
@@ -3041,15 +3041,15 @@ namespace nvgraph
 	}
 #ifndef NVGRAPH_LIGHT
 	nvgraphStatus_t NVGRAPH_API nvgraphContractGraph_impl(nvgraphHandle_t handle,
-															nvgraphGraphDescr_t descrG,
-															nvgraphGraphDescr_t contrdescrG,
-															int *aggregates,
-															size_t numaggregates,
-															nvgraphSemiringOps_t VertexCombineOp,
-															nvgraphSemiringOps_t VertexReduceOp,
-															nvgraphSemiringOps_t EdgeCombineOp,
-															nvgraphSemiringOps_t EdgeReduceOp,
-															int flag) // unused, for now
+														  nvgraphGraphDescr_t descrG,
+														  nvgraphGraphDescr_t contrdescrG,
+														  int *aggregates,
+														  size_t numaggregates,
+														  nvgraphSemiringOps_t VertexCombineOp,
+														  nvgraphSemiringOps_t VertexReduceOp,
+														  nvgraphSemiringOps_t EdgeCombineOp,
+														  nvgraphSemiringOps_t EdgeReduceOp,
+														  int flag) // unused, for now
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		typedef int IndexType;
@@ -3079,43 +3079,43 @@ namespace nvgraph
 				{
 				case NVGRAPH_MULTIPLY:
 					contracted_graph = contract_graph_csr_mul(*CSRG,
-																aggregates,
-																numaggregates,
-																handle->stream,
-																VertexCombineOp,
-																VertexReduceOp,
-																EdgeCombineOp,
-																EdgeReduceOp);
+															  aggregates,
+															  numaggregates,
+															  handle->stream,
+															  VertexCombineOp,
+															  VertexReduceOp,
+															  EdgeCombineOp,
+															  EdgeReduceOp);
 					break;
 				case NVGRAPH_SUM:
 					contracted_graph = contract_graph_csr_sum(*CSRG,
-																aggregates,
-																numaggregates,
-																handle->stream,
-																VertexCombineOp,
-																VertexReduceOp,
-																EdgeCombineOp,
-																EdgeReduceOp);
+															  aggregates,
+															  numaggregates,
+															  handle->stream,
+															  VertexCombineOp,
+															  VertexReduceOp,
+															  EdgeCombineOp,
+															  EdgeReduceOp);
 					break;
 				case NVGRAPH_MIN:
 					contracted_graph = contract_graph_csr_min(*CSRG,
-																aggregates,
-																numaggregates,
-																handle->stream,
-																VertexCombineOp,
-																VertexReduceOp,
-																EdgeCombineOp,
-																EdgeReduceOp);
+															  aggregates,
+															  numaggregates,
+															  handle->stream,
+															  VertexCombineOp,
+															  VertexReduceOp,
+															  EdgeCombineOp,
+															  EdgeReduceOp);
 					break;
 				case NVGRAPH_MAX:
 					contracted_graph = contract_graph_csr_max(*CSRG,
-																aggregates,
-																numaggregates,
-																handle->stream,
-																VertexCombineOp,
-																VertexReduceOp,
-																EdgeCombineOp,
-																EdgeReduceOp);
+															  aggregates,
+															  numaggregates,
+															  handle->stream,
+															  VertexCombineOp,
+															  VertexReduceOp,
+															  EdgeCombineOp,
+															  EdgeReduceOp);
 					break;
 				}
 
@@ -3125,7 +3125,7 @@ namespace nvgraph
 			break;
 
 			case HAS_VALUES: // MultiValuedCsrGraph
-				if (descrG->T == HIP_R_32F)
+				if (descrG->T == HIPBLAS_R_32F)
 				{
 					MultiValuedCsrGraph<int, float> *MCSRG =
 						static_cast<MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
@@ -3135,50 +3135,50 @@ namespace nvgraph
 					{
 					case NVGRAPH_MULTIPLY:
 						contracted_graph = contract_graph_mv_float_mul(*MCSRG,
-																		aggregates,
-																		numaggregates,
-																		handle->stream,
-																		VertexCombineOp,
-																		VertexReduceOp,
-																		EdgeCombineOp,
-																		EdgeReduceOp);
+																	   aggregates,
+																	   numaggregates,
+																	   handle->stream,
+																	   VertexCombineOp,
+																	   VertexReduceOp,
+																	   EdgeCombineOp,
+																	   EdgeReduceOp);
 						break;
 					case NVGRAPH_SUM:
 						contracted_graph = contract_graph_mv_float_sum(*MCSRG,
-																		aggregates,
-																		numaggregates,
-																		handle->stream,
-																		VertexCombineOp,
-																		VertexReduceOp,
-																		EdgeCombineOp,
-																		EdgeReduceOp);
+																	   aggregates,
+																	   numaggregates,
+																	   handle->stream,
+																	   VertexCombineOp,
+																	   VertexReduceOp,
+																	   EdgeCombineOp,
+																	   EdgeReduceOp);
 						break;
 					case NVGRAPH_MIN:
 						contracted_graph = contract_graph_mv_float_min(*MCSRG,
-																		aggregates,
-																		numaggregates,
-																		handle->stream,
-																		VertexCombineOp,
-																		VertexReduceOp,
-																		EdgeCombineOp,
-																		EdgeReduceOp);
+																	   aggregates,
+																	   numaggregates,
+																	   handle->stream,
+																	   VertexCombineOp,
+																	   VertexReduceOp,
+																	   EdgeCombineOp,
+																	   EdgeReduceOp);
 						break;
 					case NVGRAPH_MAX:
 						contracted_graph = contract_graph_mv_float_max(*MCSRG,
-																		aggregates,
-																		numaggregates,
-																		handle->stream,
-																		VertexCombineOp,
-																		VertexReduceOp,
-																		EdgeCombineOp,
-																		EdgeReduceOp);
+																	   aggregates,
+																	   numaggregates,
+																	   handle->stream,
+																	   VertexCombineOp,
+																	   VertexReduceOp,
+																	   EdgeCombineOp,
+																	   EdgeReduceOp);
 						break;
 					}
 
 					contrdescrG->graph_handle = contracted_graph;
 					contrdescrG->graphStatus = HAS_VALUES;
 				}
-				else if (descrG->T == HIP_R_64F)
+				else if (descrG->T == HIPBLAS_R_64F)
 				{
 					MultiValuedCsrGraph<int, double> *MCSRG =
 						static_cast<MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
@@ -3247,106 +3247,106 @@ namespace nvgraph
 #endif
 
 	nvgraphStatus_t NVGRAPH_API nvgraphSpectralClustering_impl(nvgraphHandle_t handle,							 // nvGRAPH library handle.
-																const nvgraphGraphDescr_t descrG,				 // nvGRAPH graph descriptor, should contain the connectivity information in NVGRAPH_CSR_32 or NVGRAPH_CSR_32 at least 1 edge set (weights)
-																const size_t weight_index,						 // Index of the edge set for the weights.
-																const struct SpectralClusteringParameter *params, // parameters, see struct SpectralClusteringParameter
-																int *clustering,									 // (output) clustering
-																void *eig_vals,									 // (output) eigenvalues
-																void *eig_vects)									 // (output) eigenvectors
+															   const nvgraphGraphDescr_t descrG,				 // nvGRAPH graph descriptor, should contain the connectivity information in NVGRAPH_CSR_32 or NVGRAPH_CSR_32 at least 1 edge set (weights)
+															   const size_t weight_index,						 // Index of the edge set for the weights.
+															   const struct SpectralClusteringParameter *params, // parameters, see struct SpectralClusteringParameter
+															   int *clustering,									 // (output) clustering
+															   void *eig_vals,									 // (output) eigenvalues
+															   void *eig_vects)									 // (output) eigenvectors
 	{
 		if (check_ptr(params) || check_ptr(clustering) || check_ptr(eig_vals) || check_ptr(eig_vects))
 			FatalError("Incorrect parameters.", NVGRAPH_ERR_BAD_PARAMETERS);
 		if (params->algorithm == NVGRAPH_MODULARITY_MAXIMIZATION)
 			return nvgraphSpectralModularityMaximization_impl(handle,
-																descrG,
-																weight_index,
-																params->n_clusters,
-																params->n_eig_vects,
-																params->evs_tolerance,
-																params->evs_max_iter,
-																params->kmean_tolerance,
-																params->kmean_max_iter,
-																clustering,
-																eig_vals,
-																eig_vects);
+															  descrG,
+															  weight_index,
+															  params->n_clusters,
+															  params->n_eig_vects,
+															  params->evs_tolerance,
+															  params->evs_max_iter,
+															  params->kmean_tolerance,
+															  params->kmean_max_iter,
+															  clustering,
+															  eig_vals,
+															  eig_vects);
 		else if (params->algorithm == NVGRAPH_BALANCED_CUT_LANCZOS)
 			return nvgraphBalancedCutClustering_impl(handle,
-														descrG,
-														weight_index,
-														params->n_clusters,
-														params->n_eig_vects,
-														0,
-														params->evs_tolerance,
-														params->evs_max_iter,
-														params->kmean_tolerance,
-														params->kmean_max_iter,
-														clustering,
-														eig_vals,
-														eig_vects);
+													 descrG,
+													 weight_index,
+													 params->n_clusters,
+													 params->n_eig_vects,
+													 0,
+													 params->evs_tolerance,
+													 params->evs_max_iter,
+													 params->kmean_tolerance,
+													 params->kmean_max_iter,
+													 clustering,
+													 eig_vals,
+													 eig_vects);
 		else if (params->algorithm == NVGRAPH_BALANCED_CUT_LOBPCG)
 			return nvgraphBalancedCutClustering_impl(handle,
-														descrG,
-														weight_index,
-														params->n_clusters,
-														params->n_eig_vects,
-														1,
-														params->evs_tolerance,
-														params->evs_max_iter,
-														params->kmean_tolerance,
-														params->kmean_max_iter,
-														clustering,
-														eig_vals,
-														eig_vects);
+													 descrG,
+													 weight_index,
+													 params->n_clusters,
+													 params->n_eig_vects,
+													 1,
+													 params->evs_tolerance,
+													 params->evs_max_iter,
+													 params->kmean_tolerance,
+													 params->kmean_max_iter,
+													 clustering,
+													 eig_vals,
+													 eig_vects);
 		else
 			return NVGRAPH_STATUS_INVALID_VALUE;
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphAnalyzeClustering_impl(nvgraphHandle_t handle,			// nvGRAPH library handle.
-																const nvgraphGraphDescr_t descrG, // nvGRAPH graph descriptor, should contain the connectivity information in NVGRAPH_CSR_32 at least 1 edge set (weights)
-																const size_t weight_index,		// Index of the edge set for the weights.
-																const int n_clusters,				// number of clusters
-																const int *clustering,			// clustering to analyse
-																nvgraphClusteringMetric_t metric, // metric to compute to measure the clustering quality
-																float *score)						// (output) clustering score telling how good the clustering is for the selected metric.
+															  const nvgraphGraphDescr_t descrG, // nvGRAPH graph descriptor, should contain the connectivity information in NVGRAPH_CSR_32 at least 1 edge set (weights)
+															  const size_t weight_index,		// Index of the edge set for the weights.
+															  const int n_clusters,				// number of clusters
+															  const int *clustering,			// clustering to analyse
+															  nvgraphClusteringMetric_t metric, // metric to compute to measure the clustering quality
+															  float *score)						// (output) clustering score telling how good the clustering is for the selected metric.
 	{
 		if (check_ptr(clustering) || check_ptr(score))
 			FatalError("Incorrect parameters.", NVGRAPH_ERR_BAD_PARAMETERS);
 		if (metric == NVGRAPH_MODULARITY)
 			return nvgraphAnalyzeModularityClustering_impl(handle,
-															descrG,
-															weight_index,
-															n_clusters,
-															clustering,
-															score);
+														   descrG,
+														   weight_index,
+														   n_clusters,
+														   clustering,
+														   score);
 		else if (metric == NVGRAPH_EDGE_CUT)
 		{
 			float dummy = 0;
 			return nvgraphAnalyzeBalancedCut_impl(handle,
-													descrG,
-													weight_index,
-													n_clusters,
-													clustering,
-													score,
-													&dummy);
+												  descrG,
+												  weight_index,
+												  n_clusters,
+												  clustering,
+												  score,
+												  &dummy);
 		}
 		else if (metric == NVGRAPH_RATIO_CUT)
 		{
 			float dummy = 0;
 			return nvgraphAnalyzeBalancedCut_impl(handle,
-													descrG,
-													weight_index,
-													n_clusters,
-													clustering,
-													&dummy,
-													score);
+												  descrG,
+												  weight_index,
+												  n_clusters,
+												  clustering,
+												  &dummy,
+												  score);
 		}
 		else
 			return NVGRAPH_STATUS_INVALID_VALUE;
 	}
 
 	nvgraphStatus_t NVGRAPH_API nvgraphTriangleCount_impl(nvgraphHandle_t handle,
-															const nvgraphGraphDescr_t descrG,
-															uint64_t *result)
+														  const nvgraphGraphDescr_t descrG,
+														  uint64_t *result)
 	{
 		NVGRAPH_ERROR rc = NVGRAPH_OK;
 		try
@@ -3405,8 +3405,8 @@ nvgraphStatus_t NVGRAPH_API nvgraphCreate(nvgraphHandle_t *handle)
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphCreateMulti(nvgraphHandle_t *handle,
-												int numDevices,
-												int *devices)
+											   int numDevices,
+											   int *devices)
 {
 	return nvgraph::nvgraphCreateMulti_impl(handle, numDevices, devices);
 }
@@ -3423,7 +3423,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphCreateGraphDescr(nvgraphHandle_t handle,
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphDestroyGraphDescr(nvgraphHandle_t handle,
-														nvgraphGraphDescr_t descrG)
+													 nvgraphGraphDescr_t descrG)
 {
 	return nvgraph::nvgraphDestroyGraphDescr_impl(handle, descrG);
 }
@@ -3434,23 +3434,23 @@ nvgraphStatus_t NVGRAPH_API nvgraphSetStream(nvgraphHandle_t handle, hipStream_t
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphSetGraphStructure(nvgraphHandle_t handle,
-														nvgraphGraphDescr_t descrG,
-														void *topologyData,
-														nvgraphTopologyType_t topologyType)
+													 nvgraphGraphDescr_t descrG,
+													 void *topologyData,
+													 nvgraphTopologyType_t topologyType)
 {
 	return nvgraph::nvgraphSetGraphStructure_impl(handle, descrG, topologyData, topologyType);
 }
 nvgraphStatus_t NVGRAPH_API nvgraphGetGraphStructure(nvgraphHandle_t handle,
-														nvgraphGraphDescr_t descrG,
-														void *topologyData,
-														nvgraphTopologyType_t *topologyType)
+													 nvgraphGraphDescr_t descrG,
+													 void *topologyData,
+													 nvgraphTopologyType_t *topologyType)
 {
 	return nvgraph::nvgraphGetGraphStructure_impl(handle, descrG, topologyData, topologyType);
 }
 nvgraphStatus_t NVGRAPH_API nvgraphAllocateVertexData(nvgraphHandle_t handle,
-														nvgraphGraphDescr_t descrG,
-														size_t numsets,
-														hipDataType *settypes)
+													  nvgraphGraphDescr_t descrG,
+													  size_t numsets,
+													  hipblasDatatype_t *settypes)
 {
 	return nvgraph::nvgraphAllocateVertexData_impl(handle, descrG, numsets, settypes);
 }
@@ -3458,16 +3458,16 @@ nvgraphStatus_t NVGRAPH_API nvgraphAllocateVertexData(nvgraphHandle_t handle,
 nvgraphStatus_t NVGRAPH_API nvgraphAllocateEdgeData(nvgraphHandle_t handle,
 													nvgraphGraphDescr_t descrG,
 													size_t numsets,
-													hipDataType *settypes)
+													hipblasDatatype_t *settypes)
 {
 	return nvgraph::nvgraphAllocateEdgeData_impl(handle, descrG, numsets, settypes);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphExtractSubgraphByVertex(nvgraphHandle_t handle,
-															nvgraphGraphDescr_t descrG,
-															nvgraphGraphDescr_t subdescrG,
-															int *subvertices,
-															size_t numvertices)
+														   nvgraphGraphDescr_t descrG,
+														   nvgraphGraphDescr_t subdescrG,
+														   int *subvertices,
+														   size_t numvertices)
 {
 	return nvgraph::nvgraphExtractSubgraphByVertex_impl(handle,
 														descrG,
@@ -3477,38 +3477,38 @@ nvgraphStatus_t NVGRAPH_API nvgraphExtractSubgraphByVertex(nvgraphHandle_t handl
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphExtractSubgraphByEdge(nvgraphHandle_t handle,
-															nvgraphGraphDescr_t descrG,
-															nvgraphGraphDescr_t subdescrG,
-															int *subedges,
-															size_t numedges)
+														 nvgraphGraphDescr_t descrG,
+														 nvgraphGraphDescr_t subdescrG,
+														 int *subedges,
+														 size_t numedges)
 {
 	return nvgraph::nvgraphExtractSubgraphByEdge_impl(handle, descrG, subdescrG, subedges, numedges);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphSetVertexData(nvgraphHandle_t handle,
-													nvgraphGraphDescr_t descrG,
-													void *vertexData,
-													size_t setnum)
+												 nvgraphGraphDescr_t descrG,
+												 void *vertexData,
+												 size_t setnum)
 {
 	return nvgraph::nvgraphSetVertexData_impl(handle, descrG, vertexData, setnum);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphGetVertexData(nvgraphHandle_t handle,
-													nvgraphGraphDescr_t descrG,
-													void *vertexData,
-													size_t setnum)
+												 nvgraphGraphDescr_t descrG,
+												 void *vertexData,
+												 size_t setnum)
 {
 	return nvgraph::nvgraphGetVertexData_impl(handle, descrG, vertexData, setnum);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphConvertTopology(nvgraphHandle_t handle,
-													nvgraphTopologyType_t srcTType,
-													void *srcTopology,
-													void *srcEdgeData,
-													hipDataType *dataType,
-													nvgraphTopologyType_t dstTType,
-													void *dstTopology,
-													void *dstEdgeData)
+												   nvgraphTopologyType_t srcTType,
+												   void *srcTopology,
+												   void *srcEdgeData,
+												   hipblasDatatype_t *dataType,
+												   nvgraphTopologyType_t dstTType,
+												   void *dstTopology,
+												   void *dstEdgeData)
 {
 	return nvgraph::nvgraphConvertTopology_impl(handle,
 												srcTType,
@@ -3521,29 +3521,29 @@ nvgraphStatus_t NVGRAPH_API nvgraphConvertTopology(nvgraphHandle_t handle,
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphSetEdgeData(nvgraphHandle_t handle,
-												nvgraphGraphDescr_t descrG,
-												void *edgeData,
-												size_t setnum)
+											   nvgraphGraphDescr_t descrG,
+											   void *edgeData,
+											   size_t setnum)
 {
 	return nvgraph::nvgraphSetEdgeData_impl(handle, descrG, edgeData, setnum);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphGetEdgeData(nvgraphHandle_t handle,
-												nvgraphGraphDescr_t descrG,
-												void *edgeData,
-												size_t setnum)
+											   nvgraphGraphDescr_t descrG,
+											   void *edgeData,
+											   size_t setnum)
 {
 	return nvgraph::nvgraphGetEdgeData_impl(handle, descrG, edgeData, setnum);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphSrSpmv(nvgraphHandle_t handle,
-											const nvgraphGraphDescr_t descrG,
-											const size_t weight_index,
-											const void *alpha,
-											const size_t x,
-											const void *beta,
-											const size_t y,
-											const nvgraphSemiring_t SR)
+										  const nvgraphGraphDescr_t descrG,
+										  const size_t weight_index,
+										  const void *alpha,
+										  const size_t x,
+										  const void *beta,
+										  const size_t y,
+										  const nvgraphSemiring_t SR)
 {
 	return nvgraph::nvgraphSrSpmv_impl_cub(handle, descrG, weight_index, alpha, x, beta, y, SR);
 }
@@ -3585,7 +3585,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalParameterInit(nvgraphTraversalParame
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetDistancesIndex(nvgraphTraversalParameter_t *param,
-																const size_t value)
+															  const size_t value)
 {
 	if (check_ptr(param))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3596,7 +3596,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetDistancesIndex(nvgraphTraversalPa
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetDistancesIndex(const nvgraphTraversalParameter_t param,
-																size_t *value)
+															  size_t *value)
 {
 	if (check_ptr(value))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3607,7 +3607,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetDistancesIndex(const nvgraphTrave
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetPredecessorsIndex(nvgraphTraversalParameter_t *param,
-																	const size_t value)
+																 const size_t value)
 {
 	if (check_ptr(param))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3618,7 +3618,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetPredecessorsIndex(nvgraphTraversa
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetPredecessorsIndex(const nvgraphTraversalParameter_t param,
-																	size_t *value)
+																 size_t *value)
 {
 	if (check_ptr(value))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3629,7 +3629,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetPredecessorsIndex(const nvgraphTr
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetEdgeMaskIndex(nvgraphTraversalParameter_t *param,
-																const size_t value)
+															 const size_t value)
 {
 	if (check_ptr(param))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3640,7 +3640,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetEdgeMaskIndex(nvgraphTraversalPar
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetEdgeMaskIndex(const nvgraphTraversalParameter_t param,
-																size_t *value)
+															 size_t *value)
 {
 	if (check_ptr(value))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3651,7 +3651,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetEdgeMaskIndex(const nvgraphTraver
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetUndirectedFlag(nvgraphTraversalParameter_t *param,
-																const size_t value)
+															  const size_t value)
 {
 	if (check_ptr(param))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3662,7 +3662,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetUndirectedFlag(nvgraphTraversalPa
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetUndirectedFlag(const nvgraphTraversalParameter_t param,
-																size_t *value)
+															  size_t *value)
 {
 	if (check_ptr(value))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3673,7 +3673,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetUndirectedFlag(const nvgraphTrave
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetAlpha(nvgraphTraversalParameter_t *param,
-														const size_t value)
+													 const size_t value)
 {
 	if (check_ptr(param))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3684,7 +3684,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalSetAlpha(nvgraphTraversalParameter_t
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetAlpha(const nvgraphTraversalParameter_t param,
-														size_t *value)
+													 size_t *value)
 {
 	if (check_ptr(value))
 		return NVGRAPH_STATUS_INVALID_VALUE;
@@ -3717,10 +3717,10 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversalGetBeta(const nvgraphTraversalParame
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTraversal(nvgraphHandle_t handle,
-												const nvgraphGraphDescr_t descrG,
-												const nvgraphTraversal_t traversalT,
-												const int *source_vert,
-												const nvgraphTraversalParameter_t params)
+											 const nvgraphGraphDescr_t descrG,
+											 const nvgraphTraversal_t traversalT,
+											 const int *source_vert,
+											 const nvgraphTraversalParameter_t params)
 {
 	return nvgraph::nvgraphTraversal_impl(handle, descrG, traversalT, source_vert, params);
 }
@@ -3735,10 +3735,10 @@ nvgraphStatus_t NVGRAPH_API nvgraphTraversal(nvgraphHandle_t handle,
  * @return Status code.
  */
 nvgraphStatus_t NVGRAPH_API nvgraph2dBfs(nvgraphHandle_t handle,
-											const nvgraphGraphDescr_t descrG,
-											const int32_t source_vert,
-											int32_t *distances,
-											int32_t *predecessors)
+										 const nvgraphGraphDescr_t descrG,
+										 const int32_t source_vert,
+										 int32_t *distances,
+										 int32_t *predecessors)
 {
 	return nvgraph::nvgraph2dBfs_impl(handle, descrG, source_vert, distances, predecessors);
 }
@@ -3746,10 +3746,10 @@ nvgraphStatus_t NVGRAPH_API nvgraph2dBfs(nvgraphHandle_t handle,
 // nvgraphWidestPath
 
 nvgraphStatus_t NVGRAPH_API nvgraphWidestPath(nvgraphHandle_t handle,
-												const nvgraphGraphDescr_t descrG,
-												const size_t weight_index,
-												const int *source_vert,
-												const size_t widest_path)
+											  const nvgraphGraphDescr_t descrG,
+											  const size_t weight_index,
+											  const int *source_vert,
+											  const size_t widest_path)
 {
 	return nvgraph::nvgraphWidestPath_impl(handle, descrG, weight_index, source_vert, widest_path);
 }
@@ -3765,133 +3765,133 @@ nvgraphStatus_t NVGRAPH_API nvgraphPagerank(nvgraphHandle_t handle,
 											const int max_iter)
 {
 	return nvgraph::nvgraphPagerank_impl(handle,
-											descrG,
-											weight_index,
-											alpha,
-											bookmark,
-											has_guess,
-											pagerank_index,
-											tolerance,
-											max_iter);
+										 descrG,
+										 weight_index,
+										 alpha,
+										 bookmark,
+										 has_guess,
+										 pagerank_index,
+										 tolerance,
+										 max_iter);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphKrylovPagerank(nvgraphHandle_t handle,
-													const nvgraphGraphDescr_t descrG,
-													const size_t weight_index,
-													const void *alpha,
-													const size_t bookmark,
-													const float tolerance,
-													const int max_iter,
-													const int subspace_size,
-													const int has_guess,
-													const size_t rank)
+												  const nvgraphGraphDescr_t descrG,
+												  const size_t weight_index,
+												  const void *alpha,
+												  const size_t bookmark,
+												  const float tolerance,
+												  const int max_iter,
+												  const int subspace_size,
+												  const int has_guess,
+												  const size_t rank)
 {
 	return nvgraph::nvgraphKrylovPagerank_impl(handle,
-												descrG,
-												weight_index,
-												alpha,
-												bookmark,
-												tolerance,
-												max_iter,
-												subspace_size,
-												has_guess,
-												rank);
+											   descrG,
+											   weight_index,
+											   alpha,
+											   bookmark,
+											   tolerance,
+											   max_iter,
+											   subspace_size,
+											   has_guess,
+											   rank);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphBalancedCutClustering(nvgraphHandle_t handle,
-															const nvgraphGraphDescr_t descrG,
-															const size_t weight_index,
-															const int n_clusters,
-															const int n_eig_vects,
-															const int evs_type,
-															const float evs_tolerance,
-															const int evs_max_iter,
-															const float kmean_tolerance,
-															const int kmean_max_iter,
-															int *clustering,
-															void *eig_vals,
-															void *eig_vects)
+														 const nvgraphGraphDescr_t descrG,
+														 const size_t weight_index,
+														 const int n_clusters,
+														 const int n_eig_vects,
+														 const int evs_type,
+														 const float evs_tolerance,
+														 const int evs_max_iter,
+														 const float kmean_tolerance,
+														 const int kmean_max_iter,
+														 int *clustering,
+														 void *eig_vals,
+														 void *eig_vects)
 {
 	return nvgraph::nvgraphBalancedCutClustering_impl(handle,
-														descrG,
-														weight_index,
-														n_clusters,
-														n_eig_vects,
-														evs_type,
-														evs_tolerance,
-														evs_max_iter,
-														kmean_tolerance,
-														kmean_max_iter,
-														clustering,
-														eig_vals,
-														eig_vects);
+													  descrG,
+													  weight_index,
+													  n_clusters,
+													  n_eig_vects,
+													  evs_type,
+													  evs_tolerance,
+													  evs_max_iter,
+													  kmean_tolerance,
+													  kmean_max_iter,
+													  clustering,
+													  eig_vals,
+													  eig_vects);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphAnalyzeBalancedCut(nvgraphHandle_t handle,
-														const nvgraphGraphDescr_t descrG,
-														const size_t weight_index,
-														const int n_clusters,
-														const int *clustering,
-														float *edgeCut,
-														float *ratioCut)
+													  const nvgraphGraphDescr_t descrG,
+													  const size_t weight_index,
+													  const int n_clusters,
+													  const int *clustering,
+													  float *edgeCut,
+													  float *ratioCut)
 {
 	return nvgraph::nvgraphAnalyzeBalancedCut_impl(handle,
-													descrG,
-													weight_index,
-													n_clusters,
-													clustering,
-													edgeCut,
-													ratioCut);
+												   descrG,
+												   weight_index,
+												   n_clusters,
+												   clustering,
+												   edgeCut,
+												   ratioCut);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphHeavyEdgeMatching(nvgraphHandle_t handle,
-														const nvgraphGraphDescr_t descrG,
-														const size_t weight_index,
-														const nvgraphEdgeWeightMatching_t similarity_metric,
-														int *aggregates,
-														size_t *num_aggregates)
+													 const nvgraphGraphDescr_t descrG,
+													 const size_t weight_index,
+													 const nvgraphEdgeWeightMatching_t similarity_metric,
+													 int *aggregates,
+													 size_t *num_aggregates)
 {
 	return nvgraph::nvgraphHeavyEdgeMatching_impl(handle,
-													descrG,
-													weight_index,
-													similarity_metric,
-													aggregates,
-													num_aggregates);
+												  descrG,
+												  weight_index,
+												  similarity_metric,
+												  aggregates,
+												  num_aggregates);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphSpectralModularityMaximization(nvgraphHandle_t handle,
-																	const nvgraphGraphDescr_t descrG,
-																	const size_t weight_index,
-																	const int n_clusters,
-																	const int n_eig_vects,
-																	const float evs_tolerance,
-																	const int evs_max_iter,
-																	const float kmean_tolerance,
-																	const int kmean_max_iter,
-																	int *clustering,
-																	void *eig_vals,
-																	void *eig_vects)
+																  const nvgraphGraphDescr_t descrG,
+																  const size_t weight_index,
+																  const int n_clusters,
+																  const int n_eig_vects,
+																  const float evs_tolerance,
+																  const int evs_max_iter,
+																  const float kmean_tolerance,
+																  const int kmean_max_iter,
+																  int *clustering,
+																  void *eig_vals,
+																  void *eig_vects)
 {
 	return nvgraph::nvgraphSpectralModularityMaximization_impl(handle,
-																descrG,
-																weight_index,
-																n_clusters,
-																n_eig_vects,
-																evs_tolerance,
-																evs_max_iter,
-																kmean_tolerance,
-																kmean_max_iter,
-																clustering,
-																eig_vals,
-																eig_vects);
+															   descrG,
+															   weight_index,
+															   n_clusters,
+															   n_eig_vects,
+															   evs_tolerance,
+															   evs_max_iter,
+															   kmean_tolerance,
+															   kmean_max_iter,
+															   clustering,
+															   eig_vals,
+															   eig_vects);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphAnalyzeModularityClustering(nvgraphHandle_t handle,
-																const nvgraphGraphDescr_t descrG,
-																const size_t weight_index,
-																const int n_clusters,
-																const int *clustering,
-																float *modularity)
+															   const nvgraphGraphDescr_t descrG,
+															   const size_t weight_index,
+															   const int n_clusters,
+															   const int *clustering,
+															   float *modularity)
 {
 	return nvgraph::nvgraphAnalyzeModularityClustering_impl(handle,
 															descrG,
@@ -3902,73 +3902,73 @@ nvgraphStatus_t NVGRAPH_API nvgraphAnalyzeModularityClustering(nvgraphHandle_t h
 }
 #ifndef NVGRAPH_LIGHT
 nvgraphStatus_t NVGRAPH_API nvgraphContractGraph(nvgraphHandle_t handle,
-													nvgraphGraphDescr_t descrG,
-													nvgraphGraphDescr_t contrdescrG,
-													int *aggregates,
-													size_t numaggregates,
-													nvgraphSemiringOps_t VertexCombineOp,
-													nvgraphSemiringOps_t VertexReduceOp,
-													nvgraphSemiringOps_t EdgeCombineOp,
-													nvgraphSemiringOps_t EdgeReduceOp,
-													int flag)
+												 nvgraphGraphDescr_t descrG,
+												 nvgraphGraphDescr_t contrdescrG,
+												 int *aggregates,
+												 size_t numaggregates,
+												 nvgraphSemiringOps_t VertexCombineOp,
+												 nvgraphSemiringOps_t VertexReduceOp,
+												 nvgraphSemiringOps_t EdgeCombineOp,
+												 nvgraphSemiringOps_t EdgeReduceOp,
+												 int flag)
 {
 	return nvgraph::nvgraphContractGraph_impl(handle,
-												descrG,
-												contrdescrG,
-												aggregates,
-												numaggregates,
-												VertexCombineOp,
-												VertexReduceOp,
-												EdgeCombineOp,
-												EdgeReduceOp,
-												flag);
+											  descrG,
+											  contrdescrG,
+											  aggregates,
+											  numaggregates,
+											  VertexCombineOp,
+											  VertexReduceOp,
+											  EdgeCombineOp,
+											  EdgeReduceOp,
+											  flag);
 }
 #endif
 
 nvgraphStatus_t NVGRAPH_API nvgraphSpectralClustering(nvgraphHandle_t handle,							// nvGRAPH library handle.
-														const nvgraphGraphDescr_t descrG,					// nvGRAPH graph descriptor, should contain the connectivity information in NVGRAPH_CSR_32 or NVGRAPH_CSR_32 at least 1 edge set (weights)
-														const size_t weight_index,						// Index of the edge set for the weights.
-														const struct SpectralClusteringParameter *params, // parameters, see struct SpectralClusteringParameter
-														int *clustering,									// (output) clustering
-														void *eig_vals,									// (output) eigenvalues
-														void *eig_vects)									// (output) eigenvectors
+													  const nvgraphGraphDescr_t descrG,					// nvGRAPH graph descriptor, should contain the connectivity information in NVGRAPH_CSR_32 or NVGRAPH_CSR_32 at least 1 edge set (weights)
+													  const size_t weight_index,						// Index of the edge set for the weights.
+													  const struct SpectralClusteringParameter *params, // parameters, see struct SpectralClusteringParameter
+													  int *clustering,									// (output) clustering
+													  void *eig_vals,									// (output) eigenvalues
+													  void *eig_vects)									// (output) eigenvectors
 {
 	return nvgraph::nvgraphSpectralClustering_impl(handle,
-													descrG,
-													weight_index,
-													params,
-													clustering,
-													eig_vals,
-													eig_vects);
+												   descrG,
+												   weight_index,
+												   params,
+												   clustering,
+												   eig_vals,
+												   eig_vects);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphAnalyzeClustering(nvgraphHandle_t handle,		   // nvGRAPH library handle.
-														const nvgraphGraphDescr_t descrG, // nvGRAPH graph descriptor, should contain the connectivity information in NVGRAPH_CSR_32 at least 1 edge set (weights)
-														const size_t weight_index,		   // Index of the edge set for the weights.
-														const int n_clusters,			   // number of clusters
-														const int *clustering,			   // clustering to analyse
-														nvgraphClusteringMetric_t metric, // metric to compute to measure the clustering quality
-														float *score)					   // (output) clustering score telling how good the clustering is for the selected metric.
+													 const nvgraphGraphDescr_t descrG, // nvGRAPH graph descriptor, should contain the connectivity information in NVGRAPH_CSR_32 at least 1 edge set (weights)
+													 const size_t weight_index,		   // Index of the edge set for the weights.
+													 const int n_clusters,			   // number of clusters
+													 const int *clustering,			   // clustering to analyse
+													 nvgraphClusteringMetric_t metric, // metric to compute to measure the clustering quality
+													 float *score)					   // (output) clustering score telling how good the clustering is for the selected metric.
 {
 	return nvgraph::nvgraphAnalyzeClustering_impl(handle,
-													descrG,
-													weight_index,
-													n_clusters,
-													clustering,
-													metric,
-													score);
+												  descrG,
+												  weight_index,
+												  n_clusters,
+												  clustering,
+												  metric,
+												  score);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphTriangleCount(nvgraphHandle_t handle,
-													const nvgraphGraphDescr_t descrG,
-													uint64_t *result)
+												 const nvgraphGraphDescr_t descrG,
+												 uint64_t *result)
 {
 	return nvgraph::nvgraphTriangleCount_impl(handle, descrG, result);
 }
 
-nvgraphStatus_t NVGRAPH_API nvgraphLouvain(hipDataType index_type, hipDataType val_type, const size_t num_vertex, const size_t num_edges,
-											void *csr_ptr, void *csr_ind, void *csr_val, int weighted, int has_init_cluster, void *init_cluster,
-											void *final_modularity, void *best_cluster_vec, void *num_level)
+nvgraphStatus_t NVGRAPH_API nvgraphLouvain(hipblasDatatype_t index_type, hipblasDatatype_t val_type, const size_t num_vertex, const size_t num_edges,
+										   void *csr_ptr, void *csr_ind, void *csr_val, int weighted, int has_init_cluster, void *init_cluster,
+										   void *final_modularity, void *best_cluster_vec, void *num_level)
 {
 	NVLOUVAIN_STATUS status = NVLOUVAIN_OK;
 	if ((csr_ptr == NULL) || (csr_ind == NULL) || ((csr_val == NULL) && (weighted == 1)) ||
@@ -3978,7 +3978,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphLouvain(hipDataType index_type, hipDataType v
 	std::ostream log(0);
 	bool weighted_b = weighted;
 	bool has_init_cluster_b = has_init_cluster;
-	if (val_type == HIP_R_32F)
+	if (val_type == HIPBLAS_R_32F)
 		status = nvlouvain::louvain((int *)csr_ptr, (int *)csr_ind, (float *)csr_val, num_vertex, num_edges,
 									weighted_b, has_init_cluster_b, (int *)init_cluster, *((float *)final_modularity),
 									(int *)best_cluster_vec, *((int *)num_level), log);
@@ -3993,8 +3993,8 @@ nvgraphStatus_t NVGRAPH_API nvgraphLouvain(hipDataType index_type, hipDataType v
 	return NVGRAPH_STATUS_SUCCESS;
 }
 
-nvgraphStatus_t NVGRAPH_API nvgraphJaccard(hipDataType index_type, hipDataType val_type, const size_t n,
-											const size_t e, void *csr_ptr, void *csr_ind, void *csr_val, int weighted, void *v, void *gamma, void *weight_j)
+nvgraphStatus_t NVGRAPH_API nvgraphJaccard(hipblasDatatype_t index_type, hipblasDatatype_t val_type, const size_t n,
+										   const size_t e, void *csr_ptr, void *csr_ind, void *csr_val, int weighted, void *v, void *gamma, void *weight_j)
 {
 	int status = 0;
 
@@ -4003,7 +4003,7 @@ nvgraphStatus_t NVGRAPH_API nvgraphJaccard(hipDataType index_type, hipDataType v
 
 	bool weighted_b = weighted;
 
-	if (val_type == HIP_R_32F)
+	if (val_type == HIPBLAS_R_32F)
 	{
 		float *weight_i = NULL, *weight_s = NULL, *work = NULL;
 		NVG_CUDA_TRY(hipMalloc((void **)&weight_i, sizeof(float) * e));
@@ -4063,17 +4063,17 @@ nvgraphStatus_t NVGRAPH_API nvgraphAttachGraphStructure(nvgraphHandle_t handle,
 nvgraphStatus_t NVGRAPH_API nvgraphAttachVertexData(nvgraphHandle_t handle,
 													nvgraphGraphDescr_t descrG,
 													size_t setnum,
-													hipDataType settype,
+													hipblasDatatype_t settype,
 													void *vertexData)
 {
 	return nvgraph::nvgraphAttachVertexData_impl(handle, descrG, setnum, settype, vertexData);
 }
 
 nvgraphStatus_t NVGRAPH_API nvgraphAttachEdgeData(nvgraphHandle_t handle,
-													nvgraphGraphDescr_t descrG,
-													size_t setnum,
-													hipDataType settype,
-													void *edgeData)
+												  nvgraphGraphDescr_t descrG,
+												  size_t setnum,
+												  hipblasDatatype_t settype,
+												  void *edgeData)
 {
 	return nvgraph::nvgraphAttachEdgeData_impl(handle, descrG, setnum, settype, edgeData);
 }

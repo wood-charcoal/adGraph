@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <hipblas.h>
 #include "nvgraph_convert.hxx"
 #include "nvgraph_error.hxx"
 
@@ -36,20 +37,20 @@ namespace nvgraph
                const void *csrVal, const int *csrRowPtr, const int *csrColInd,
                void *cscVal, int *cscRowInd, int *cscColPtr,
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
-               hipDataType *dataType)
+               hipblasDatatype_t *dataType)
   {
     // CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
     //                                    m, n, nnz,
     //                                    csrVal, *dataType, csrRowPtr, csrColInd,
     //                                    cscVal, *dataType, cscRowInd, cscColPtr,
     //                                    copyValues, idxBase, *dataType));
-    
+
     hipsparseHandle_t handle = Cusparse::get_handle();
-    hipDataType valType = *dataType;
-    
+    hipDataType valType = static_cast<hipDataType>(*dataType);
+
     size_t buffer_size = 0;
-    hipsparseCsr2CscAlg_t alg = HIPSPARSE_CSR2CSC_ALG1; 
-    
+    hipsparseCsr2CscAlg_t alg = HIPSPARSE_CSR2CSC_ALG1;
+
     CHECK_CUSPARSE(hipsparseCsr2cscEx2_bufferSize(
         handle,
         m, n, nnz,
@@ -60,11 +61,13 @@ namespace nvgraph
         &buffer_size));
 
     void *buffer = nullptr;
-    if (buffer_size > 0) {
-        hipError_t hip_status = hipMalloc(&buffer, buffer_size);
-        if (hip_status != hipSuccess) {
-            CHECK_CUDA(hip_status); 
-        }
+    if (buffer_size > 0)
+    {
+      hipError_t hip_status = hipMalloc(&buffer, buffer_size);
+      if (hip_status != hipSuccess)
+      {
+        CHECK_CUDA(hip_status);
+      }
     }
 
     CHECK_CUSPARSE(hipsparseCsr2cscEx2(
@@ -77,8 +80,9 @@ namespace nvgraph
         alg,
         buffer));
 
-    if (buffer) {
-        CHECK_CUDA(hipFree(buffer));
+    if (buffer)
+    {
+      CHECK_CUDA(hipFree(buffer));
     }
   }
 
@@ -86,23 +90,23 @@ namespace nvgraph
                const void *cscVal, const int *cscRowInd, const int *cscColPtr,
                void *csrVal, int *csrRowPtr, int *csrColInd,
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
-               hipDataType *dataType)
+               hipblasDatatype_t *dataType)
   {
     // CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
     //                                    m, n, nnz,
     //                                    cscVal, *dataType, cscColPtr, cscRowInd,
     //                                    csrVal, *dataType, csrColInd, csrRowPtr,
     //                                    copyValues, idxBase, *dataType));
-    
+
     hipsparseHandle_t handle = Cusparse::get_handle();
-    hipDataType valType = *dataType;
-    
+    hipDataType valType = static_cast<hipDataType>(*dataType);
+
     int m_csc = n;
     int n_csc = m;
 
     size_t buffer_size = 0;
     hipsparseCsr2CscAlg_t alg = HIPSPARSE_CSR2CSC_ALG1;
-  
+
     CHECK_CUSPARSE(hipsparseCsr2cscEx2_bufferSize(
         handle,
         m_csc, n_csc, nnz,
@@ -113,9 +117,10 @@ namespace nvgraph
         &buffer_size));
 
     void *buffer = nullptr;
-    if (buffer_size > 0) {
-        hipError_t hip_status = hipMalloc(&buffer, buffer_size);
-        CHECK_CUDA(hip_status); 
+    if (buffer_size > 0)
+    {
+      hipError_t hip_status = hipMalloc(&buffer, buffer_size);
+      CHECK_CUDA(hip_status);
     }
 
     CHECK_CUSPARSE(hipsparseCsr2cscEx2(
@@ -123,20 +128,21 @@ namespace nvgraph
         m_csc, n_csc, nnz,
         cscVal, cscColPtr, cscRowInd,
         csrVal, csrRowPtr, csrColInd,
-        valType, 
+        valType,
         copyValues, idxBase,
         alg,
         buffer));
 
-    if (buffer) {
-        CHECK_CUDA(hipFree(buffer));
+    if (buffer)
+    {
+      CHECK_CUDA(hipFree(buffer));
     }
   }
 
   void cooSortByDestination(int m, int n, int nnz,
                             const void *srcVal, const int *srcRowInd, const int *srcColInd,
                             void *dstVal, int *dstRowInd, int *dstColInd,
-                            hipsparseIndexBase_t idxBase, hipDataType *dataType)
+                            hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType)
   {
     size_t pBufferSizeInBytes = 0;
     SHARED_PREFIX::shared_ptr<char> pBuffer;
@@ -161,7 +167,7 @@ namespace nvgraph
   void cooSortBySource(int m, int n, int nnz,
                        const void *srcVal, const int *srcRowInd, const int *srcColInd,
                        void *dstVal, int *dstRowInd, int *dstColInd,
-                       hipsparseIndexBase_t idxBase, hipDataType *dataType)
+                       hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType)
   {
     size_t pBufferSizeInBytes = 0;
     SHARED_PREFIX::shared_ptr<char> pBuffer;
@@ -185,7 +191,7 @@ namespace nvgraph
   void coos2csc(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowInd, int *dstColPtr,
-                hipsparseIndexBase_t idxBase, hipDataType *dataType)
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType)
   {
     // coos -> cood -> csc
     SHARED_PREFIX::shared_ptr<int> tmp = allocateDevice<int>(nnz, NULL);
@@ -195,7 +201,7 @@ namespace nvgraph
   void cood2csr(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowPtr, int *dstColInd,
-                hipsparseIndexBase_t idxBase, hipDataType *dataType)
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType)
   {
     // cood -> coos -> csr
     SHARED_PREFIX::shared_ptr<int> tmp = allocateDevice<int>(nnz, NULL);
@@ -205,7 +211,7 @@ namespace nvgraph
   void coou2csr(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowPtr, int *dstColInd,
-                hipsparseIndexBase_t idxBase, hipDataType *dataType)
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType)
   {
     cood2csr(m, n, nnz,
              srcVal, srcRowInd, srcColInd,
@@ -215,7 +221,7 @@ namespace nvgraph
   void coou2csc(int m, int n, int nnz,
                 const void *srcVal, const int *srcRowInd, const int *srcColInd,
                 void *dstVal, int *dstRowInd, int *dstColPtr,
-                hipsparseIndexBase_t idxBase, hipDataType *dataType)
+                hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType)
   {
     coos2csc(m, n, nnz,
              srcVal, srcRowInd, srcColInd,
@@ -230,13 +236,13 @@ namespace nvgraph
   }
 
   void gthrX(int nnz, const void *y, void *xVal, const int *xInd,
-             hipsparseIndexBase_t idxBase, hipDataType *dataType)
+             hipsparseIndexBase_t idxBase, hipblasDatatype_t *dataType)
   {
-    if (*dataType == HIP_R_32F)
+    if (*dataType == HIPBLAS_R_32F)
     {
       CHECK_CUSPARSE(hipsparseSgthr(Cusparse::get_handle(), nnz, (float *)y, (float *)xVal, xInd, idxBase));
     }
-    else if (*dataType == HIP_R_64F)
+    else if (*dataType == HIPBLAS_R_64F)
     {
       CHECK_CUSPARSE(hipsparseDgthr(Cusparse::get_handle(), nnz, (double *)y, (double *)xVal, xInd, idxBase));
     }

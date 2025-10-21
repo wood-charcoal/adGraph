@@ -38,6 +38,7 @@
 #include "nvgraph_experimental.h"
 #include "stdlib.h"
 #include "stdint.h"
+#include <hipblas.h>
 #include <algorithm>
 extern "C"
 {
@@ -81,7 +82,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<double>
 {
-    static const hipDataType Type = HIP_R_64F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_64F;
     static const double inf;
     static const double tol;
     typedef union fpint
@@ -97,7 +98,7 @@ const double nvgraph_Const<double>::tol = 1e-6; // this is what we use as a tole
 template <>
 struct nvgraph_Const<float>
 {
-    static const hipDataType Type = HIP_R_32F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32F;
     static const float inf;
     static const float tol;
 
@@ -114,7 +115,7 @@ const float nvgraph_Const<float>::tol = 1e-4;
 template <>
 struct nvgraph_Const<int>
 {
-    static const hipDataType Type = HIPBLAS_R_32I;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32I;
     static const int inf;
     static const int tol;
 };
@@ -215,10 +216,10 @@ void run_srspmv_bench(const SrSPMV_Usecase &param)
         // printf ("data1[%d]==%f, data2[%d]==%f\n", i, data1[i], i, data2[i]);
     }
     void *vertexptr[2] = {(void *)&data1[0], (void *)&data2[0]};
-    hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
 
     void *edgeptr[1] = {(void *)&csr_read_val[0]};
-    hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
     int weight_index = 0;
     int x_index = 0;
@@ -377,10 +378,10 @@ void run_widest_bench(const WidestPath_Usecase &param)
     size_t numsets = 1;
     std::vector<T> calculated_res(n);
     // void*  vertexptr[1] = {(void*)&calculated_res[0]};
-    hipDataType type_v[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
 
     void *edgeptr[1] = {(void *)&read_val[0]};
-    hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
     NVGRAPH_SAFE_CALL(nvgraphAllocateVertexData(handle, g1, numsets, type_v));
     NVGRAPH_SAFE_CALL(nvgraphAllocateEdgeData(handle, g1, numsets, type_e));
@@ -475,9 +476,9 @@ void run_sssp_bench(const SSSP_Usecase &param)
 
     // set up graph data
     size_t numsets = 1;
-    hipDataType type_v[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
     void *edgeptr[1] = {(void *)&read_val[0]};
-    hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
     NVGRAPH_SAFE_CALL(nvgraphAllocateVertexData(handle, g1, numsets, type_v));
     NVGRAPH_SAFE_CALL(nvgraphAllocateEdgeData(handle, g1, numsets, type_e));
@@ -594,7 +595,7 @@ void run_traversal_bench(const Traversal_Usecase &param)
 
     // set up graph data
     size_t numsets = 1;
-    hipDataType type_v[1] = {nvgraph_Const<int>::Type};
+    hipblasDatatype_t type_v[1] = {nvgraph_Const<int>::Type};
 
     NVGRAPH_SAFE_CALL(nvgraphAllocateVertexData(handle, g1, numsets, type_v));
 
@@ -692,10 +693,10 @@ void run_pagerank_bench(const Pagerank_Usecase &param)
     // set up graph data
     std::vector<T> calculated_res(n, (T)1.0 / n);
     void *vertexptr[2] = {(void *)&dangling[0], (void *)&calculated_res[0]};
-    hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
 
     void *edgeptr[1] = {(void *)&read_val[0]};
-    hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
     NVGRAPH_SAFE_CALL(nvgraphAllocateVertexData(handle, g1, 2, type_v));
     NVGRAPH_SAFE_CALL(nvgraphSetVertexData(handle, g1, vertexptr[0], 0));
@@ -814,7 +815,7 @@ void run_modularity_bench(const ModMax_Usecase &param)
     // set up graph data
     size_t numsets = 1;
     void *edgeptr[1] = {(void *)&csrValA[0]};
-    hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
     NVGRAPH_SAFE_CALL(nvgraphAllocateEdgeData(handle, g1, numsets, type_e));
     NVGRAPH_SAFE_CALL(nvgraphSetEdgeData(handle, g1, (void *)edgeptr[0], 0));
 
@@ -965,7 +966,7 @@ void run_balancedCut_bench(const BalancedCut_Usecase &param)
     // set up graph data
     size_t numsets = 1;
     void *edgeptr[1] = {(void *)&csrValA[0]};
-    hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+    hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
     NVGRAPH_SAFE_CALL(nvgraphAllocateEdgeData(handle, g1, numsets, type_e));
     NVGRAPH_SAFE_CALL(nvgraphSetEdgeData(handle, g1, (void *)edgeptr[0], 0));
 

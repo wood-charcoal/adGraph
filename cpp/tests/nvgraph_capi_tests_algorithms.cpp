@@ -43,6 +43,7 @@
 
 #include "stdlib.h"
 #include <algorithm>
+#include <hipblas.h>
 
 // do the perf measurements, enabled by command line parameter '--perf'
 static int PERF = 0;
@@ -73,7 +74,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<double>
 {
-    static const hipDataType Type = HIP_R_64F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_64F;
     static const double inf;
     static const double tol;
     typedef union fpint
@@ -89,7 +90,7 @@ const double nvgraph_Const<double>::tol = 1e-6; // this is what we use as a tole
 template <>
 struct nvgraph_Const<float>
 {
-    static const hipDataType Type = HIP_R_32F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32F;
     static const float inf;
     static const float tol;
 
@@ -435,10 +436,10 @@ public:
             // printf ("data1[%d]==%f, data2[%d]==%f\n", i, data1[i], i, data2[i]);
         }
         void *vertexptr[2] = {(void *)&data1[0], (void *)&data2[0]};
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -594,10 +595,10 @@ public:
         size_t numsets = 1;
         std::vector<T> calculated_res(n);
         // void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        hipDataType type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -742,10 +743,10 @@ public:
         size_t numsets = 1;
         std::vector<T> calculated_res(n);
         // void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -910,10 +911,10 @@ public:
         // set up graph data
         std::vector<T> calculated_res(n, (T)1.0 / n);
         void *vertexptr[2] = {(void *)&dangling[0], (void *)&calculated_res[0]};
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -1079,10 +1080,10 @@ public:
         // set up graph data
         std::vector<T> calculated_res(n, (T)1.0 / n);
         void *vertexptr[2] = {(void *)&dangling[0], (void *)&calculated_res[0]};
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -1216,8 +1217,8 @@ public:
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void *)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1353,8 +1354,8 @@ public:
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void *)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        hipDataType type_v[1] = {nvgraph_Const<T>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1521,8 +1522,8 @@ public:
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void *)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        hipDataType type_v[1] = {nvgraph_Const<T>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1685,8 +1686,8 @@ public:
         nnz = topo_st.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void *)&topo_st, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -1831,8 +1832,8 @@ public:
         nnz = topology.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void *)&topology, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         // not multivalued CSR
         status = nvgraphSrSpmv(handle, g1, weight_index, (void *)&alpha, x_index, (void *)&beta, y_index, NVGRAPH_PLUS_TIMES_SR);
@@ -1889,10 +1890,10 @@ public:
         // but we cannot check SrSPMV for that because AllocateData will throw an error first
         /*for (int i = 0; i < 10; i++)
         {
-            if (i == HIP_R_32F || i == HIP_R_64F)
+            if (i == HIPBLAS_R_32F || i == HIPBLAS_R_64F)
                 continue;
-            hipDataType t_type_v[2] = {(hipDataType)i, (hipDataType)i};
-            hipDataType t_type_e[1] = {(hipDataType)i};
+            hipblasDatatype_t t_type_v[2] = {(hipblasDatatype_t)i, (hipblasDatatype_t)i};
+            hipblasDatatype_t t_type_e[1] = {(hipblasDatatype_t)i};
             status = nvgraphCreateGraphDescr(handle, &g1);
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, NVGRAPH_CSR_32);
@@ -1986,8 +1987,8 @@ public:
         status = nvgraphSssp(handle, g1, weight_index, &source_vert, sssp_index);
         ASSERT_NE(NVGRAPH_STATUS_SUCCESS, status);
 
-        hipDataType type_v[1] = {nvgraph_Const<T>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -2033,10 +2034,10 @@ public:
         // but we cannot check SSSP for that because AllocateData will throw an error first
         /*for (int i = 0; i < 10; i++)
         {
-            if (i == HIP_R_32F || i == HIP_R_64F)
+            if (i == HIPBLAS_R_32F || i == HIPBLAS_R_64F)
                 continue;
-            hipDataType t_type_v[2] = {(hipDataType)i, (hipDataType)i};
-            hipDataType t_type_e[1] = {(hipDataType)i};
+            hipblasDatatype_t t_type_v[2] = {(hipblasDatatype_t)i, (hipblasDatatype_t)i};
+            hipblasDatatype_t t_type_e[1] = {(hipblasDatatype_t)i};
             status = nvgraphCreateGraphDescr(handle, &g1);
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, NVGRAPH_CSC_32);
@@ -2133,8 +2134,8 @@ public:
         status = nvgraphWidestPath(handle, g1, weight_index, &source_vert, widest_path_index);
         ASSERT_NE(NVGRAPH_STATUS_SUCCESS, status);
 
-        hipDataType type_v[1] = {nvgraph_Const<T>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
         status = nvgraphAllocateVertexData(handle, g1, 1, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphAllocateEdgeData(handle, g1, 1, type_e);
@@ -2180,10 +2181,10 @@ public:
         // but we cannot check WidestPath for that because AllocateData will throw an error first
         /*for (int i = 0; i < 10; i++)
         {
-            if (i == HIP_R_32F || i == HIP_R_64F)
+            if (i == HIPBLAS_R_32F || i == HIPBLAS_R_64F)
                 continue;
-            hipDataType t_type_v[2] = {(hipDataType)i, (hipDataType)i};
-            hipDataType t_type_e[1] = {(hipDataType)i};
+            hipblasDatatype_t t_type_v[2] = {(hipblasDatatype_t)i, (hipblasDatatype_t)i};
+            hipblasDatatype_t t_type_e[1] = {(hipblasDatatype_t)i};
             status = nvgraphCreateGraphDescr(handle, &g1);
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, NVGRAPH_CSC_32);
@@ -2272,8 +2273,8 @@ public:
         nnz = topology.nedges;
         status = nvgraphSetGraphStructure(handle, g1, (void *)&topology, topo);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         int bookmark_index = 0;
         int weight_index = 0;
@@ -2344,10 +2345,10 @@ public:
         // but we cannot check Pagerank for that because AllocateData will throw an error first
         /*for (int i = 0; i < 10; i++)
         {
-            if (i == HIP_R_32F || i == HIP_R_64F)
+            if (i == HIPBLAS_R_32F || i == HIPBLAS_R_64F)
                 continue;
-            hipDataType t_type_v[2] = {(hipDataType)i, (hipDataType)i};
-            hipDataType t_type_e[1] = {(hipDataType)i};
+            hipblasDatatype_t t_type_v[2] = {(hipblasDatatype_t)i, (hipblasDatatype_t)i};
+            hipblasDatatype_t t_type_e[1] = {(hipblasDatatype_t)i};
             status = nvgraphCreateGraphDescr(handle, &g1);
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             status = nvgraphSetGraphStructure(handle, g1, (void*)&topology, NVGRAPH_CSC_32);
@@ -2447,10 +2448,10 @@ public:
             data2[i] = (T)(1.0 * rand() / RAND_MAX - 0.5);
         }
         void *vertexptr[2] = {(void *)&data1[0], (void *)&data2[0]};
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -2613,10 +2614,10 @@ public:
         size_t numsets = 1;
         std::vector<T> calculated_res(n);
         // void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        hipDataType type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -2762,10 +2763,10 @@ public:
         size_t numsets = 1;
         std::vector<T> calculated_res(n);
         // void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        hipDataType type_v[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -2913,10 +2914,10 @@ public:
         // set up graph data
         std::vector<T> calculated_res(n, (T)1.0 / n);
         void *vertexptr[2] = {(void *)&dangling[0], (void *)&calculated_res[0]};
-        hipDataType type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_v[2] = {nvgraph_Const<T>::Type, nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&read_val[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateVertexData(handle, g1, 2, type_v);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);

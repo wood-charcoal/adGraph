@@ -23,6 +23,7 @@
  */
 
 #pragma once
+#include <hipblas.h>
 #include "nvgraph.h"
 #include "cnmem.h"
 
@@ -50,7 +51,7 @@ extern "C"
    struct nvgraphGraphDescr
    {
       nvgraphGraphStatus_t graphStatus;
-      hipDataType T;            // This is the type of values for the graph
+      hipblasDatatype_t T;      // This is the type of values for the graph
       nvgraphTopologyType_t TT; // The topology type (class to cast graph_handle pointer to)
       void *graph_handle;       // Opaque pointer to the graph class object
    };

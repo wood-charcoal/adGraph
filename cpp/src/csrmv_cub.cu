@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <hipblas.h>
 #include <hipcub/hipcub.hpp>
 
 #include "nvgraph.h"
@@ -45,11 +46,11 @@ namespace nvgraph
         // std::static_assert(std::is_same<typename std::remove_cv<T>::type, int>::value, "current CUB implementation supports int only for indices");
         size_t temp_buf_size = 0;
         hipError_t err = cub_semiring::cub::DeviceSpmv::CsrMV<V, SR>(NULL, temp_buf_size, d_values, d_row_offsets, d_column_indices, d_vector_x,
-                                                                        d_vector_y, alpha, beta, num_rows, num_cols, num_nonzeros, stream);
+                                                                     d_vector_y, alpha, beta, num_rows, num_cols, num_nonzeros, stream);
         CHECK_CUDA(err);
         Vector<char> tmp_buf(std::max(temp_buf_size, size_t(1)), stream);
         err = cub_semiring::cub::DeviceSpmv::CsrMV<V, SR>(tmp_buf.raw(), temp_buf_size, d_values, d_row_offsets, d_column_indices, d_vector_x,
-                                                             d_vector_y, alpha, beta, num_rows, num_cols, num_nonzeros, stream);
+                                                          d_vector_y, alpha, beta, num_rows, num_cols, num_nonzeros, stream);
         CHECK_CUDA(err);
         return NVGRAPH_OK;
     };
@@ -124,14 +125,14 @@ namespace nvgraph
 
         switch (descrG->T)
         {
-        case HIP_R_32F:
+        case HIPBLAS_R_32F:
         {
             const nvgraph::MultiValuedCsrGraph<I, float> *mcsrg = static_cast<const nvgraph::MultiValuedCsrGraph<I, float> *>(descrG->graph_handle);
             err = SemiringDispatch<I, float>::InitAndLaunch(*mcsrg, weight_index, static_cast<const float *>(alpha), x,
                                                             static_cast<const float *>(beta), y, sr, stream);
             break;
         }
-        case HIP_R_64F:
+        case HIPBLAS_R_64F:
         {
             const nvgraph::MultiValuedCsrGraph<I, double> *mcsrg = static_cast<const nvgraph::MultiValuedCsrGraph<I, double> *>(descrG->graph_handle);
             err = SemiringDispatch<I, double>::InitAndLaunch(*mcsrg, weight_index, static_cast<const double *>(alpha), x,

@@ -12,6 +12,7 @@
 #include <nvgraphP.h> // private header, contains structures, and potentially other things, used in the public C API that should never be exposed.
 
 #include "convert_preset_testcases.h"
+#include <hipblas.h>
 
 #define DEBUG_MSG std::cout << "-----------> " << __FILE__ << " " << __LINE__ << std::endl;
 #define DEBUG_VAR(var) std::cout << "-----------> " << __FILE__ << " " << __LINE__ << ": " << #var "=" << var << std::endl;
@@ -175,15 +176,15 @@ void ref_cooSortByDestination(int nnz,
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Random generators
 ////////////////////////////////////////////////////////////////////////////////////////////////
-void randomArray(int n, void *arr, hipDataType *dataType)
+void randomArray(int n, void *arr, hipblasDatatype_t *dataType)
 {
-    if (*dataType == HIP_R_32F)
+    if (*dataType == HIPBLAS_R_32F)
     {
         float *a = (float *)arr;
         for (int i = 0; i < n; ++i)
             a[i] = (float)rand() / (rand() + 1); // don't divide by 0.
     }
-    else if (*dataType == HIP_R_64F)
+    else if (*dataType == HIPBLAS_R_64F)
     {
         double *a = (double *)arr;
         for (int i = 0; i < n; ++i)
@@ -878,7 +879,7 @@ public:
 
 // Compares the convesion result from and to preset values (Used primary for simple test, and to validate reference convsrsion).
 class PresetTopology : public NVGraphAPIConvertTest,
-                       public ::testing::WithParamInterface<std::tr1::tuple<hipDataType,        // dataType
+                       public ::testing::WithParamInterface<std::tr1::tuple<hipblasDatatype_t,  // dataType
                                                                             testTopologyType_t, // srcTopoType
                                                                             testTopologyType_t, // dstTopoType
                                                                             presetTestContainer_st>>
@@ -928,7 +929,7 @@ public:
 
     // nvgraph conversion test
     template <typename T>
-    void nvgraphPresetConvertTest(testTopologyType_t srcTestTopoType, void *srcTopologyHst, const double *srcEdgeDataHst, hipDataType *dataType,
+    void nvgraphPresetConvertTest(testTopologyType_t srcTestTopoType, void *srcTopologyHst, const double *srcEdgeDataHst, hipblasDatatype_t *dataType,
                                   testTopologyType_t dstTestTopoType, void *refTopologyHst, const double *refEdgeDataHst)
     {
 
@@ -1027,7 +1028,7 @@ public:
 TEST_P(PresetTopology, referenceValidation)
 {
 
-    hipDataType dataType = std::tr1::get<0>(GetParam());
+    hipblasDatatype_t dataType = std::tr1::get<0>(GetParam());
     testTopologyType_t srcTestTopoType = std::tr1::get<1>(GetParam());
     testTopologyType_t dstTestTopoType = std::tr1::get<2>(GetParam());
     presetTestContainer_st prestTestContainer = std::tr1::get<3>(GetParam());
@@ -1040,12 +1041,12 @@ TEST_P(PresetTopology, referenceValidation)
     this->getTestData(srcTestTopoType, &srcTopology, &srcEdgeData, prestTestContainer);
     this->getTestData(dstTestTopoType, &refTopology, &refEdgeData, prestTestContainer);
 
-    if (dataType == HIP_R_32F)
+    if (dataType == HIPBLAS_R_32F)
     {
         this->refPrestConvertTest<float>(srcTestTopoType, srcTopology, (const double *)srcEdgeData,
                                          dstTestTopoType, refTopology, (const double *)refEdgeData);
     }
-    else if (dataType == HIP_R_64F)
+    else if (dataType == HIPBLAS_R_64F)
     {
         this->refPrestConvertTest<double>(srcTestTopoType, srcTopology, (const double *)srcEdgeData,
                                           dstTestTopoType, refTopology, (const double *)refEdgeData);
@@ -1059,7 +1060,7 @@ TEST_P(PresetTopology, referenceValidation)
 TEST_P(PresetTopology, nvgraphConvertTopology)
 {
 
-    hipDataType dataType = std::tr1::get<0>(GetParam());
+    hipblasDatatype_t dataType = std::tr1::get<0>(GetParam());
     testTopologyType_t srcTestTopoType = std::tr1::get<1>(GetParam());
     testTopologyType_t dstTestTopoType = std::tr1::get<2>(GetParam());
     presetTestContainer_st prestTestContainer = std::tr1::get<3>(GetParam());
@@ -1072,12 +1073,12 @@ TEST_P(PresetTopology, nvgraphConvertTopology)
     this->getTestData(srcTestTopoType, &srcTopology, &srcEdgeData, prestTestContainer);
     this->getTestData(dstTestTopoType, &refTopology, &refEdgeData, prestTestContainer);
 
-    if (dataType == HIP_R_32F)
+    if (dataType == HIPBLAS_R_32F)
     {
         this->nvgraphPresetConvertTest<float>(srcTestTopoType, srcTopology, (const double *)srcEdgeData, &dataType,
                                               dstTestTopoType, refTopology, (const double *)refEdgeData);
     }
-    else if (dataType == HIP_R_64F)
+    else if (dataType == HIPBLAS_R_64F)
     {
         this->nvgraphPresetConvertTest<double>(srcTestTopoType, srcTopology, (const double *)srcEdgeData, &dataType,
                                                dstTestTopoType, refTopology, (const double *)refEdgeData);
@@ -1089,7 +1090,7 @@ TEST_P(PresetTopology, nvgraphConvertTopology)
 }
 
 class RandomTopology : public NVGraphAPIConvertTest,
-                       public ::testing::WithParamInterface<std::tr1::tuple<hipDataType,        // dataType
+                       public ::testing::WithParamInterface<std::tr1::tuple<hipblasDatatype_t,  // dataType
                                                                             testTopologyType_t, // srcTopoType
                                                                             testTopologyType_t, // dstTopoType
                                                                             int,                // n
@@ -1103,7 +1104,7 @@ public:
     // nvgraph conversion check
     template <typename T>
     void nvgraphTopologyConvertTest(testTopologyType_t srcTestTopoType, void *srcTopologyHst, const double *srcEdgeDataHst,
-                                    hipDataType *dataType, testTopologyType_t dstTestTopoType)
+                                    hipblasDatatype_t *dataType, testTopologyType_t dstTestTopoType)
     {
         int srcN = 0, srcNNZ = 0;
         topoGetN(srcTestTopoType, srcTopologyHst, &srcN);
@@ -1162,7 +1163,7 @@ public:
     // nvgraph conversion check
     template <typename T>
     void nvgraphGraphConvertTest(testTopologyType_t srcTestTopoType, void *srcTopologyHst, const double *srcEdgeDataHst,
-                                 hipDataType *dataType, testTopologyType_t dstTestTopoType)
+                                 hipblasDatatype_t *dataType, testTopologyType_t dstTestTopoType)
     {
         int srcN = 0, srcNNZ = 0;
         topoGetN(srcTestTopoType, srcTopologyHst, &srcN);
@@ -1222,7 +1223,7 @@ public:
 TEST_P(RandomTopology, nvgraphConvertTopology)
 {
 
-    hipDataType dataType = std::tr1::get<0>(GetParam());
+    hipblasDatatype_t dataType = std::tr1::get<0>(GetParam());
     testTopologyType_t srcTestTopoType = std::tr1::get<1>(GetParam());
     testTopologyType_t dstTestTopoType = std::tr1::get<2>(GetParam());
     int n = std::tr1::get<3>(GetParam());
@@ -1271,11 +1272,11 @@ TEST_P(RandomTopology, nvgraphConvertTopology)
     for (int i = 0; i < nnz; ++i)
         srcEdgeData[i] = (double)rand() / (rand() + 1); // don't divide by zero
 
-    if (dataType == HIP_R_32F)
+    if (dataType == HIPBLAS_R_32F)
     {
         this->nvgraphTopologyConvertTest<float>(srcTestTopoType, srcTopology, srcEdgeData, &dataType, dstTestTopoType);
     }
-    else if (dataType == HIP_R_64F)
+    else if (dataType == HIPBLAS_R_64F)
     {
         this->nvgraphTopologyConvertTest<double>(srcTestTopoType, srcTopology, srcEdgeData, &dataType, dstTestTopoType);
     }
@@ -1288,7 +1289,7 @@ TEST_P(RandomTopology, nvgraphConvertTopology)
 }
 
 class RandomGraph : public NVGraphAPIConvertTest,
-                    public ::testing::WithParamInterface<std::tr1::tuple<hipDataType,        // dataType
+                    public ::testing::WithParamInterface<std::tr1::tuple<hipblasDatatype_t,  // dataType
                                                                          testTopologyType_t, // srcTopoType
                                                                          testTopologyType_t, // dstTopoType
                                                                          int,                // n
@@ -1352,7 +1353,7 @@ public:
 TEST_P(RandomGraph, nvgraphConvertGraph)
 {
 
-    hipDataType dataType = std::tr1::get<0>(GetParam());
+    hipblasDatatype_t dataType = std::tr1::get<0>(GetParam());
     srcTestTopoType = std::tr1::get<1>(GetParam());
     dstTestTopoType = std::tr1::get<2>(GetParam());
     int n = std::tr1::get<3>(GetParam());
@@ -1422,7 +1423,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Prepeate data arrays
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (dataType == HIP_R_32F)
+    if (dataType == HIPBLAS_R_32F)
     {
         srcEdgeData = malloc(sizeof(float) * nnz);
         dstEdgeData = malloc(sizeof(float) * nnz);
@@ -1431,7 +1432,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
         dstVertexData = malloc(sizeof(float) * n);
         refVertexData = malloc(sizeof(float) * n);
     }
-    else if (dataType == HIP_R_64F)
+    else if (dataType == HIPBLAS_R_64F)
     {
         srcEdgeData = malloc(sizeof(double) * nnz);
         dstEdgeData = malloc(sizeof(double) * nnz);
@@ -1453,10 +1454,10 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
     // Prepare reference graph
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     allocateTopo(&refTopology, dstTestTopoType, n, nnz, HOST);
-    if (dataType == HIP_R_32F)
+    if (dataType == HIPBLAS_R_32F)
         refConvert(srcTopoType, srcTopology, (float *)srcEdgeData,
                    dstTopoType, refTopology, (float *)refEdgeData); // We don't care about edgeData
-    else if (dataType == HIP_R_64F)
+    else if (dataType == HIPBLAS_R_64F)
         refConvert(srcTopoType, srcTopology, (double *)srcEdgeData,
                    dstTopoType, refTopology, (double *)refEdgeData); // We don't care about edgeData
     else
@@ -1481,7 +1482,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
     // Fill graph with vertex and edge data
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     size_t edgeDataDim = (rand() % 11); // up to 10 edgeData sets
-    std::vector<hipDataType> edgeDataType(edgeDataDim);
+    std::vector<hipblasDatatype_t> edgeDataType(edgeDataDim);
     std::fill(edgeDataType.begin(), edgeDataType.end(), dataType);
     status = nvgraphAllocateEdgeData(handle, srcGrDesc, edgeDataDim, edgeDataType.data());
     if (edgeDataDim == 0)
@@ -1500,10 +1501,10 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
         status = nvgraphSetEdgeData(handle, srcGrDesc, srcEdgeData, i);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         // ref Graph (not the fastest approach, but I'm too lazy to do the permutation approach)
-        if (dataType == HIP_R_32F)
+        if (dataType == HIPBLAS_R_32F)
             refConvert(srcTopoType, srcTopology, (float *)srcEdgeData,
                        dstTopoType, refTopology, (float *)refEdgeData);
-        else if (dataType == HIP_R_64F)
+        else if (dataType == HIPBLAS_R_64F)
             refConvert(srcTopoType, srcTopology, (double *)srcEdgeData,
                        dstTopoType, refTopology, (double *)refEdgeData);
         else
@@ -1513,7 +1514,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
     }
 
     size_t vertexDataDim = (rand() % 6); // up to 5 vertexData sets
-    std::vector<hipDataType> vertexDataType(vertexDataDim);
+    std::vector<hipblasDatatype_t> vertexDataType(vertexDataDim);
     std::fill(vertexDataType.begin(), vertexDataType.end(), dataType);
     status = nvgraphAllocateVertexData(handle, srcGrDesc, vertexDataDim, vertexDataType.data());
     if (vertexDataDim == 0)
@@ -1546,7 +1547,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
     // ///////////////////////////////////////////////////////////////////////////////////////////////////////
     int ref_nvertices, ref_nedges, dst_nvertices, dst_nedges;
     int *dstOffset, *dstInd, *refOffset, *refInd;
-    if (dataType == HIP_R_32F)
+    if (dataType == HIPBLAS_R_32F)
     {
         nvgraph::MultiValuedCsrGraph<int, float> *refMCSRG = static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(refGrDesc->graph_handle);
         ref_nvertices = static_cast<int>(refMCSRG->get_num_vertices());
@@ -1560,7 +1561,7 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
         dstOffset = dstMCSRG->get_raw_row_offsets();
         dstInd = dstMCSRG->get_raw_column_indices();
     }
-    else if (dataType == HIP_R_64F)
+    else if (dataType == HIPBLAS_R_64F)
     {
         nvgraph::MultiValuedCsrGraph<int, double> *refMCSRG = static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(refGrDesc->graph_handle);
         ref_nvertices = static_cast<int>(refMCSRG->get_num_vertices());
@@ -1588,9 +1589,9 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphGetEdgeData(handle, dstGrDesc, dstEdgeData, i);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        if (dataType == HIP_R_32F)
+        if (dataType == HIPBLAS_R_32F)
             cmpArray((float *)refEdgeData, HOST, (float *)dstEdgeData, HOST, nnz);
-        else if (dataType == HIP_R_64F)
+        else if (dataType == HIPBLAS_R_64F)
             cmpArray((double *)refEdgeData, HOST, (double *)dstEdgeData, HOST, nnz);
         else
             FAIL();
@@ -1602,16 +1603,16 @@ TEST_P(RandomGraph, nvgraphConvertGraph)
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         status = nvgraphGetVertexData(handle, dstGrDesc, dstVertexData, i);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        if (dataType == HIP_R_32F)
+        if (dataType == HIPBLAS_R_32F)
             cmpArray((float *)refVertexData, HOST, (float *)dstVertexData, HOST, n);
-        else if (dataType == HIP_R_64F)
+        else if (dataType == HIPBLAS_R_64F)
             cmpArray((double *)refVertexData, HOST, (double *)dstVertexData, HOST, n);
         else
             FAIL();
     }
 }
 
-hipDataType DATA_TYPES[] = {HIP_R_32F, HIP_R_64F};
+hipblasDatatype_t DATA_TYPES[] = {HIPBLAS_R_32F, HIPBLAS_R_64F};
 testTopologyType_t SRC_TOPO_TYPES[] = {CSR_32, CSC_32, COO_SOURCE_32, COO_DESTINATION_32, COO_UNSORTED_32};
 testTopologyType_t DST_TOPO_TYPES[] = {CSR_32, CSC_32, COO_SOURCE_32, COO_DESTINATION_32, COO_UNSORTED_32};
 int ns[] = {10, 100, 1000, 50000, 100000, 200000, 300000, 456179, 500000, 1000000};

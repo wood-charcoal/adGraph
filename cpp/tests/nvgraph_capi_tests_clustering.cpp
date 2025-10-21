@@ -8,6 +8,7 @@
 #include "nvgraph_experimental.h"
 #include "stdlib.h"
 #include <algorithm>
+#include <hipblas.h>
 extern "C"
 {
 #include "mmio.h"
@@ -37,7 +38,7 @@ struct nvgraph_Const;
 template <>
 struct nvgraph_Const<double>
 {
-    static const hipDataType Type = HIP_R_64F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_64F;
     static const double inf;
     static const double tol;
     typedef union fpint
@@ -53,7 +54,7 @@ const double nvgraph_Const<double>::tol = 1e-6; // this is what we use as a tole
 template <>
 struct nvgraph_Const<float>
 {
-    static const hipDataType Type = HIP_R_32F;
+    static const hipblasDatatype_t Type = HIPBLAS_R_32F;
     static const float inf;
     static const float tol;
 
@@ -237,7 +238,7 @@ public:
         size_t numsets = 1;
 
         void *edgeptr[1] = {(void *)&csrValA[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         status = nvgraphAllocateEdgeData(handle, g1, numsets, type_e);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -561,10 +562,10 @@ public:
         // set up graph data
         size_t numsets = 1;
         // void*  vertexptr[1] = {(void*)&calculated_res[0]};
-        // hipDataType type_v[1] = {nvgraph_Const<T>::Type};
+        // hipblasDatatype_t type_v[1] = {nvgraph_Const<T>::Type};
 
         void *edgeptr[1] = {(void *)&csrValA[0]};
-        hipDataType type_e[1] = {nvgraph_Const<T>::Type};
+        hipblasDatatype_t type_e[1] = {nvgraph_Const<T>::Type};
 
         // status = nvgraphAllocateVertexData(handle, g1, numsets, type_v);
         // ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);

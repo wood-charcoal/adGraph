@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "nvgraph.h"
+#include <hipblas.h>
 #include <iostream>
 
 TEST(SimpleBFS2D, DummyTest) {
