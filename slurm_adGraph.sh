@@ -14,7 +14,7 @@ cd ${SLURM_SUBMIT_DIR}
 
 module purge
 module load compiler/gcc/8.2.0
-module load compiler/rocm/dtk-23.04
+module load compiler/rocm/dtk-23.10
 # module load nvidia/cuda/11.3
 module load compiler/cmake/3.23.3
 module list

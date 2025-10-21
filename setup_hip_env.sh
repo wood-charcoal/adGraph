@@ -4,7 +4,7 @@
 # This script sets up the environment variables needed to build and run adGraph with HIP/ROCm
 
 # Default ROCm installation path - modify if needed
-DEFAULT_ROCM_PATH="/public/software/compiler/rocm/dtk-23.04"
+DEFAULT_ROCM_PATH="/public/software/compiler/rocm/dtk-23.10"
 
 # Check if DTK_ROOT is already set
 if [ -z "$DTK_ROOT" ]; then
@@ -14,7 +14,7 @@ if [ -z "$DTK_ROOT" ]; then
     else
         echo "Error: DTK_ROOT not set and default ROCm path not found at $DEFAULT_ROCM_PATH"
         echo "Please set DTK_ROOT to your ROCm installation path"
-        echo "Example: export DTK_ROOT=/public/software/compiler/rocm/dtk-23.04"
+        echo "Example: export DTK_ROOT=/public/software/compiler/rocm/dtk-23.10"
         exit 1
     fi
 else
