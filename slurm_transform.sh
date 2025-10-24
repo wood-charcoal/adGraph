@@ -13,12 +13,12 @@ cd ${SLURM_SUBMIT_DIR}
 
 module purge
 module load compiler/gcc/8.2.0
-module load compiler/rocm/dtk-23.10
+module load compiler/rocm/dtk-24.04
 module load nvidia/cuda/11.3
 module load compiler/cmake/3.23.3
 module list
 
-export DTK_ROOT=/public/software/compiler/rocm/dtk-23.10
+export DTK_ROOT=/public/software/compiler/rocm/dtk-24.04
 export CXX=/public/software/compiler/gcc-8.2.0/bin/g++
 export CUDA_TOOLKIT_ROOT_DIR=/public/software/compiler/nvidia/cuda/11.3.0
 export CMAKE_CUDA_COMPILER=/public/software/compiler/nvidia/cuda/11.3.0/bin/nvcc
