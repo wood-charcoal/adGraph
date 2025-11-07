@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SOURCE_DIR="adGraph"
-TARGET_ROOT="adGraph_hip-content_only"
+TARGET_ROOT="adGraph"
 # 设置最大并发进程数 (推荐根据 CPU 核心数调整)
 MAX_THREADS=8 
 
