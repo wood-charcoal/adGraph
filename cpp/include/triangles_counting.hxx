@@ -63,7 +63,7 @@ public:
     // Simple destructor
     ~TrianglesCount();
 
-    NVGRAPH_ERROR count(TrianglesCountAlgo algo = TCOUNT_DEFAULT );
+    NVGRAPH_ERROR count(TrianglesCountAlgo algo = TCOUNT_THR ); // TCOUNT_DEFAULT );
     inline uint64_t get_triangles_count() const {return m_triangles_number;}
 };
 
