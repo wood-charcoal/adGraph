@@ -38,7 +38,7 @@ VERBOSE=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
 
-INSTALL_PREFIX=${DTK_ROOT}
+INSTALL_PREFIX=${CUDA_ROOT}
 PARALLEL_LEVEL=${PARALLEL_LEVEL:=""}
 BUILD_ABI=${BUILD_ABI:=ON}
 
@@ -88,13 +88,10 @@ fi
 
 ################################################################################
 # Configure, build, and install libnvgraph
+git submodule update --init --recursive
 mkdir -p ${LIBNVGRAPH_BUILD_DIR}
 cd ${LIBNVGRAPH_BUILD_DIR}
-cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-      -DCMAKE_CXX11_ABI= "${BUILD_ABI}" \
-      -D CMAKE_HIP_COMPILER_ROCM_ROOT= "${INSTALL_PREFIX}" \
-      -D CMAKE_HIP_ABI_COMPILED=Yes \
-      -D CMAKE_HIP_COMPILER= "${INSTALL_PREFIX}/llvm/bin/clang-14" \
-      -D CMAKE_CXX_COMPILER= "${INSTALL_PREFIX}/bin/hipcc"
+cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
+      -DCMAKE_CXX11_ABI=${BUILD_ABI} \
       -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
 make -j${PARALLEL_LEVEL} VERBOSE=${VERBOSE} ${INSTALL_TARGET}
