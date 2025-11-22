@@ -23,12 +23,12 @@
 #include <stdio.h>
 #include <time.h>
 
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 
 #define USE_CURAND 1
 
 #ifdef USE_CURAND
-#include <curand.h>
+#include <hiprand.h>
 #endif
 
 #include "nvgraph_error.hxx"
@@ -52,34 +52,34 @@
 //
 //  /// Get message string from cuRAND status code
 //  //static
-//  //const char* curandGetErrorString(curandStatus_t e) {
+//  //const char* curandGetErrorString(hiprandStatus_t e) {
 //  //  switch(e) {
-//  //  case CURAND_STATUS_SUCCESS:
-//  //    return "CURAND_STATUS_SUCCESS";
-//  //  case CURAND_STATUS_VERSION_MISMATCH:
-//  //    return "CURAND_STATUS_VERSION_MISMATCH";
-//  //  case CURAND_STATUS_NOT_INITIALIZED:
-//  //    return "CURAND_STATUS_NOT_INITIALIZED";
-//  //  case CURAND_STATUS_ALLOCATION_FAILED:
-//  //    return "CURAND_STATUS_ALLOCATION_FAILED";
-//  //  case CURAND_STATUS_TYPE_ERROR:
-//  //    return "CURAND_STATUS_TYPE_ERROR";
-//  //  case CURAND_STATUS_OUT_OF_RANGE:
-//  //    return "CURAND_STATUS_OUT_OF_RANGE";
-//  //  case CURAND_STATUS_LENGTH_NOT_MULTIPLE:
-//  //    return "CURAND_STATUS_LENGTH_NOT_MULTIPLE";
-//  //  case CURAND_STATUS_DOUBLE_PRECISION_REQUIRED:
-//  //    return "CURAND_STATUS_DOUBLE_PRECISION_REQUIRED";
-//  //  case CURAND_STATUS_LAUNCH_FAILURE:
-//  //    return "CURAND_STATUS_LAUNCH_FAILURE";
-//  //  case CURAND_STATUS_PREEXISTING_FAILURE:
-//  //    return "CURAND_STATUS_PREEXISTING_FAILURE";
-//  //  case CURAND_STATUS_INITIALIZATION_FAILED:
-//  //    return "CURAND_STATUS_INITIALIZATION_FAILED";
-//  //  case CURAND_STATUS_ARCH_MISMATCH:
-//  //    return "CURAND_STATUS_ARCH_MISMATCH";
-//  //  case CURAND_STATUS_INTERNAL_ERROR:
-//  //    return "CURAND_STATUS_INTERNAL_ERROR";
+//  //  case HIPRAND_STATUS_SUCCESS:
+//  //    return "HIPRAND_STATUS_SUCCESS";
+//  //  case HIPRAND_STATUS_VERSION_MISMATCH:
+//  //    return "HIPRAND_STATUS_VERSION_MISMATCH";
+//  //  case HIPRAND_STATUS_NOT_INITIALIZED:
+//  //    return "HIPRAND_STATUS_NOT_INITIALIZED";
+//  //  case HIPRAND_STATUS_ALLOCATION_FAILED:
+//  //    return "HIPRAND_STATUS_ALLOCATION_FAILED";
+//  //  case HIPRAND_STATUS_TYPE_ERROR:
+//  //    return "HIPRAND_STATUS_TYPE_ERROR";
+//  //  case HIPRAND_STATUS_OUT_OF_RANGE:
+//  //    return "HIPRAND_STATUS_OUT_OF_RANGE";
+//  //  case HIPRAND_STATUS_LENGTH_NOT_MULTIPLE:
+//  //    return "HIPRAND_STATUS_LENGTH_NOT_MULTIPLE";
+//  //  case HIPRAND_STATUS_DOUBLE_PRECISION_REQUIRED:
+//  //    return "HIPRAND_STATUS_DOUBLE_PRECISION_REQUIRED";
+//  //  case HIPRAND_STATUS_LAUNCH_FAILURE:
+//  //    return "HIPRAND_STATUS_LAUNCH_FAILURE";
+//  //  case HIPRAND_STATUS_PREEXISTING_FAILURE:
+//  //    return "HIPRAND_STATUS_PREEXISTING_FAILURE";
+//  //  case HIPRAND_STATUS_INITIALIZATION_FAILED:
+//  //    return "HIPRAND_STATUS_INITIALIZATION_FAILED";
+//  //  case HIPRAND_STATUS_ARCH_MISMATCH:
+//  //    return "HIPRAND_STATUS_ARCH_MISMATCH";
+//  //  case HIPRAND_STATUS_INTERNAL_ERROR:
+//  //    return "HIPRAND_STATUS_INTERNAL_ERROR";
 //  //  default:
 //  //    return "unknown cuRAND error";
 //  //  }
@@ -87,18 +87,18 @@
 //
 //  // curandGeneratorNormalX
 //  inline static
-//  curandStatus_t
-//  curandGenerateNormalX(curandGenerator_t generator,
+//  hiprandStatus_t
+//  curandGenerateNormalX(hiprandGenerator_t generator,
 //      float * outputPtr, size_t n,
 //      float mean, float stddev) {
-//    return curandGenerateNormal(generator, outputPtr, n, mean, stddev);
+//    return hiprandGenerateNormal(generator, outputPtr, n, mean, stddev);
 //  }
 //  inline static
-//  curandStatus_t
-//  curandGenerateNormalX(curandGenerator_t generator,
+//  hiprandStatus_t
+//  curandGenerateNormalX(hiprandGenerator_t generator,
 //      double * outputPtr, size_t n,
 //      double mean, double stddev) {
-//    return curandGenerateNormalDouble(generator, outputPtr,
+//    return hiprandGenerateNormalDouble(generator, outputPtr,
 //              n, mean, stddev);
 //  }
 //
@@ -261,7 +261,7 @@ namespace nvgraph
                       lanczosVecs_dev + IDX(0, *iter, n), 1);
       }
 
-      CHECK_HIP(cudaDeviceSynchronize());
+      CHECK_HIP(hipDeviceSynchronize());
 
       return 0;
     }
@@ -841,11 +841,11 @@ namespace nvgraph
 
 #ifdef USE_CURAND
     // Random number generator
-    curandGenerator_t randGen;
+    hiprandGenerator_t randGen;
     // Initialize random number generator
-    CHECK_HIPRAND(curandCreateGenerator(&randGen,
-                                        CURAND_RNG_PSEUDO_PHILOX4_32_10));
-    CHECK_HIPRAND(curandSetPseudoRandomGeneratorSeed(randGen,
+    CHECK_HIPRAND(hiprandCreateGenerator(&randGen,
+                                        HIPRAND_RNG_PSEUDO_PHILOX4_32_10));
+    CHECK_HIPRAND(hiprandSetPseudoRandomGeneratorSeed(randGen,
                                                      123456 /*time(NULL)*/));
     // Initialize initial Lanczos vector
     CHECK_HIPRAND(curandGenerateNormalX(randGen, lanczosVecs_dev, n + n % 2, zero, one));
@@ -971,7 +971,7 @@ namespace nvgraph
     free(Z_host);
     free(work_host);
 #ifdef USE_CURAND
-    CHECK_HIPRAND(curandDestroyGenerator(randGen));
+    CHECK_HIPRAND(hiprandDestroyGenerator(randGen));
 #endif
     return NVGRAPH_OK;
   }
@@ -1244,11 +1244,11 @@ namespace nvgraph
 
 #ifdef USE_CURAND
     // Random number generator
-    curandGenerator_t randGen;
+    hiprandGenerator_t randGen;
     // Initialize random number generator
-    CHECK_HIPRAND(curandCreateGenerator(&randGen,
-                                        CURAND_RNG_PSEUDO_PHILOX4_32_10));
-    CHECK_HIPRAND(curandSetPseudoRandomGeneratorSeed(randGen,
+    CHECK_HIPRAND(hiprandCreateGenerator(&randGen,
+                                        HIPRAND_RNG_PSEUDO_PHILOX4_32_10));
+    CHECK_HIPRAND(hiprandSetPseudoRandomGeneratorSeed(randGen,
                                                      123456));
     // Initialize initial Lanczos vector
     CHECK_HIPRAND(curandGenerateNormalX(randGen, lanczosVecs_dev, n + n % 2, zero, one));
@@ -1382,7 +1382,7 @@ namespace nvgraph
     free(Z_host);
     free(work_host);
 #ifdef USE_CURAND
-    CHECK_HIPRAND(curandDestroyGenerator(randGen));
+    CHECK_HIPRAND(hiprandDestroyGenerator(randGen));
 #endif
     return NVGRAPH_OK;
   }

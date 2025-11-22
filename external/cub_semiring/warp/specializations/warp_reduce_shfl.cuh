@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned across a CUDA thread warp.
+ * hipcub::WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned across a CUDA thread warp.
  */
 
 #pragma once
@@ -140,7 +140,7 @@ struct WarpReduceShfl
     /// Reduction (specialized for summation across uint32 types)
     __device__ __forceinline__ unsigned int ReduceStep(
         unsigned int    input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*reduction_op*/,   ///< [in] Binary reduction operator
+        hipcub::Sum        /*reduction_op*/,   ///< [in] Binary reduction operator
         int             last_lane,          ///< [in] Index of last lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
@@ -176,7 +176,7 @@ struct WarpReduceShfl
     /// Reduction (specialized for summation across fp32 types)
     __device__ __forceinline__ float ReduceStep(
         float           input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*reduction_op*/,   ///< [in] Binary reduction operator
+        hipcub::Sum        /*reduction_op*/,   ///< [in] Binary reduction operator
         int             last_lane,          ///< [in] Index of last lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
@@ -212,7 +212,7 @@ struct WarpReduceShfl
     /// Reduction (specialized for summation across unsigned long long types)
     __device__ __forceinline__ unsigned long long ReduceStep(
         unsigned long long  input,              ///< [in] Calling thread's input item.
-        cub::Sum            /*reduction_op*/,   ///< [in] Binary reduction operator
+        hipcub::Sum            /*reduction_op*/,   ///< [in] Binary reduction operator
         int                 last_lane,          ///< [in] Index of last lane in segment
         int                 offset)             ///< [in] Up-offset to pull from
     {
@@ -253,7 +253,7 @@ struct WarpReduceShfl
     /// Reduction (specialized for summation across long long types)
     __device__ __forceinline__ long long ReduceStep(
         long long           input,              ///< [in] Calling thread's input item.
-        cub::Sum            /*reduction_op*/,   ///< [in] Binary reduction operator
+        hipcub::Sum            /*reduction_op*/,   ///< [in] Binary reduction operator
         int                 last_lane,          ///< [in] Index of last lane in segment
         int                 offset)             ///< [in] Up-offset to pull from
     {
@@ -295,7 +295,7 @@ struct WarpReduceShfl
     /// Reduction (specialized for summation across double types)
     __device__ __forceinline__ double ReduceStep(
         double              input,              ///< [in] Calling thread's input item.
-        cub::Sum            /*reduction_op*/,   ///< [in] Binary reduction operator
+        hipcub::Sum            /*reduction_op*/,   ///< [in] Binary reduction operator
         int                 last_lane,          ///< [in] Index of last lane in segment
         int                 offset)             ///< [in] Up-offset to pull from
     {
@@ -338,11 +338,11 @@ struct WarpReduceShfl
     }
 
 
-    /// Reduction (specialized for swizzled ReduceByKeyOp<cub::Sum> across KeyValuePair<KeyT, ValueT> types)
+    /// Reduction (specialized for swizzled ReduceByKeyOp<hipcub::Sum> across KeyValuePair<KeyT, ValueT> types)
     template <typename ValueT, typename KeyT>
     __device__ __forceinline__ KeyValuePair<KeyT, ValueT> ReduceStep(
         KeyValuePair<KeyT, ValueT>                  input,              ///< [in] Calling thread's input item.
-        SwizzleScanOp<ReduceByKeyOp<cub::Sum> >     /*reduction_op*/,       ///< [in] Binary reduction operator
+        SwizzleScanOp<ReduceByKeyOp<hipcub::Sum> >     /*reduction_op*/,       ///< [in] Binary reduction operator
         int                                         last_lane,          ///< [in] Index of last lane in segment
         int                                         offset)             ///< [in] Up-offset to pull from
     {
@@ -353,7 +353,7 @@ struct WarpReduceShfl
         output.key = input.key;
         output.value = ReduceStep(
             input.value, 
-            cub::Sum(), 
+            hipcub::Sum(), 
             last_lane, 
             offset, 
             Int2Type<IsInteger<ValueT>::IS_SMALL_UNSIGNED>());
@@ -366,18 +366,18 @@ struct WarpReduceShfl
 
 
 
-    /// Reduction (specialized for swizzled ReduceBySegmentOp<cub::Sum> across KeyValuePair<OffsetT, ValueT> types)
+    /// Reduction (specialized for swizzled ReduceBySegmentOp<hipcub::Sum> across KeyValuePair<OffsetT, ValueT> types)
     template <typename ValueT, typename OffsetT>
     __device__ __forceinline__ KeyValuePair<OffsetT, ValueT> ReduceStep(
         KeyValuePair<OffsetT, ValueT>                 input,              ///< [in] Calling thread's input item.
-        SwizzleScanOp<ReduceBySegmentOp<cub::Sum> >   /*reduction_op*/,   ///< [in] Binary reduction operator
+        SwizzleScanOp<ReduceBySegmentOp<hipcub::Sum> >   /*reduction_op*/,   ///< [in] Binary reduction operator
         int                                           last_lane,          ///< [in] Index of last lane in segment
         int                                           offset)             ///< [in] Up-offset to pull from
     {
         KeyValuePair<OffsetT, ValueT> output;
 
-        output.value = ReduceStep(input.value, cub::Sum(), last_lane, offset, Int2Type<IsInteger<ValueT>::IS_SMALL_UNSIGNED>());
-        output.key = ReduceStep(input.key, cub::Sum(), last_lane, offset, Int2Type<IsInteger<OffsetT>::IS_SMALL_UNSIGNED>());
+        output.value = ReduceStep(input.value, hipcub::Sum(), last_lane, offset, Int2Type<IsInteger<ValueT>::IS_SMALL_UNSIGNED>());
+        output.key = ReduceStep(input.key, hipcub::Sum(), last_lane, offset, Int2Type<IsInteger<OffsetT>::IS_SMALL_UNSIGNED>());
 
         if (input.key > 0)
             output.value = input.value;

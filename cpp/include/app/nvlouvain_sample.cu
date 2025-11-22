@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 // Turn on to see stats for each level
 //#define ENABLE_LOG true
 #include "nvlouvain.cuh"

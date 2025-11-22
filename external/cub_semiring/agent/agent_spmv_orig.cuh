@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
+ * hipcub::AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
  */
 
 #pragma once
@@ -123,7 +123,7 @@ template <
     typename    SemiringT,                  ///< Semiring type
     bool        HAS_ALPHA,                  ///< Whether the input parameter \p alpha is 1
     bool        HAS_BETA,                   ///< Whether the input parameter \p beta is 0
-    int         PTX_ARCH = CUB_PTX_ARCH>    ///< PTX compute capability
+    int         PTX_ARCH = HIPCUB_ARCH>    ///< PTX compute capability
 struct AgentSpmv
 {
     //---------------------------------------------------------------------
@@ -333,13 +333,13 @@ struct AgentSpmv
             OffsetT column_idx          = wd_column_indices[nonzero_idx];
             ValueT  value               = wd_values[nonzero_idx];
 
-// #if (CUB_PTX_ARCH >= 350)
+// #if (HIPCUB_ARCH >= 350)
 //             ValueT vector_value         = wd_vector_x[column_idx];
 // #else
 //             ValueT vector_value         = spmv_params.t_vector_x[column_idx];
 // #endif
             ValueT  vector_value        = spmv_params.t_vector_x[column_idx];
-#if (CUB_PTX_ARCH >= 350)
+#if (HIPCUB_ARCH >= 350)
             vector_value                = wd_vector_x[column_idx];
 #endif
             ValueT nonzero              = SemiringT::times(value, vector_value);
@@ -426,7 +426,7 @@ struct AgentSpmv
         int         tile_num_rows           = tile_end_coord.x - tile_start_coord.x;
         int         tile_num_nonzeros       = tile_end_coord.y - tile_start_coord.y;
 
-#if (CUB_PTX_ARCH >= 520)
+#if (HIPCUB_ARCH >= 520)
 
         OffsetT*    s_tile_row_end_offsets  = &temp_storage.aliasable.merge_items[0].row_end_offset;
         ValueT*     s_tile_nonzeros         = &temp_storage.aliasable.merge_items[tile_num_rows + ITEMS_PER_THREAD].nonzero;
@@ -474,13 +474,13 @@ struct AgentSpmv
                 OffsetT column_idx              = wd_column_indices[tile_start_coord.y + nonzero_idx];
                 ValueT  value                   = wd_values[tile_start_coord.y + nonzero_idx];
 
-// #if (CUB_PTX_ARCH >= 350)
+// #if (HIPCUB_ARCH >= 350)
 //                 ValueT vector_value             = wd_vector_x[column_idx];
 // #else
 //                 ValueT vector_value             = spmv_params.t_vector_x[column_idx];
 // #endif
                 ValueT  vector_value            = spmv_params.t_vector_x[column_idx];
-#if (CUB_PTX_ARCH >= 350)
+#if (HIPCUB_ARCH >= 350)
                 vector_value                    = wd_vector_x[column_idx];
 #endif
                 ValueT  nonzero                 = SemiringT::times(value, vector_value);

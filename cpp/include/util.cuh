@@ -35,10 +35,10 @@ namespace nvlouvain
 
 #define CUDA_CALL(call)                                                                       \
   {                                                                                           \
-    cudaError_t cudaStatus = call;                                                            \
+    hipError_t cudaStatus = call;                                                            \
     if (hipSuccess != cudaStatus)                                                             \
       fprintf(stderr, "ERROR: CUDA call \"%s\" in line %d of file %s failed with %s (%d).\n", \
-              #call, __LINE__, __FILE__, cudaGetErrorString(cudaStatus), cudaStatus);         \
+              #call, __LINE__, __FILE__, hipGetErrorString(cudaStatus), cudaStatus);         \
   }
 
 #define THRUST_SAFE_CALL(call)                               \

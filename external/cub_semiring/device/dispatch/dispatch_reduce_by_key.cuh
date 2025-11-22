@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
@@ -29,7 +30,7 @@
 
 /**
  * \file
- * cub::DeviceReduceByKey provides device-wide, parallel operations for reducing segments of values residing within device-accessible memory.
+ * hipcub::DeviceReduceByKey provides device-wide, parallel operations for reducing segments of values residing within device-accessible memory.
  */
 
 #pragma once
@@ -248,16 +249,16 @@ namespace cub
          * Tuning policies of current PTX compiler pass
          ******************************************************************************/
 
-#if (CUB_PTX_ARCH >= 350)
+#if (HIPCUB_ARCH >= 350)
         typedef Policy350 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 300)
+#elif (HIPCUB_ARCH >= 300)
         typedef Policy300 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 200)
+#elif (HIPCUB_ARCH >= 200)
         typedef Policy200 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 130)
+#elif (HIPCUB_ARCH >= 130)
         typedef Policy130 PtxPolicy;
 
 #else
@@ -278,11 +279,11 @@ namespace cub
          * Initialize kernel dispatch configurations with the policies corresponding to the PTX assembly we will use
          */
         template <typename KernelConfig>
-        CUB_RUNTIME_FUNCTION __forceinline__ static void InitConfigs(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static void InitConfigs(
             int ptx_version,
             KernelConfig &reduce_by_key_config)
         {
-#if (CUB_PTX_ARCH > 0)
+#if (HIPCUB_ARCH > 0)
             (void)ptx_version;
 
             // We're on the device, so initialize the kernel dispatch configurations with the current PTX policy
@@ -325,7 +326,7 @@ namespace cub
             int tile_items;
 
             template <typename PolicyT>
-            CUB_RUNTIME_FUNCTION __forceinline__ void Init()
+            HIPCUB_RUNTIME_FUNCTION __forceinline__ void Init()
             {
                 block_threads = PolicyT::BLOCK_THREADS;
                 items_per_thread = PolicyT::ITEMS_PER_THREAD;
@@ -342,9 +343,9 @@ namespace cub
          * specified kernel functions.
          */
         template <
-            typename ScanInitKernelT,    ///< Function type of cub::DeviceScanInitKernel
-            typename ReduceByKeyKernelT> ///< Function type of cub::DeviceReduceByKeyKernelT
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+            typename ScanInitKernelT,    ///< Function type of hipcub::DeviceScanInitKernel
+            typename ReduceByKeyKernelT> ///< Function type of hipcub::DeviceReduceByKeyKernelT
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Dispatch(
             void *d_temp_storage,                       ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             KeysInputIteratorT d_keys_in,               ///< [in] Pointer to the input sequence of keys
@@ -358,8 +359,8 @@ namespace cub
             hipStream_t stream,                         ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
             bool debug_synchronous,                     ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
             int /*ptx_version*/,                        ///< [in] PTX version of dispatch kernels
-            ScanInitKernelT init_kernel,                ///< [in] Kernel function pointer to parameterization of cub::DeviceScanInitKernel
-            ReduceByKeyKernelT reduce_by_key_kernel,    ///< [in] Kernel function pointer to parameterization of cub::DeviceReduceByKeyKernel
+            ScanInitKernelT init_kernel,                ///< [in] Kernel function pointer to parameterization of hipcub::DeviceScanInitKernel
+            ReduceByKeyKernelT reduce_by_key_kernel,    ///< [in] Kernel function pointer to parameterization of hipcub::DeviceReduceByKeyKernel
             KernelConfig reduce_by_key_config)          ///< [in] Dispatch parameters that match the policy that \p reduce_by_key_kernel was compiled for
         {
 
@@ -381,21 +382,21 @@ namespace cub
             (void)reduce_by_key_config;
 
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 
 #else
 
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get device ordinal
                 int device_ordinal;
-                if (CubDebug(error = hipGetDevice(&device_ordinal)))
+                if (HipcubDebug(error = hipGetDevice(&device_ordinal)))
                     break;
 
                 // Get SM count
                 int sm_count;
-                if (CubDebug(error = cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
+                if (HipcubDebug(error = hipDeviceGetAttribute(&sm_count, hipDeviceAttributeMultiprocessorCount, device_ordinal)))
                     break;
 
                 // Number of input tiles
@@ -404,12 +405,12 @@ namespace cub
 
                 // Specify temporary storage allocation requirements
                 size_t allocation_sizes[1];
-                if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
+                if (HipcubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
                     break; // bytes needed for tile status descriptors
 
                 // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
                 void *allocations[1];
-                if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                if (HipcubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
                     break;
                 if (d_temp_storage == NULL)
                 {
@@ -419,13 +420,13 @@ namespace cub
 
                 // Construct the tile status interface
                 ScanTileStateT tile_state;
-                if (CubDebug(error = tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
+                if (HipcubDebug(error = tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
                     break;
 
                 // Log init_kernel configuration
                 int init_grid_size = CUB_MAX(1, (num_tiles + INIT_KERNEL_THREADS - 1) / INIT_KERNEL_THREADS);
                 if (debug_synchronous)
-                    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long)stream);
+                    _HipcubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long)stream);
 
                 // Invoke init_kernel to initialize tile descriptors
                 init_kernel<<<init_grid_size, INIT_KERNEL_THREADS, 0, stream>>>(
@@ -434,11 +435,11 @@ namespace cub
                     d_num_runs_out);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
                 // Return if empty problem
@@ -447,7 +448,7 @@ namespace cub
 
                 // Get SM occupancy for reduce_by_key_kernel
                 int reduce_by_key_sm_occupancy;
-                if (CubDebug(error = MaxSmOccupancy(
+                if (HipcubDebug(error = MaxSmOccupancy(
                                  reduce_by_key_sm_occupancy, // out
                                  reduce_by_key_kernel,
                                  reduce_by_key_config.block_threads)))
@@ -455,7 +456,7 @@ namespace cub
 
                 // Get max x-dimension of grid
                 int max_dim_x;
-                if (CubDebug(error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+                if (HipcubDebug(error = hipDeviceGetAttribute(&max_dim_x, hipDeviceAttributeMaxGridDimX, device_ordinal)))
                     break;
                 ;
 
@@ -465,7 +466,7 @@ namespace cub
                 {
                     // Log reduce_by_key_kernel configuration
                     if (debug_synchronous)
-                        _CubLog("Invoking %d reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
+                        _HipcubLog("Invoking %d reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                                 start_tile, scan_grid_size, reduce_by_key_config.block_threads, (long long)stream, reduce_by_key_config.items_per_thread, reduce_by_key_sm_occupancy);
 
                     // Invoke reduce_by_key_kernel
@@ -482,11 +483,11 @@ namespace cub
                         num_items);
 
                     // Check for failure to launch
-                    if (CubDebug(error = cudaPeekAtLastError()))
+                    if (HipcubDebug(error = hipPeekAtLastError()))
                         break;
 
                     // Sync the stream if specified to flush runtime errors
-                    if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                    if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                         break;
                 }
             } while (0);
@@ -499,7 +500,7 @@ namespace cub
         /**
          * Internal dispatch routine
          */
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Dispatch(
             void *d_temp_storage,                       ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             KeysInputIteratorT d_keys_in,               ///< [in] Pointer to the input sequence of keys
@@ -513,16 +514,16 @@ namespace cub
             hipStream_t stream,                         ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
             bool debug_synchronous)                     ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
         {
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get PTX version
                 int ptx_version;
-#if (CUB_PTX_ARCH == 0)
-                if (CubDebug(error = PtxVersion(ptx_version)))
+#if (HIPCUB_ARCH == 0)
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 #else
-                ptx_version = CUB_PTX_ARCH;
+                ptx_version = HIPCUB_ARCH;
 #endif
 
                 // Get kernel kernel dispatch configurations
@@ -530,7 +531,7 @@ namespace cub
                 InitConfigs(ptx_version, reduce_by_key_config);
 
                 // Dispatch
-                if (CubDebug(error = Dispatch(
+                if (HipcubDebug(error = Dispatch(
                                  d_temp_storage,
                                  temp_storage_bytes,
                                  d_keys_in,

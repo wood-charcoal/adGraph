@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -127,7 +128,7 @@ namespace nvgraph
   void DenseMatrix<IndexType_, ValueType_>::getCUDAStream(hipStream_t *_s)
   {
     *_s = this->s;
-    // CHECK_HIPBLAS(cublasGetStream(cublasHandle, _s));
+    // CHECK_HIPBLAS(hipblasGetStream(cublasHandle, _s));
   }
 
   /// Matrix-vector product for dense matrix class
@@ -254,7 +255,7 @@ namespace nvgraph
   void CsrMatrix<IndexType_, ValueType_>::getCUDAStream(hipStream_t *_s)
   {
     *_s = this->s;
-    // CHECK_HIPSPARSE(cusparseGetStream(Cusparse::get_handle(), _s));
+    // CHECK_HIPSPARSE(hipsparseGetStream(Cusparse::get_handle(), _s));
   }
   template <typename IndexType_, typename ValueType_>
   void CsrMatrix<IndexType_, ValueType_>::mm(IndexType_ k, ValueType_ alpha, const ValueType_ *__restrict__ x, ValueType_ beta, ValueType_ *__restrict__ y) const
@@ -283,16 +284,16 @@ namespace nvgraph
     {
       // analyse lower triangular factor
       CHECK_HIPSPARSE(cusparseCreateSolveAnalysisInfo(&info_l));
-      CHECK_HIPSPARSE(cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_LOWER));
-      CHECK_HIPSPARSE(cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_UNIT));
-      CHECK_HIPSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(), CUSPARSE_OPERATION_NON_TRANSPOSE, this->m, nnz, descrA, csrValA, csrRowPtrA, csrColIndA, info_l));
+      CHECK_HIPSPARSE(hipsparseSetMatFillMode(descrA, HIPSPARSE_FILL_MODE_LOWER));
+      CHECK_HIPSPARSE(hipsparseSetMatDiagType(descrA, HIPSPARSE_DIAG_TYPE_UNIT));
+      CHECK_HIPSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(), HIPSPARSE_OPERATION_NON_TRANSPOSE, this->m, nnz, descrA, csrValA, csrRowPtrA, csrColIndA, info_l));
       // analyse upper triangular factor
       CHECK_HIPSPARSE(cusparseCreateSolveAnalysisInfo(&info_u));
-      CHECK_HIPSPARSE(cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_UPPER));
-      CHECK_HIPSPARSE(cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_NON_UNIT));
-      CHECK_HIPSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(), CUSPARSE_OPERATION_NON_TRANSPOSE, this->m, nnz, descrA, csrValA, csrRowPtrA, csrColIndA, info_u));
+      CHECK_HIPSPARSE(hipsparseSetMatFillMode(descrA, HIPSPARSE_FILL_MODE_UPPER));
+      CHECK_HIPSPARSE(hipsparseSetMatDiagType(descrA, HIPSPARSE_DIAG_TYPE_NON_UNIT));
+      CHECK_HIPSPARSE(cusparseXcsrsm_analysis(Cusparse::get_handle(), HIPSPARSE_OPERATION_NON_TRANSPOSE, this->m, nnz, descrA, csrValA, csrRowPtrA, csrColIndA, info_u));
       // perform csrilu0 (should be slightly faster than csric0)
-      CHECK_HIPSPARSE(cusparseXcsrilu0(Cusparse::get_handle(), CUSPARSE_OPERATION_NON_TRANSPOSE, this->m, descrA, csrValA, csrRowPtrA, csrColIndA, info_l));
+      CHECK_HIPSPARSE(cusparseXcsrilu0(Cusparse::get_handle(), HIPSPARSE_OPERATION_NON_TRANSPOSE, this->m, descrA, csrValA, csrRowPtrA, csrColIndA, info_l));
       // set factored flag to true
       factored = true;
     }
@@ -305,13 +306,13 @@ namespace nvgraph
 
     // preconditioning Mx=f (where M = L*U, threfore x=U\(L\f))
     // solve lower triangular factor
-    CHECK_HIPSPARSE(cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_LOWER));
-    CHECK_HIPSPARSE(cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_UNIT));
-    CHECK_HIPSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(), CUSPARSE_OPERATION_NON_TRANSPOSE, this->m, k, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, info_l, fx, this->m, t, this->m));
+    CHECK_HIPSPARSE(hipsparseSetMatFillMode(descrA, HIPSPARSE_FILL_MODE_LOWER));
+    CHECK_HIPSPARSE(hipsparseSetMatDiagType(descrA, HIPSPARSE_DIAG_TYPE_UNIT));
+    CHECK_HIPSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(), HIPSPARSE_OPERATION_NON_TRANSPOSE, this->m, k, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, info_l, fx, this->m, t, this->m));
     // solve upper triangular factor
-    CHECK_HIPSPARSE(cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_UPPER));
-    CHECK_HIPSPARSE(cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_NON_UNIT));
-    CHECK_HIPSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(), CUSPARSE_OPERATION_NON_TRANSPOSE, this->m, k, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, info_u, t, this->m, fx, this->m));
+    CHECK_HIPSPARSE(hipsparseSetMatFillMode(descrA, HIPSPARSE_FILL_MODE_UPPER));
+    CHECK_HIPSPARSE(hipsparseSetMatDiagType(descrA, HIPSPARSE_DIAG_TYPE_NON_UNIT));
+    CHECK_HIPSPARSE(cusparseXcsrsm_solve(Cusparse::get_handle(), HIPSPARSE_OPERATION_NON_TRANSPOSE, this->m, k, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, info_u, t, this->m, fx, this->m));
   }
 
   /// Matrix-vector product for CSR matrix class
@@ -405,7 +406,7 @@ namespace nvgraph
 
     // Scale result vector
     if (beta == 0)
-      CHECK_HIP(cudaMemset(y, 0, (this->n) * sizeof(ValueType_)))
+      CHECK_HIP(hipMemset(y, 0, (this->n) * sizeof(ValueType_)))
     else if (beta != 1)
       thrust::transform(thrust::device_pointer_cast(y),
                         thrust::device_pointer_cast(y + this->n),
@@ -465,7 +466,7 @@ namespace nvgraph
     if (beta == 0.0)
     {
       // set vectors to 0 (WARNING: notice that you need to set, not scale, because of NaNs corner case)
-      CHECK_HIP(cudaMemset(y, 0, t * sizeof(ValueType_)));
+      CHECK_HIP(hipMemset(y, 0, t * sizeof(ValueType_)));
       diagmm<IndexType_, ValueType_, true><<<gridDim, blockDim, 0, A->s>>>(this->n, k, alpha, D.raw(), x, beta, y);
     }
     else

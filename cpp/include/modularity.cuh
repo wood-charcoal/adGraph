@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -15,8 +16,8 @@
  */
 #pragma once
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/reduce.h>
@@ -197,7 +198,7 @@ namespace nvlouvain
                                                        cluster_ptr, cluster_inv_ptr_ptr, cluster_inv_ind_ptr,
                                                        weighted, k_vec_ptr, Q_arr_ptr, temp_i_ptr);
 
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     ValType Q = thrust::reduce(thrust::cuda::par, Q_arr_ptr, Q_arr_ptr + n_vertex, (ValType)(0.0));
 
@@ -240,7 +241,7 @@ namespace nvlouvain
     IdxType *cluster_inv_ptr_ptr = thrust::raw_pointer_cast(cluster_inv_ptr.data());
 
     generate_cluster_inv_ptr<<<nblocks, nthreads>>>(n_vertex, c_size, cluster_iter, cluster_inv_ptr_ptr);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
 #ifdef DEBUG
     if ((unsigned)c_size + 1 > cluster_inv_ptr.size())

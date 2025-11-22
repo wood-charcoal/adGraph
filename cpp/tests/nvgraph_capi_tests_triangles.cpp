@@ -65,7 +65,7 @@ template <typename T>
 bool enough_device_memory(int n, int nnz, size_t add)
 {
     size_t mtotal, mfree;
-    cudaMemGetInfo(&mfree, &mtotal);
+    hipMemGetInfo(&mfree, &mtotal);
     if (mfree > add + sizeof(T)*3*(n + nnz)) 
         return true;
     return false;
@@ -289,7 +289,7 @@ class TriCountRefGraphCheck : public ::testing::TestWithParam<TriCount_Usecase_t
         uint64_t res = 0;
 
         status = nvgraphTriangleCount(handle, g1, &res);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
         // run
@@ -304,7 +304,7 @@ class TriCountRefGraphCheck : public ::testing::TestWithParam<TriCount_Usecase_t
                 status = nvgraphTriangleCount(handle, g1, &res);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0*(stop-start)/repeat);
         }

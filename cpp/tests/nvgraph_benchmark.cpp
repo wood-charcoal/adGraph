@@ -67,7 +67,7 @@ extern "C"
 
 #define CUDA_SAFE_CALL(call)                                                                        \
     {                                                                                               \
-        cudaError_t status = (call);                                                                \
+        hipError_t status = (call);                                                                \
         if (hipSuccess != status)                                                                   \
         {                                                                                           \
             std::cout << "Error #" << status << " in " << __FILE__ << ":" << __LINE__ << std::endl; \
@@ -236,7 +236,7 @@ void run_srspmv_bench(const SrSPMV_Usecase &param)
     int repeat = std::max(param.repeats, 1);
     NVGRAPH_SAFE_CALL(nvgraphSrSpmv(handle, g1, weight_index, (void *)&alphaT, x_index, (void *)&betaT, y_index, sr));
     NVGRAPH_SAFE_CALL(nvgraphSrSpmv(handle, g1, weight_index, (void *)&alphaT, x_index, (void *)&betaT, y_index, sr));
-    CUDA_SAFE_CALL(cudaDeviceSynchronize());
+    CUDA_SAFE_CALL(hipDeviceSynchronize());
     std::cout << "Running spmv for " << repeat << " times..." << std::endl;
     std::cout << "n = " << n << ", nnz = " << nnz << std::endl;
     for (int i = 0; i < repeat; i++)
@@ -244,7 +244,7 @@ void run_srspmv_bench(const SrSPMV_Usecase &param)
         start = second();
         start = second();
         NVGRAPH_SAFE_CALL(nvgraphSrSpmv(handle, g1, weight_index, (void *)&alphaT, x_index, (void *)&betaT, y_index, sr));
-        CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        CUDA_SAFE_CALL(hipDeviceSynchronize());
         stop = second();
         total += stop - start;
     }
@@ -799,11 +799,11 @@ void run_modularity_bench(const ModMax_Usecase &param)
 
     // could also be on device
     int *clustering_d;
-    cudaMalloc((void **)&clustering_d, n * sizeof(int));
+    hipMalloc((void **)&clustering_d, n * sizeof(int));
     T *eigVals_d;
-    cudaMalloc((void **)&eigVals_d, clustering_params.n_clusters * sizeof(T));
+    hipMalloc((void **)&eigVals_d, clustering_params.n_clusters * sizeof(T));
     T *eigVecs_d;
-    cudaMalloc((void **)&eigVecs_d, n * clustering_params.n_clusters * sizeof(T));
+    hipMalloc((void **)&eigVecs_d, n * clustering_params.n_clusters * sizeof(T));
 
     NVGRAPH_SAFE_CALL(nvgraphCreateGraphDescr(handle, &g1));
 
@@ -950,11 +950,11 @@ void run_balancedCut_bench(const BalancedCut_Usecase &param)
 
     // could also be on device
     int *clustering_d;
-    cudaMalloc((void **)&clustering_d, n * sizeof(int));
+    hipMalloc((void **)&clustering_d, n * sizeof(int));
     T *eigVals_d;
-    cudaMalloc((void **)&eigVals_d, clustering_params.n_clusters * sizeof(T));
+    hipMalloc((void **)&eigVals_d, clustering_params.n_clusters * sizeof(T));
     T *eigVecs_d;
-    cudaMalloc((void **)&eigVecs_d, n * clustering_params.n_clusters * sizeof(T));
+    hipMalloc((void **)&eigVecs_d, n * clustering_params.n_clusters * sizeof(T));
 
     NVGRAPH_SAFE_CALL(nvgraphCreateGraphDescr(handle, &g1));
 

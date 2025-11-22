@@ -28,14 +28,14 @@ namespace nvgraph
   void coo2csr(const int *cooRowInd,
                int nnz, int m, int *csrSortedRowPtr, hipsparseIndexBase_t idxBase)
   {
-    CHECK_HIPSPARSE(cusparseXcoo2csr(Hipsparse::get_handle(),
+    CHECK_HIPSPARSE(hipsparseXcoo2csr(Hipsparse::get_handle(),
                                      cooRowInd, nnz, m, csrSortedRowPtr, idxBase));
   }
 
   void csr2csc(int m, int n, int nnz,
                const void *csrVal, const int *csrRowPtr, const int *csrColInd,
                void *cscVal, int *cscRowInd, int *cscColPtr,
-               cusparseAction_t copyValues, hipsparseIndexBase_t idxBase,
+               hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipblasDatatype_t *dataType)
   {
     CHECK_HIPSPARSE(cusparseCsr2cscEx(Hipsparse::get_handle(),
@@ -47,7 +47,7 @@ namespace nvgraph
   void csc2csr(int m, int n, int nnz,
                const void *cscVal, const int *cscRowInd, const int *cscColPtr,
                void *csrVal, int *csrRowPtr, int *csrColInd,
-               cusparseAction_t copyValues, hipsparseIndexBase_t idxBase,
+               hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipblasDatatype_t *dataType)
   {
     CHECK_HIPSPARSE(cusparseCsr2cscEx(Hipsparse::get_handle(),
@@ -150,7 +150,7 @@ namespace nvgraph
   ////////////////////////// Utility functions //////////////////////////
   void createIdentityPermutation(int n, int *p)
   {
-    CHECK_HIPSPARSE(cusparseCreateIdentityPermutation(Hipsparse::get_handle(), n, p));
+    CHECK_HIPSPARSE(hipsparseCreateIdentityPermutation(Hipsparse::get_handle(), n, p));
   }
 
   void gthrX(int nnz, const void *y, void *xVal, const int *xInd,
@@ -158,29 +158,29 @@ namespace nvgraph
   {
     if (*dataType == HIPBLAS_R_32F)
     {
-      CHECK_HIPSPARSE(cusparseSgthr(Hipsparse::get_handle(), nnz, (float *)y, (float *)xVal, xInd, idxBase));
+      CHECK_HIPSPARSE(hipsparseSgthr(Hipsparse::get_handle(), nnz, (float *)y, (float *)xVal, xInd, idxBase));
     }
     else if (*dataType == HIPBLAS_R_64F)
     {
-      CHECK_HIPSPARSE(cusparseDgthr(Hipsparse::get_handle(), nnz, (double *)y, (double *)xVal, xInd, idxBase));
+      CHECK_HIPSPARSE(hipsparseDgthr(Hipsparse::get_handle(), nnz, (double *)y, (double *)xVal, xInd, idxBase));
     }
   }
 
   void cooSortBufferSize(int m, int n, int nnz, const int *cooRows, const int *cooCols, size_t *pBufferSizeInBytes)
   {
-    CHECK_HIPSPARSE(cusparseXcoosort_bufferSizeExt(Hipsparse::get_handle(),
+    CHECK_HIPSPARSE(hipsparseXcoosort_bufferSizeExt(Hipsparse::get_handle(),
                                                    m, n, nnz,
                                                    cooRows, cooCols, pBufferSizeInBytes));
   }
   void cooGetSourcePermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer)
   {
-    CHECK_HIPSPARSE(cusparseXcoosortByRow(Hipsparse::get_handle(),
+    CHECK_HIPSPARSE(hipsparseXcoosortByRow(Hipsparse::get_handle(),
                                           m, n, nnz,
                                           cooRows, cooCols, p, pBuffer));
   }
   void cooGetDestinationPermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer)
   {
-    CHECK_HIPSPARSE(cusparseXcoosortByColumn(Hipsparse::get_handle(),
+    CHECK_HIPSPARSE(hipsparseXcoosortByColumn(Hipsparse::get_handle(),
                                              m, n, nnz,
                                              cooRows, cooCols, p, pBuffer));
   }

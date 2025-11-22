@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2017, NVIDIA CORPORATION.  All rights reserved.
@@ -28,7 +29,7 @@
 
 /**
  * \file
- * The cub::BlockDiscontinuity class provides [<em>collective</em>](index.html#sec0) methods for flagging discontinuities within an ordered set of items partitioned across a CUDA thread block.
+ * The hipcub::BlockDiscontinuity class provides [<em>collective</em>](index.html#sec0) methods for flagging discontinuities within an ordered set of items partitioned across a CUDA thread block.
  */
 
 #pragma once
@@ -48,7 +49,7 @@ template <
     int         BLOCK_DIM_X,
     int         BLOCK_DIM_Y     = 1,
     int         BLOCK_DIM_Z     = 1,
-    int         PTX_ARCH        = CUB_PTX_ARCH>
+    int         PTX_ARCH        = HIPCUB_ARCH>
 class BlockAdjacentDifference
 {
 private:

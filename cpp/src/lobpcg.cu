@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -20,11 +21,11 @@
 #include <time.h>
 #include <math.h>
 
-#include <cuda.h>
-#include <cublas_v2.h>
+#include <hip/hip_runtime.h>
+#include <hipblas.h>
 #include <cusolverDn.h>
-#include <cusparse.h>
-#include <curand.h>
+#include <hipsparse.h>
+#include <hiprand.h>
 // #include "spectral_parameters.h"
 // #include "cuda_helper.h"
 // #include "cublas_helper.h"
@@ -46,7 +47,7 @@ static double timer(void)
 {
 #ifdef COLLECT_TIME_STATISTICS
     struct timeval tv;
-    cudaDeviceSynchronize();
+    hipDeviceSynchronize();
     gettimeofday(&tv, NULL);
     return (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
 #else
@@ -372,7 +373,7 @@ namespace nvgraph
         t_start = timer();
 
         // Random number generator
-        curandGenerator_t randGen;
+        hiprandGenerator_t randGen;
 
         // -------------------------------------------------------
         // Check that parameters are valid
@@ -426,19 +427,19 @@ namespace nvgraph
         // create a CUDA stream
         hipEventCreate(&event);
         hipCheckError();
-        cudaStreamCreate(&s_alg);
+        hipStreamCreate(&s_alg);
         hipCheckError();
         /// s_alg=NULL;
 
         // set pointer mode in CUBLAS
-        CHECK_HIPBLAS(cublasSetPointerMode(cublasHandle, CUBLAS_POINTER_MODE_HOST));
+        CHECK_HIPBLAS(hipblasSetPointerMode(cublasHandle, HIPBLAS_POINTER_MODE_HOST));
 
         // save and set streams in CUBLAS and CUSOLVER/MAGMA
-        CHECK_HIPBLAS(cublasGetStream(cublasHandle, &s_cublas));
+        CHECK_HIPBLAS(hipblasGetStream(cublasHandle, &s_cublas));
         CHECK_HIPBLAS(hipblasSetStream(cublasHandle, s_alg));
         // if (use_magma) {
-        //     CHECK_HIPBLAS(magmablasGetKernelStream(&s_magma)); //returns cublasStatus_t
-        //     CHECK_HIPBLAS(magmablasSetKernelStream(s_alg));    //returns cublasStatus_t
+        //     CHECK_HIPBLAS(magmablasGetKernelStream(&s_magma)); //returns hipblasStatus_t
+        //     CHECK_HIPBLAS(magmablasSetKernelStream(s_alg));    //returns hipblasStatus_t
         // }
         // else {
         CHECK_HIPSOLVER(cusolverDnGetStream(cusolverHandle, &s_cusolver));
@@ -449,8 +450,8 @@ namespace nvgraph
         L->setCUDAStream(s_alg);
 
         // Initialize random number generator
-        CHECK_HIPRAND(curandCreateGenerator(&randGen, CURAND_RNG_PSEUDO_PHILOX4_32_10));
-        CHECK_HIPRAND(curandSetPseudoRandomGeneratorSeed(randGen, 123456 /*time(NULL)*/));
+        CHECK_HIPRAND(hiprandCreateGenerator(&randGen, HIPRAND_RNG_PSEUDO_PHILOX4_32_10));
+        CHECK_HIPRAND(hiprandSetPseudoRandomGeneratorSeed(randGen, 123456 /*time(NULL)*/));
 
         // Initialize initial LOBPCG subspace
         CHECK_HIPRAND(curandGenerateNormalX(randGen, X, k * n, zero, one));
@@ -458,11 +459,11 @@ namespace nvgraph
         // print_matrix<IndexType_,ValueType_,true>(3,3,X,n,"X");
 
         // set nxk matrices P=0, AP=0 and BP=0
-        cudaMemsetAsync(P, 0, n * k * sizeof(ValueType_), s_alg);
+        hipMemsetAsync(P, 0, n * k * sizeof(ValueType_), s_alg);
         hipCheckError();
-        cudaMemsetAsync(AP, 0, n * k * sizeof(ValueType_), s_alg);
+        hipMemsetAsync(AP, 0, n * k * sizeof(ValueType_), s_alg);
         hipCheckError();
-        cudaMemsetAsync(BP, 0, n * k * sizeof(ValueType_), s_alg);
+        hipMemsetAsync(BP, 0, n * k * sizeof(ValueType_), s_alg);
         hipCheckError();
 
         // if (use_magma) {
@@ -488,7 +489,7 @@ namespace nvgraph
 
         if (use_throttle)
         {
-            cudaHostAlloc(&h_nrmR, 2 * sizeof(h_nrmR[0]), cudaHostAllocDefault); // pinned memory
+            hipHostAlloc(&h_nrmR, 2 * sizeof(h_nrmR[0]), hipHostMallocDefault); // pinned memory
             hipCheckError();
         }
         else
@@ -499,7 +500,7 @@ namespace nvgraph
         h_kappa_history = (ValueType_ *)malloc((mit + 1) * sizeof(h_kappa_history[0]));
         if ((!h_kappa_history) || (!h_nrmR))
         {
-            WARNING("lobpcg_simplified - malloc/cudaHostAlloc failed");
+            WARNING("lobpcg_simplified - malloc/hipHostAlloc failed");
             return -1;
         }
         h_kappa_history[0] = -log10(eps) / 2.0;
@@ -524,7 +525,7 @@ namespace nvgraph
 
         // G = X'*BX
         t1 = timer();
-        CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, k, k, n, &one, X, n, BX, n, &zero, G, k));
+        CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, k, k, n, &one, X, n, BX, n, &zero, G, k));
         t2 = timer();
         t_bdot += t2 - t1;
         // print_matrix<IndexType_,ValueType_,true>(k,k,G,k,"G=X'*BX");
@@ -542,11 +543,11 @@ namespace nvgraph
         t_potrf += t2 - t1;
         // print_matrix<IndexType_,ValueType_,true>(k,k,G,k,"S=chol(G,lower_part_stored)");
 
-        // X = X/S (notice that in MATLAB S has L', therefore extra transpose (CUBLAS_OP_T) is required below)
+        // X = X/S (notice that in MATLAB S has L', therefore extra transpose (HIPBLAS_OP_T) is required below)
         t1 = timer();
-        CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, n, k, &one, G, k, X, n));
+        CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_RIGHT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, n, k, &one, G, k, X, n));
         // BX=BX/S
-        CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, n, k, &one, G, k, BX, n));
+        CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_RIGHT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, n, k, &one, G, k, BX, n));
         t2 = timer();
         t_trsm += t2 - t1;
         // print_matrix<IndexType_,ValueType_,true>(3,3,X, n,"X = X/S");
@@ -561,7 +562,7 @@ namespace nvgraph
 
         // H = X'*AX
         t1 = timer();
-        CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, k, k, n, &one, X, n, AX, n, &zero, H, k));
+        CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, k, k, n, &one, X, n, AX, n, &zero, H, k));
         t2 = timer();
         t_bdot += t2 - t1;
         // print_matrix<IndexType_,ValueType_,true>(k,k,H,k,"H=X'*A*X");
@@ -585,15 +586,15 @@ namespace nvgraph
 
         // X = X*W
         t1 = timer();
-        CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k, &one, X, n, H, k, &zero, AR, n));
+        CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k, &one, X, n, H, k, &zero, AR, n));
         hipMemcpyAsync(X, AR, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
         hipCheckError();
         // BX = BX*W
-        CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k, &one, BX, n, H, k, &zero, AR, n));
+        CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k, &one, BX, n, H, k, &zero, AR, n));
         hipMemcpyAsync(BX, AR, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
         hipCheckError();
         // AX = AX*W (notice that R=AX below, which we will use later on when computing residual R)
-        CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k, &one, AX, n, H, k, &zero, R, n));
+        CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k, &one, AX, n, H, k, &zero, R, n));
         hipMemcpyAsync(AX, R, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
         hipCheckError();
         t2 = timer();
@@ -622,7 +623,7 @@ namespace nvgraph
                 if ((i % 2) == 0)
                 {
                     // notice can not use G=R'*BR, because it is != R'*R, which is needed at this point
-                    CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, k, k, n, &one, R, n, R, n, &zero, G, k));
+                    CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, k, k, n, &one, R, n, R, n, &zero, G, k));
                     collect_sqrt_memcpy<IndexType_, ValueType_>(k, G, k, nrmR, s_alg);
                     hipMemcpyAsync(h_nrmR, &nrmR[k - 1], sizeof(ValueType_), hipMemcpyDeviceToHost, s_alg);
                     hipCheckError();
@@ -666,12 +667,12 @@ namespace nvgraph
             if (use_R_orthogonalization)
             {
                 t1 = timer();
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, k, k, n, &one, BX, n, R, n, &zero, G, k));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, k, k, n, &one, BX, n, R, n, &zero, G, k));
                 t2 = timer();
                 t_bdot += t2 - t1;
 
                 t1 = timer();
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k, &mone, X, n, G, k, &one, R, n));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k, &mone, X, n, G, k, &one, R, n));
                 t2 = timer();
                 t_gemm += t2 - t1;
             }
@@ -688,7 +689,7 @@ namespace nvgraph
             }
             // G=R'*BR
             t1 = timer();
-            CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, k, k, n, &one, R, n, BR, n, &zero, G, k));
+            CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, k, k, n, &one, R, n, BR, n, &zero, G, k));
             t2 = timer();
             t_bdot += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(k,k,G,k,"G=R'*BR");
@@ -706,11 +707,11 @@ namespace nvgraph
             t_potrf += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(k,k,G,k,"S=chol(G,lower_part_stored)");
 
-            // R = R/S (notice that in MATLAB S has L', therefore extra transpose (CUBLAS_OP_T) is required below)
+            // R = R/S (notice that in MATLAB S has L', therefore extra transpose (HIPBLAS_OP_T) is required below)
             t1 = timer();
-            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, n, k, &one, G, k, R, n));
+            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_RIGHT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, n, k, &one, G, k, R, n));
             // BR=BR/S
-            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, n, k, &one, G, k, BR, n));
+            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_RIGHT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, n, k, &one, G, k, BR, n));
             t2 = timer();
             t_trsm += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(3,3, R,n,"R = R/S");
@@ -721,7 +722,7 @@ namespace nvgraph
             // print_matrix<IndexType_,ValueType_,true>(sz,sz,Y,sz,"Y");
             // print_matrix<IndexType_,ValueType_,true>(sz,sz,Q,sz,"Q");
             t1 = timer();
-            CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, sz, sz, n, &one, Y, n, Q, n, &zero, G, sz));
+            CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, sz, sz, n, &one, Y, n, Q, n, &zero, G, sz));
             t2 = timer();
             t_bdot += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(sz,sz,G,sz,"G=Y'*Q");
@@ -778,7 +779,7 @@ namespace nvgraph
                 // printf("restart=%d (%d, %d, %d, %d) (%f %f %f)\n",i,(int)round(log(k)),i-10-((int)round(log(k))),start,i-start+1,kappa,kappa_average,max_kappa);
                 // recompute G=Y'*Q and corresponding condition number (excluding P)
                 t1 = timer();
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, sz, sz, n, &one, Y, n, Q, n, &zero, G, sz));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, sz, sz, n, &one, Y, n, Q, n, &zero, G, sz));
                 t2 = timer();
                 t_bdot += t2 - t1;
                 // print_matrix<IndexType_,ValueType_,true>(sz,sz,G,sz,"G=Y'*Y");
@@ -814,7 +815,7 @@ namespace nvgraph
             // lower triangle of G (including diagonal), so it must be recomputed again.
             // recompute G=Y'*Q
             t1 = timer();
-            CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, sz, sz, n, &one, Y, n, Q, n, &zero, G, sz));
+            CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, sz, sz, n, &one, Y, n, Q, n, &zero, G, sz));
             t2 = timer();
             t_bdot += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(sz,sz,G,sz,"G=Y'*Q (recomputing)");
@@ -828,7 +829,7 @@ namespace nvgraph
 
             // H = Y'*Z
             t1 = timer();
-            CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, sz, sz, n, &one, Y, n, Z, n, &zero, H, sz));
+            CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, sz, sz, n, &one, Y, n, Z, n, &zero, H, sz));
             t2 = timer();
             t_bdot += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(sz,sz,H,sz,"H=Y'*A*Y");
@@ -847,10 +848,10 @@ namespace nvgraph
             t_potrf += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(sz,sz,G,sz,"S=chol(G,lower_part_stored)");
 
-            // H = S'\ H /S (notice that in MATLAB S has L', therefore extra transpose (CUBLAS_OP_T) is required below)
+            // H = S'\ H /S (notice that in MATLAB S has L', therefore extra transpose (HIPBLAS_OP_T) is required below)
             t1 = timer();
-            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, sz, sz, &one, G, sz, H, sz));
-            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, sz, sz, &one, G, sz, H, sz));
+            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_RIGHT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, sz, sz, &one, G, sz, H, sz));
+            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_LEFT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_N, HIPBLAS_DIAG_NON_UNIT, sz, sz, &one, G, sz, H, sz));
             t2 = timer();
             t_trsm += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(sz,sz,H,sz,"H = S'\\ H /S");
@@ -879,7 +880,7 @@ namespace nvgraph
 
             // W=S\W (recover original eigvectors)
             t1 = timer();
-            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, sz, sz, &one, G, sz, H, sz));
+            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_LEFT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, sz, sz, &one, G, sz, H, sz));
             t2 = timer();
             t_trsm += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(sz,sz,H,sz,"W=S\\W");
@@ -887,15 +888,15 @@ namespace nvgraph
             // WARNING: using eigVecs_dev as a temporary space
             // X =Y*W(:,1:k); //notice can not use X  for the result directly, because it is part of Y (and aliased by Y)
             t1 = timer();
-            CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, sz, &one, Y, n, H, sz, &zero, eigVecs_dev, n));
+            CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, sz, &one, Y, n, H, sz, &zero, eigVecs_dev, n));
             hipMemcpyAsync(X, eigVecs_dev, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
             hipCheckError();
             // BX=Q*W(:,1:k); //notice can not use BX for the result directly, because it is part of Q (and aliased by Q)
-            CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, sz, &one, Q, n, H, sz, &zero, eigVecs_dev, n));
+            CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, sz, &one, Q, n, H, sz, &zero, eigVecs_dev, n));
             hipMemcpyAsync(BX, eigVecs_dev, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
             hipCheckError();
             // AX=Z*W(:,1:k); //notice can not use AX for the result directly, because it is part of Z (and aliased by Z)
-            CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, sz, &one, Z, n, H, sz, &zero, eigVecs_dev, n));
+            CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, sz, &one, Z, n, H, sz, &zero, eigVecs_dev, n));
             hipMemcpyAsync(AX, eigVecs_dev, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
             hipCheckError();
             t2 = timer();
@@ -909,11 +910,11 @@ namespace nvgraph
             if (sz == k2)
             {
                 // P = R*W(k+1:2*k,1:k);
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k, &one, R, n, &H[k], sz, &zero, P, n));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k, &one, R, n, &H[k], sz, &zero, P, n));
                 // BP=BR*W(k+1:2*k,1:k);
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k, &one, BR, n, &H[k], sz, &zero, BP, n));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k, &one, BR, n, &H[k], sz, &zero, BP, n));
                 // AP=AR*W(k+1:2*k,1:k);
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k, &one, AR, n, &H[k], sz, &zero, AP, n));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k, &one, AR, n, &H[k], sz, &zero, AP, n));
                 // print_matrix<IndexType_,ValueType_,true>(3,3, P,n,"P = R*W(k+1:2*k,1:k)");
                 // print_matrix<IndexType_,ValueType_,true>(3,3,BP,n,"BP=BR*W(k+1:2*k,1:k)");
                 // print_matrix<IndexType_,ValueType_,true>(3,3,AP,n,"AP=AR*W(k+1:2*k,1:k)");
@@ -921,15 +922,15 @@ namespace nvgraph
             else
             { //(sz == k3)
                 // P= R*W(k+1:2*k,1:k) +  P*W(2*k+1:3*k,1:k); and recall that Y = [X,R,P]
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k2, &one, &Y[n * k], n, &H[k], sz, &zero, eigVecs_dev, n));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k2, &one, &Y[n * k], n, &H[k], sz, &zero, eigVecs_dev, n));
                 hipMemcpyAsync(P, eigVecs_dev, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
                 hipCheckError();
                 // BP=BR*W(k+1:2*k,1:k) + BP*W(2*k+1:3*k,1:k); and recall that Q = [BX,BR,BP]
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k2, &one, &Q[n * k], n, &H[k], sz, &zero, eigVecs_dev, n));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k2, &one, &Q[n * k], n, &H[k], sz, &zero, eigVecs_dev, n));
                 hipMemcpyAsync(BP, eigVecs_dev, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
                 hipCheckError();
                 // AP=AR*W(k+1:2*k,1:k) + AP*W(2*k+1:3*k,1:k); and recall that Z = [AX,AR,AP]
-                CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, k, k2, &one, &Z[n * k], n, &H[k], sz, &zero, eigVecs_dev, n));
+                CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_N, HIPBLAS_OP_N, n, k, k2, &one, &Z[n * k], n, &H[k], sz, &zero, eigVecs_dev, n));
                 hipMemcpyAsync(AP, eigVecs_dev, n * k * sizeof(ValueType_), hipMemcpyDeviceToDevice, s_alg);
                 hipCheckError();
                 // print_matrix<IndexType_,ValueType_,true>(3,3, P,n,"P = R*W(k+1:2*k,1:k) +  P*W(2*k+1:3*k,1:k)");
@@ -942,7 +943,7 @@ namespace nvgraph
             // orthonormalize P
             // G = P'*BP
             t1 = timer();
-            CHECK_HIPBLAS(cublasXgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, k, k, n, &one, P, n, BP, n, &zero, G, k));
+            CHECK_HIPBLAS(cublasXgemm(cublasHandle, HIPBLAS_OP_T, HIPBLAS_OP_N, k, k, n, &one, P, n, BP, n, &zero, G, k));
             t2 = timer();
             t_bdot += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(k,k,G,k,"G=P'*BP");
@@ -960,13 +961,13 @@ namespace nvgraph
             t_potrf += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(k,k,G,k,"S=chol(G,lower_part_stored)");
 
-            // P  =  P/S (notice that in MATLAB S has L', therefore extra transpose (CUBLAS_OP_T) is required below)
+            // P  =  P/S (notice that in MATLAB S has L', therefore extra transpose (HIPBLAS_OP_T) is required below)
             t1 = timer();
-            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, n, k, &one, G, k, P, n));
+            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_RIGHT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, n, k, &one, G, k, P, n));
             // BP = BP/S
-            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, n, k, &one, G, k, BP, n));
+            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_RIGHT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, n, k, &one, G, k, BP, n));
             // AP = AP/S
-            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, n, k, &one, G, k, AP, n));
+            CHECK_HIPBLAS(cublasXtrsm(cublasHandle, HIPBLAS_SIDE_RIGHT, HIPBLAS_FILL_MODE_LOWER, HIPBLAS_OP_T, HIPBLAS_DIAG_NON_UNIT, n, k, &one, G, k, AP, n));
             t2 = timer();
             t_trsm += t2 - t1;
             // print_matrix<IndexType_,ValueType_,true>(3,3, P,n,"P = P/S");
@@ -990,7 +991,7 @@ namespace nvgraph
         hipCheckError();
 
         // free temporary host memory
-        cudaStreamSynchronize(s_alg);
+        hipStreamSynchronize(s_alg);
         hipCheckError();
         // if (use_magma) {
         //     if (h_E) free(h_E);
@@ -1014,13 +1015,13 @@ namespace nvgraph
         hipCheckError();
         if (s_alg)
         {
-            cudaStreamDestroy(s_alg);
+            hipStreamDestroy(s_alg);
             hipCheckError();
         }
         // revert CUBLAS and CUSOLVER/MAGMA streams
         CHECK_HIPBLAS(hipblasSetStream(cublasHandle, s_cublas));
         // if (use_magma) {
-        //     CHECK_HIPBLAS(magmablasSetKernelStream(s_magma)); //returns cublasStatus_t
+        //     CHECK_HIPBLAS(magmablasSetKernelStream(s_magma)); //returns hipblasStatus_t
         // }
         // else {
         CHECK_HIPSOLVER(cusolverDnSetStream(cusolverHandle, s_cusolver));

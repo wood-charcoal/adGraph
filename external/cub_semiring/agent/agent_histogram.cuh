@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating in device-wide histogram .
+ * hipcub::AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating in device-wide histogram .
  */
 
 #pragma once
@@ -107,7 +107,7 @@ template <
     typename    PrivatizedDecodeOpT,            ///< The transform operator type for determining privatized counter indices from samples, one for each channel
     typename    OutputDecodeOpT,                ///< The transform operator type for determining output bin-ids from privatized counter indices, one for each channel
     typename    OffsetT,                        ///< Signed integer type for global offsets
-    int         PTX_ARCH = CUB_PTX_ARCH>        ///< PTX compute capability
+    int         PTX_ARCH = HIPCUB_ARCH>        ///< PTX compute capability
 struct AgentHistogram
 {
     //---------------------------------------------------------------------
@@ -564,7 +564,7 @@ struct AgentHistogram
             is_valid[PIXEL] = IS_FULL_TILE || (((threadIdx.x * PIXELS_PER_THREAD + PIXEL) * NUM_CHANNELS) < valid_samples);
 
         // Accumulate samples
-#if CUB_PTX_ARCH >= 120
+#if HIPCUB_ARCH >= 120
         if (prefer_smem)
             AccumulateSmemPixels(samples, is_valid);
         else

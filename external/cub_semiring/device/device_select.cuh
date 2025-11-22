@@ -29,7 +29,7 @@
 
 /**
  * \file
- * cub::DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items residing within device-accessible memory.
+ * hipcub::DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -93,7 +93,7 @@ namespace cub
          * The code snippet below illustrates the compaction of items selected from an \p int device vector.
          * \par
          * \code
-         * #include <cub/cub.cuh>       // or equivalently <cub/device/device_select.cuh>
+         * #include <hipcub/hipcub.hpp>       // or equivalently <cub/device/device_select.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input, flags, and output
          * int  num_items;              // e.g., 8
@@ -106,13 +106,13 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items);
+         * hipcub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run selection
-         * cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items);
+         * hipcub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items);
          *
          * // d_out                 <-- [1, 4, 6, 7]
          * // d_num_selected_out    <-- [4]
@@ -129,7 +129,7 @@ namespace cub
             typename FlagIterator,
             typename OutputIteratorT,
             typename NumSelectedIteratorT>
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Flagged(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Flagged(
             void *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,              ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,                     ///< [in] Pointer to the input sequence of data items
@@ -183,17 +183,17 @@ namespace cub
          * The code snippet below illustrates the compaction of items selected from an \p int device vector.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_select.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_select.cuh>
          *
          * // Functor type for selecting values less than some criteria
          * struct LessThan
          * {
          *     int compare;
          *
-         *     CUB_RUNTIME_FUNCTION __forceinline__
+         *     HIPCUB_RUNTIME_FUNCTION __forceinline__
          *     LessThan(int compare) : compare(compare) {}
          *
-         *     CUB_RUNTIME_FUNCTION __forceinline__
+         *     HIPCUB_RUNTIME_FUNCTION __forceinline__
          *     bool operator()(const int &a) const {
          *         return (a < compare);
          *     }
@@ -210,13 +210,13 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op);
+         * hipcub::DeviceSelect::If(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run selection
-         * cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op);
+         * hipcub::DeviceSelect::If(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op);
          *
          * // d_out                 <-- [0, 2, 3, 5, 2]
          * // d_num_selected_out    <-- [5]
@@ -233,7 +233,7 @@ namespace cub
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp>
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t If(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t If(
             void *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,              ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,                     ///< [in] Pointer to the input sequence of data items
@@ -288,7 +288,7 @@ namespace cub
          * The code snippet below illustrates the compaction of items selected from an \p int device vector.
          * \par
          * \code
-         * #include <cub/cub.cuh>       // or equivalently <cub/device/device_select.cuh>
+         * #include <hipcub/hipcub.hpp>       // or equivalently <cub/device/device_select.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input and output
          * int  num_items;              // e.g., 8
@@ -300,13 +300,13 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items);
+         * hipcub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run selection
-         * cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items);
+         * hipcub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items);
          *
          * // d_out                 <-- [0, 2, 9, 5, 8]
          * // d_num_selected_out    <-- [5]
@@ -321,7 +321,7 @@ namespace cub
             typename InputIteratorT,
             typename OutputIteratorT,
             typename NumSelectedIteratorT>
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Unique(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Unique(
             void *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,              ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,                     ///< [in] Pointer to the input sequence of data items

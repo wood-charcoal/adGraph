@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -2196,7 +2197,7 @@ namespace nvgraph
 		{
 			const size_t NUM_WARPS = CTA_SIZE / WARP_SIZE;
 
-			// AMGX uses pool allocator thrust::global_thread_handle::cudaMallocHost(), here...
+			// AMGX uses pool allocator thrust::global_thread_handle::hipHostMalloc(), here...
 			//
 			SHARED_PREFIX::shared_ptr<IndexT> h_status(new IndexT);
 			SHARED_PREFIX::shared_ptr<IndexT> h_work_offset(new IndexT);
@@ -2232,7 +2233,7 @@ namespace nvgraph
 
 				// Read the result from count_non_zeroes.
 				hipMemcpyAsync(p_status, hash_wk.get_status(), sizeof(IndexT), hipMemcpyDeviceToHost, stream);
-				cudaStreamSynchronize(stream);
+				hipStreamSynchronize(stream);
 				done = (*p_status == 0);
 
 				hipCheckError();

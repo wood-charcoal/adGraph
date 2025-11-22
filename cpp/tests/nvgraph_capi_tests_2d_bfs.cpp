@@ -89,7 +89,7 @@ void offsetsToIndices(std::vector<int> &offsets, std::vector<int> &indices)
 bool enough_device_memory(int n, int nnz, size_t add)
 {
 	size_t mtotal, mfree;
-	cudaMemGetInfo(&mfree, &mtotal);
+	hipMemGetInfo(&mfree, &mtotal);
 	if (mfree > add + sizeof(int) * (4 * n)) // graph + pred + distances + 2n (working data)
 		return true;
 	return false;
@@ -318,7 +318,7 @@ public:
 							  &calculated_distances_res[0],
 							  &calculated_predecessors_res[0]);
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		if (PERF && n > PERF_ROWS_LIMIT)
 		{
@@ -334,7 +334,7 @@ public:
 									  &calculated_predecessors_res[0]);
 				ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			}
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 			stop = second();
 			printf("&&&& PERF Time_%s %10.8f -ms\n",
 				   test_id.c_str(),
@@ -701,7 +701,7 @@ TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath)
 //
 //				if (i == std::min(50, (int) (repeat / 2)))
 //				{
-//					cudaMemGetInfo(&free_mid, &total);
+//					hipMemGetInfo(&free_mid, &total);
 //				}
 //				if (i == repeat - 1)
 //				{
@@ -710,7 +710,7 @@ TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath)
 //							(void *) &calculated_res_last[0],
 //							traversal_distances_index);
 //					ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-//					cudaMemGetInfo(&free_last, &total);
+//					hipMemGetInfo(&free_last, &total);
 //				}
 //			}
 //

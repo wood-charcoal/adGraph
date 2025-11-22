@@ -153,7 +153,7 @@ namespace cub
         // Constants
         enum
         {
-            TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+            TILE_STATUS_PADDING = HIPCUB_WARP_THREADS,
         };
 
         // Device storage
@@ -168,7 +168,7 @@ namespace cub
 
         /// Initializer
         __host__ __device__ __forceinline__
-            cudaError_t
+            hipError_t
             Init(
                 int /*num_tiles*/,             ///< [in] Number of tiles
                 void *d_temp_storage,          ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
@@ -181,7 +181,7 @@ namespace cub
         /**
          * Compute device memory needed for tile status
          */
-        __host__ __device__ __forceinline__ static cudaError_t AllocationSize(
+        __host__ __device__ __forceinline__ static hipError_t AllocationSize(
             int num_tiles,              ///< [in] Number of tiles
             size_t &temp_storage_bytes) ///< [out] Size in bytes of \t d_temp_storage allocation
         {
@@ -277,7 +277,7 @@ namespace cub
         // Constants
         enum
         {
-            TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+            TILE_STATUS_PADDING = HIPCUB_WARP_THREADS,
         };
 
         // Device storage
@@ -296,13 +296,13 @@ namespace cub
 
         /// Initializer
         __host__ __device__ __forceinline__
-            cudaError_t
+            hipError_t
             Init(
                 int num_tiles,             ///< [in] Number of tiles
                 void *d_temp_storage,      ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
                 size_t temp_storage_bytes) ///< [in] Size in bytes of \t d_temp_storage allocation
         {
-            cudaError_t error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 void *allocations[3] = {NULL, NULL, NULL};
@@ -313,7 +313,7 @@ namespace cub
                 allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>); // bytes needed for inclusives
 
                 // Compute allocation pointers into the single storage blob
-                if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                if (HipcubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
                     break;
 
                 // Alias the offsets
@@ -328,7 +328,7 @@ namespace cub
         /**
          * Compute device memory needed for tile status
          */
-        __host__ __device__ __forceinline__ static cudaError_t AllocationSize(
+        __host__ __device__ __forceinline__ static hipError_t AllocationSize(
             int num_tiles,              ///< [in] Number of tiles
             size_t &temp_storage_bytes) ///< [out] Size in bytes of \t d_temp_storage allocation
         {
@@ -340,7 +340,7 @@ namespace cub
 
             // Set the necessary size of the blob
             void *allocations[3];
-            return CubDebug(AliasTemporaries(NULL, temp_storage_bytes, allocations, allocation_sizes));
+            return HipcubDebug(AliasTemporaries(NULL, temp_storage_bytes, allocations, allocation_sizes));
         }
 
         /**
@@ -463,7 +463,7 @@ namespace cub
             TXN_WORD_SIZE = 1 << Log2<PAIR_SIZE + 1>::VALUE,
             STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE,
 
-            TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+            TILE_STATUS_PADDING = HIPCUB_WARP_THREADS,
         };
 
         // Status word type
@@ -517,7 +517,7 @@ namespace cub
 
         /// Initializer
         __host__ __device__ __forceinline__
-            cudaError_t
+            hipError_t
             Init(
                 int /*num_tiles*/,             ///< [in] Number of tiles
                 void *d_temp_storage,          ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
@@ -530,7 +530,7 @@ namespace cub
         /**
          * Compute device memory needed for tile status
          */
-        __host__ __device__ __forceinline__ static cudaError_t AllocationSize(
+        __host__ __device__ __forceinline__ static hipError_t AllocationSize(
             int num_tiles,              ///< [in] Number of tiles
             size_t &temp_storage_bytes) ///< [out] Size in bytes of \t d_temp_storage allocation
         {
@@ -644,11 +644,11 @@ namespace cub
         typename T,
         typename ScanOpT,
         typename ScanTileStateT,
-        int PTX_ARCH = CUB_PTX_ARCH>
+        int PTX_ARCH = HIPCUB_ARCH>
     struct TilePrefixCallbackOp
     {
         // Parameterized warp reduce
-        typedef WarpReduce<T, CUB_PTX_WARP_THREADS, PTX_ARCH> WarpReduceT;
+        typedef WarpReduce<T, HIPCUB_WARP_THREADS, PTX_ARCH> WarpReduceT;
 
         // Temporary storage type
         struct _TempStorage
@@ -729,7 +729,7 @@ namespace cub
             // Keep sliding the window back until we come across a tile whose inclusive prefix is known
             while (WARP_ALL((predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE)), 0xffffffff))
             {
-                predecessor_idx -= CUB_PTX_WARP_THREADS;
+                predecessor_idx -= HIPCUB_WARP_THREADS;
 
                 // Update exclusive tile prefix with the window prefix
                 ProcessWindow(predecessor_idx, predecessor_status, window_aggregate);

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
@@ -86,7 +87,7 @@ void k_i_in_compute_test( thrust::device_vector<int> &csr_ptr_d,
   int i = 0; 
   std::cout<<"successfully declair device vector.\n";
   kernal_k_in_test<<<block_size, grid_size>>>(size, csr_ptr_d.begin(), csr_ind_d.begin(), csr_val_d.begin(), cluster_d.begin(), i, result_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
 
   hr_clock.stop(&timed);
   double iter_time(timed);

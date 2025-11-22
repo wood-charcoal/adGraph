@@ -23,51 +23,51 @@ namespace nvgraph
 
     namespace
     {
-        cublasStatus_t cublas_axpy(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_axpy(hipblasHandle_t handle, int n,
                                    const float *alpha,
                                    const float *x, int incx,
                                    float *y, int incy)
         {
-            return cublasSaxpy(handle, n, alpha, x, incx, y, incy);
+            return hipblasSaxpy(handle, n, alpha, x, incx, y, incy);
         }
 
-        cublasStatus_t cublas_axpy(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_axpy(hipblasHandle_t handle, int n,
                                    const double *alpha,
                                    const double *x, int incx,
                                    double *y, int incy)
         {
-            return cublasDaxpy(handle, n, alpha, x, incx, y, incy);
+            return hipblasDaxpy(handle, n, alpha, x, incx, y, incy);
         }
 
-        cublasStatus_t cublas_copy(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_copy(hipblasHandle_t handle, int n,
                                    const float *x, int incx,
                                    float *y, int incy)
         {
-            return cublasScopy(handle, n, x, incx, y, incy);
+            return hipblasScopy(handle, n, x, incx, y, incy);
         }
 
-        cublasStatus_t cublas_copy(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_copy(hipblasHandle_t handle, int n,
                                    const double *x, int incx,
                                    double *y, int incy)
         {
-            return cublasDcopy(handle, n, x, incx, y, incy);
+            return hipblasDcopy(handle, n, x, incx, y, incy);
         }
 
-        cublasStatus_t cublas_dot(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_dot(hipblasHandle_t handle, int n,
                                   const float *x, int incx, const float *y, int incy,
                                   float *result)
         {
-            return cublasSdot(handle, n, x, incx, y, incy, result);
+            return hipblasSdot(handle, n, x, incx, y, incy, result);
         }
 
-        cublasStatus_t cublas_dot(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_dot(hipblasHandle_t handle, int n,
                                   const double *x, int incx, const double *y, int incy,
                                   double *result)
         {
-            return cublasDdot(handle, n, x, incx, y, incy, result);
+            return hipblasDdot(handle, n, x, incx, y, incy, result);
         }
 
-        cublasStatus_t cublas_trsv_v2(hipblasHandle_t handle,
+        hipblasStatus_t cublas_trsv_v2(hipblasHandle_t handle,
                                       hipblasFillMode_t uplo,
                                       hipblasOperation_t trans,
                                       hipblasDiagType_t diag,
@@ -77,9 +77,9 @@ namespace nvgraph
                                       float *x,
                                       int incx)
         {
-            return cublasStrsv(handle, uplo, trans, diag, n, A, lda, x, incx);
+            return hipblasStrsv(handle, uplo, trans, diag, n, A, lda, x, incx);
         }
-        cublasStatus_t cublas_trsv_v2(hipblasHandle_t handle,
+        hipblasStatus_t cublas_trsv_v2(hipblasHandle_t handle,
                                       hipblasFillMode_t uplo,
                                       hipblasOperation_t trans,
                                       hipblasDiagType_t diag,
@@ -89,10 +89,10 @@ namespace nvgraph
                                       double *x,
                                       int incx)
         {
-            return cublasDtrsv(handle, uplo, trans, diag, n, A, lda, x, incx);
+            return hipblasDtrsv(handle, uplo, trans, diag, n, A, lda, x, incx);
         }
 
-        cublasStatus_t cublas_gemm(hipblasHandle_t handle,
+        hipblasStatus_t cublas_gemm(hipblasHandle_t handle,
                                    hipblasOperation_t transa, hipblasOperation_t transb,
                                    int m, int n, int k,
                                    const float *alpha,
@@ -101,10 +101,10 @@ namespace nvgraph
                                    const float *beta,
                                    float *C, int ldc)
         {
-            return cublasSgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+            return hipblasSgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
         }
 
-        cublasStatus_t cublas_gemm(hipblasHandle_t handle,
+        hipblasStatus_t cublas_gemm(hipblasHandle_t handle,
                                    hipblasOperation_t transa, hipblasOperation_t transb,
                                    int m, int n, int k,
                                    const double *alpha,
@@ -113,70 +113,70 @@ namespace nvgraph
                                    const double *beta,
                                    double *C, int ldc)
         {
-            return cublasDgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+            return hipblasDgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
         }
 
-        cublasStatus_t cublas_gemv(hipblasHandle_t handle, hipblasOperation_t trans, int m, int n,
+        hipblasStatus_t cublas_gemv(hipblasHandle_t handle, hipblasOperation_t trans, int m, int n,
                                    const float *alpha, const float *A, int lda,
                                    const float *x, int incx,
                                    const float *beta, float *y, int incy)
         {
-            return cublasSgemv(handle, trans, m, n, alpha, A, lda, x, incx, beta, y, incy);
+            return hipblasSgemv(handle, trans, m, n, alpha, A, lda, x, incx, beta, y, incy);
         }
 
-        cublasStatus_t cublas_gemv(hipblasHandle_t handle, hipblasOperation_t trans, int m, int n,
+        hipblasStatus_t cublas_gemv(hipblasHandle_t handle, hipblasOperation_t trans, int m, int n,
                                    const double *alpha, const double *A, int lda,
                                    const double *x, int incx,
                                    const double *beta, double *y, int incy)
         {
-            return cublasDgemv(handle, trans, m, n, alpha, A, lda, x, incx, beta, y, incy);
+            return hipblasDgemv(handle, trans, m, n, alpha, A, lda, x, incx, beta, y, incy);
         }
 
-        cublasStatus_t cublas_ger(hipblasHandle_t handle, int m, int n,
+        hipblasStatus_t cublas_ger(hipblasHandle_t handle, int m, int n,
                                   const float *alpha,
                                   const float *x, int incx,
                                   const float *y, int incy,
                                   float *A, int lda)
         {
-            return cublasSger(handle, m, n, alpha, x, incx, y, incy, A, lda);
+            return hipblasSger(handle, m, n, alpha, x, incx, y, incy, A, lda);
         }
 
-        cublasStatus_t cublas_ger(hipblasHandle_t handle, int m, int n,
+        hipblasStatus_t cublas_ger(hipblasHandle_t handle, int m, int n,
                                   const double *alpha,
                                   const double *x, int incx,
                                   const double *y, int incy,
                                   double *A, int lda)
         {
-            return cublasDger(handle, m, n, alpha, x, incx, y, incy, A, lda);
+            return hipblasDger(handle, m, n, alpha, x, incx, y, incy, A, lda);
         }
 
-        cublasStatus_t cublas_nrm2(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_nrm2(hipblasHandle_t handle, int n,
                                    const float *x, int incx, float *result)
         {
-            return cublasSnrm2(handle, n, x, incx, result);
+            return hipblasSnrm2(handle, n, x, incx, result);
         }
 
-        cublasStatus_t cublas_nrm2(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_nrm2(hipblasHandle_t handle, int n,
                                    const double *x, int incx, double *result)
         {
-            return cublasDnrm2(handle, n, x, incx, result);
+            return hipblasDnrm2(handle, n, x, incx, result);
         }
 
-        cublasStatus_t cublas_scal(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_scal(hipblasHandle_t handle, int n,
                                    const float *alpha,
                                    float *x, int incx)
         {
-            return cublasSscal(handle, n, alpha, x, incx);
+            return hipblasSscal(handle, n, alpha, x, incx);
         }
 
-        cublasStatus_t cublas_scal(hipblasHandle_t handle, int n,
+        hipblasStatus_t cublas_scal(hipblasHandle_t handle, int n,
                                    const double *alpha,
                                    double *x, int incx)
         {
-            return cublasDscal(handle, n, alpha, x, incx);
+            return hipblasDscal(handle, n, alpha, x, incx);
         }
 
-        cublasStatus_t cublas_geam(hipblasHandle_t handle,
+        hipblasStatus_t cublas_geam(hipblasHandle_t handle,
                                    hipblasOperation_t transa,
                                    hipblasOperation_t transb,
                                    int m, int n,
@@ -186,11 +186,11 @@ namespace nvgraph
                                    const float *B, int ldb,
                                    float *C, int ldc)
         {
-            return cublasSgeam(handle, transa, transb, m, n,
+            return hipblasSgeam(handle, transa, transb, m, n,
                                alpha, A, lda, beta, B, ldb, C, ldc);
         }
 
-        cublasStatus_t cublas_geam(hipblasHandle_t handle,
+        hipblasStatus_t cublas_geam(hipblasHandle_t handle,
                                    hipblasOperation_t transa,
                                    hipblasOperation_t transb,
                                    int m, int n,
@@ -200,7 +200,7 @@ namespace nvgraph
                                    const double *B, int ldb,
                                    double *C, int ldc)
         {
-            return cublasDgeam(handle, transa, transb, m, n,
+            return hipblasDgeam(handle, transa, transb, m, n,
                                alpha, A, lda, beta, B, ldb, C, ldc);
         }
 
@@ -209,13 +209,13 @@ namespace nvgraph
     void Hipblas::set_pointer_mode_device()
     {
         hipblasHandle_t handle = Hipblas::get_handle();
-        cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE);
+        hipblasSetPointerMode(handle, HIPBLAS_POINTER_MODE_DEVICE);
     }
 
     void Hipblas::set_pointer_mode_host()
     {
         hipblasHandle_t handle = Hipblas::get_handle();
-        cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
+        hipblasSetPointerMode(handle, HIPBLAS_POINTER_MODE_HOST);
     }
 
     template <typename T>
@@ -280,7 +280,7 @@ namespace nvgraph
                        const T *beta, T *y, int incy)
     {
         hipblasHandle_t handle = Hipblas::get_handle();
-        hipblasOperation_t trans = transposed ? CUBLAS_OP_T : CUBLAS_OP_N;
+        hipblasOperation_t trans = transposed ? HIPBLAS_OP_T : HIPBLAS_OP_N;
         CHECK_HIPBLAS(cublas_gemv(handle, trans, m, n, alpha, A, lda,
                                   x, incx, beta, y, incy));
     }
@@ -292,7 +292,7 @@ namespace nvgraph
                            const T *beta, T *y, const int incy, const int offsetx, const int offsety, const int offseta)
     {
         hipblasHandle_t handle = Hipblas::get_handle();
-        hipblasOperation_t trans = transposed ? CUBLAS_OP_T : CUBLAS_OP_N;
+        hipblasOperation_t trans = transposed ? HIPBLAS_OP_T : HIPBLAS_OP_N;
         CHECK_HIPBLAS(cublas_gemv(handle, trans, m, n, alpha, A + offseta, lda,
                                   x + offsetx, incx, beta, y + offsety, incy));
     }
@@ -327,8 +327,8 @@ namespace nvgraph
                        T *C, int ldc)
     {
         hipblasHandle_t handle = Hipblas::get_handle();
-        hipblasOperation_t cublasTransA = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
-        hipblasOperation_t cublasTransB = transb ? CUBLAS_OP_T : CUBLAS_OP_N;
+        hipblasOperation_t cublasTransA = transa ? HIPBLAS_OP_T : HIPBLAS_OP_N;
+        hipblasOperation_t cublasTransB = transb ? HIPBLAS_OP_T : HIPBLAS_OP_N;
         CHECK_HIPBLAS(cublas_gemm(handle, cublasTransA, cublasTransB, m, n, k,
                                   alpha, A, lda, B, ldb, beta, C, ldc));
     }
@@ -340,8 +340,8 @@ namespace nvgraph
                        T *C, int ldc)
     {
         hipblasHandle_t handle = Hipblas::get_handle();
-        hipblasOperation_t cublasTransA = transa ? CUBLAS_OP_T : CUBLAS_OP_N;
-        hipblasOperation_t cublasTransB = transb ? CUBLAS_OP_T : CUBLAS_OP_N;
+        hipblasOperation_t cublasTransA = transa ? HIPBLAS_OP_T : HIPBLAS_OP_N;
+        hipblasOperation_t cublasTransB = transb ? HIPBLAS_OP_T : HIPBLAS_OP_N;
         CHECK_HIPBLAS(cublas_geam(handle, cublasTransA, cublasTransB, m, n,
                                   alpha, A, lda, beta, B, ldb, C, ldc));
     }

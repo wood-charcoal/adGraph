@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -23,7 +24,7 @@
 #include <time.h>
 #include <math.h>
 
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
 #include <thrust/binary_search.h>
@@ -462,7 +463,7 @@ namespace
     gridDim_block.z = 1;
 
     // Assign observation vectors to code 0
-    CHECK_HIP(cudaMemsetAsync(codes, 0, n * sizeof(IndexType_)));
+    CHECK_HIP(hipMemsetAsync(codes, 0, n * sizeof(IndexType_)));
 
     // Choose first centroid
     thrust::fill(thrust::device_pointer_cast(dists),
@@ -472,7 +473,7 @@ namespace
       WARNING("error in k-means++ (could not pick centroid)");
 
     // Compute distances from first centroid
-    CHECK_HIP(cudaMemsetAsync(dists, 0, n * sizeof(ValueType_)));
+    CHECK_HIP(hipMemsetAsync(dists, 0, n * sizeof(ValueType_)));
     computeDistances<<<gridDim_warp, blockDim_warp>>>(n, d, 1, obs, centroids, dists);
     hipCheckError()
 
@@ -485,7 +486,7 @@ namespace
         WARNING("error in k-means++ (could not pick centroid)");
 
       // Compute distances from ith centroid
-      CHECK_HIP(cudaMemsetAsync(dists + n, 0, n * sizeof(ValueType_)));
+      CHECK_HIP(hipMemsetAsync(dists + n, 0, n * sizeof(ValueType_)));
       computeDistances<<<gridDim_warp, blockDim_warp>>>(n, d, 1, obs, centroids + IDX(0, i, d), dists + n);
       hipCheckError();
 
@@ -495,7 +496,7 @@ namespace
     }
 
     // Compute cluster sizes
-    CHECK_HIP(cudaMemsetAsync(clusterSizes, 0, k * sizeof(IndexType_)));
+    CHECK_HIP(hipMemsetAsync(clusterSizes, 0, k * sizeof(IndexType_)));
     computeClusterSizes<<<gridDim_block, BLOCK_SIZE>>>(n, k, codes, clusterSizes);
     hipCheckError();
 
@@ -539,7 +540,7 @@ namespace
     dim3 blockDim, gridDim;
 
     // Compute distance between centroids and observation vectors
-    CHECK_HIP(cudaMemsetAsync(dists, 0, n * k * sizeof(ValueType_)));
+    CHECK_HIP(hipMemsetAsync(dists, 0, n * k * sizeof(ValueType_)));
     blockDim.x = WARP_SIZE;
     blockDim.y = 1;
     blockDim.z = BLOCK_SIZE / WARP_SIZE;
@@ -552,7 +553,7 @@ namespace
     hipCheckError();
 
     // Find centroid closest to each observation vector
-    CHECK_HIP(cudaMemsetAsync(clusterSizes, 0, k * sizeof(IndexType_)));
+    CHECK_HIP(hipMemsetAsync(clusterSizes, 0, k * sizeof(IndexType_)));
     blockDim.x = BLOCK_SIZE;
     blockDim.y = 1;
     blockDim.z = 1;
@@ -765,7 +766,7 @@ namespace nvgraph
     // Trivial cases
     if (k == 1)
     {
-      CHECK_HIP(cudaMemsetAsync(codes, 0, n * sizeof(IndexType_)));
+      CHECK_HIP(hipMemsetAsync(codes, 0, n * sizeof(IndexType_)));
       CHECK_HIP(hipMemcpyAsync(clusterSizes, &n, sizeof(IndexType_),
                                hipMemcpyHostToDevice));
       if (updateCentroids(n, d, k, obs, codes,
@@ -779,7 +780,7 @@ namespace nvgraph
       gridDim.x = min((d + WARP_SIZE - 1) / WARP_SIZE, 65535);
       gridDim.y = 1;
       gridDim.z = min((n + BLOCK_SIZE / WARP_SIZE - 1) / (BLOCK_SIZE / WARP_SIZE), 65535);
-      CHECK_HIP(cudaMemsetAsync(work, 0, n * k * sizeof(ValueType_)));
+      CHECK_HIP(hipMemsetAsync(work, 0, n * k * sizeof(ValueType_)));
       computeDistances<<<gridDim, blockDim>>>(n, d, 1,
                                               obs,
                                               centroids,
@@ -799,7 +800,7 @@ namespace nvgraph
       hipCheckError();
 
       if (n < k)
-        CHECK_HIP(cudaMemsetAsync(clusterSizes + n, 0, (k - n) * sizeof(IndexType_)));
+        CHECK_HIP(hipMemsetAsync(clusterSizes + n, 0, (k - n) * sizeof(IndexType_)));
       CHECK_HIP(hipMemcpyAsync(centroids, obs, d * n * sizeof(ValueType_),
                                hipMemcpyDeviceToDevice));
       *residual_host = 0;

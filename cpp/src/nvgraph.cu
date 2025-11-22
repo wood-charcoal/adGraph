@@ -232,13 +232,13 @@ namespace nvgraph
 
 			// cnmem
 			memset(&ctx->cnmem_device, 0, sizeof(ctx->cnmem_device)); // init all to 0
-			ctx->cnmem_device.device = device;						  // cnmem runs on the device set by cudaSetDevice
+			ctx->cnmem_device.device = device;						  // cnmem runs on the device set by hipSetDevice
 
 			size_t init_alloc = 1; // Initial allocation tentative, it is currently 1 so this feature is basically disabeled.
 
 			// Warning : Should uncomment that if using init_alloc > 1
 			// size_t freeMem, totalMem;
-			// cudaMemGetInfo(&freeMem, &totalMem);
+			// hipMemGetInfo(&freeMem, &totalMem);
 			// if (freeMem < init_alloc) // Couldn't find enough memory to do the initial alloc
 			//    init_alloc = 1; // (0 is used as default parameter in cnmem)
 

@@ -29,7 +29,7 @@
 
 /**
  * \file
- * cub::DeviceHistogram provides device-wide parallel operations for constructing histogram(s) from a sequence of samples data residing within device-accessible memory.
+ * hipcub::DeviceHistogram provides device-wide parallel operations for constructing histogram(s) from a sequence of samples data residing within device-accessible memory.
  */
 
 #pragma once
@@ -81,7 +81,7 @@ namespace cub
          *
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_histogram.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_histogram.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input samples and
          * // output histogram
@@ -96,14 +96,14 @@ namespace cub
          * // Determine temporary device storage requirements
          * void*    d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, lower_level, upper_level, num_samples);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Compute histograms
-         * cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, lower_level, upper_level, num_samples);
          *
          * // d_histogram   <-- [1, 0, 5, 0, 3, 0, 0, 0];
@@ -120,7 +120,7 @@ namespace cub
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-        CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t HistogramEven(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,      ///< [in] The pointer to the input sequence of data samples.
@@ -173,7 +173,7 @@ namespace cub
          *
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_histogram.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_histogram.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input samples and
          * // output histogram
@@ -191,15 +191,15 @@ namespace cub
          * // Determine temporary device storage requirements
          * void*    d_temp_storage  = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, lower_level, upper_level,
          *     num_row_samples, num_rows, row_stride_bytes);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Compute histograms
-         * cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes, d_samples, d_histogram,
+         * hipcub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes, d_samples, d_histogram,
          *     d_samples, d_histogram, num_levels, lower_level, upper_level,
          *     num_row_samples, num_rows, row_stride_bytes);
          *
@@ -217,7 +217,7 @@ namespace cub
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-        CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t HistogramEven(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,      ///< [in] The pointer to the input sequence of data samples.
@@ -271,7 +271,7 @@ namespace cub
          *
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_histogram.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_histogram.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input samples
          * // and output histograms
@@ -288,14 +288,14 @@ namespace cub
          * // Determine temporary device storage requirements
          * void*    d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceHistogram::MultiHistogramEven<4, 3>(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::MultiHistogramEven<4, 3>(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, lower_level, upper_level, num_pixels);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Compute histograms
-         * cub::DeviceHistogram::MultiHistogramEven<4, 3>(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::MultiHistogramEven<4, 3>(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, lower_level, upper_level, num_pixels);
          *
          * // d_histogram   <-- [ [1, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, ..., 0],
@@ -318,7 +318,7 @@ namespace cub
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-        CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t MultiHistogramEven(
             void *d_temp_storage,                       ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                  ///< [in] The pointer to the multi-channel input sequence of data samples. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four <em>RGBA</em> 8-bit samples).
@@ -372,7 +372,7 @@ namespace cub
          *
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_histogram.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_histogram.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input samples
          * // and output histograms
@@ -391,15 +391,15 @@ namespace cub
          * // Determine temporary device storage requirements
          * void*    d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceHistogram::MultiHistogramEven<4, 3>(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::MultiHistogramEven<4, 3>(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, lower_level, upper_level,
          *     num_row_pixels, num_rows, row_stride_bytes);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Compute histograms
-         * cub::DeviceHistogram::MultiHistogramEven<4, 3>(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::MultiHistogramEven<4, 3>(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, lower_level, upper_level,
          *     num_row_pixels, num_rows, row_stride_bytes);
          *
@@ -423,7 +423,7 @@ namespace cub
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-        CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t MultiHistogramEven(
             void *d_temp_storage,                       ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                  ///< [in] The pointer to the multi-channel input sequence of data samples. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four <em>RGBA</em> 8-bit samples).
@@ -478,7 +478,7 @@ namespace cub
          *
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_histogram.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_histogram.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input samples and
          * // output histogram
@@ -492,14 +492,14 @@ namespace cub
          * // Determine temporary device storage requirements
          * void*    d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceHistogram::HistogramRange(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::HistogramRange(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, d_levels, num_samples);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Compute histograms
-         * cub::DeviceHistogram::HistogramRange(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::HistogramRange(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, d_levels, num_samples);
          *
          * // d_histogram   <-- [1, 0, 5, 0, 3, 0, 0, 0];
@@ -516,7 +516,7 @@ namespace cub
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-        CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t HistogramRange(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,      ///< [in] The pointer to the input sequence of data samples.
@@ -566,7 +566,7 @@ namespace cub
          *
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_histogram.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_histogram.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input samples and
          * // output histogram
@@ -583,15 +583,15 @@ namespace cub
          * // Determine temporary device storage requirements
          * void*    d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceHistogram::HistogramRange(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::HistogramRange(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, d_levels,
          *     num_row_samples, num_rows, row_stride_bytes);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Compute histograms
-         * cub::DeviceHistogram::HistogramRange(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::HistogramRange(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, d_levels,
          *     num_row_samples, num_rows, row_stride_bytes);
          *
@@ -609,7 +609,7 @@ namespace cub
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-        CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t HistogramRange(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,      ///< [in] The pointer to the input sequence of data samples.
@@ -660,7 +660,7 @@ namespace cub
          *
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_histogram.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_histogram.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input samples
          * // and output histograms
@@ -677,14 +677,14 @@ namespace cub
          * // Determine temporary device storage requirements
          * void*    d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceHistogram::MultiHistogramRange<4, 3>(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::MultiHistogramRange<4, 3>(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, d_levels, num_pixels);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Compute histograms
-         * cub::DeviceHistogram::MultiHistogramRange<4, 3>(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::MultiHistogramRange<4, 3>(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, d_levels, num_pixels);
          *
          * // d_histogram   <-- [ [1, 3, 0, 1],
@@ -707,7 +707,7 @@ namespace cub
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-        CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t MultiHistogramRange(
             void *d_temp_storage,                       ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                  ///< [in] The pointer to the multi-channel input sequence of data samples. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four <em>RGBA</em> 8-bit samples).
@@ -759,7 +759,7 @@ namespace cub
          *
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_histogram.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_histogram.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input samples
          * // and output histograms
@@ -778,14 +778,14 @@ namespace cub
          * // Determine temporary device storage requirements
          * void*    d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceHistogram::MultiHistogramRange<4, 3>(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::MultiHistogramRange<4, 3>(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, d_levels, num_row_pixels, num_rows, row_stride_bytes);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Compute histograms
-         * cub::DeviceHistogram::MultiHistogramRange<4, 3>(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceHistogram::MultiHistogramRange<4, 3>(d_temp_storage, temp_storage_bytes,
          *     d_samples, d_histogram, num_levels, d_levels, num_row_pixels, num_rows, row_stride_bytes);
          *
          * // d_histogram   <-- [ [2, 3, 0, 1],
@@ -808,7 +808,7 @@ namespace cub
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-        CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t MultiHistogramRange(
             void *d_temp_storage,                       ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                  ///< [in] The pointer to the multi-channel input sequence of data samples. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four <em>RGBA</em> 8-bit samples).

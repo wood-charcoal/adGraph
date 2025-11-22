@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -75,16 +76,16 @@ void thrust_passing_arg_test(thrust::host_vector<int> &csr_ptr_h,
   hr_clock.start();
   thrust::device_vector<T> sum_d(1, 0.0);
   test_sum<<<block_size, grid_size>>>(csr_val_d.begin(), csr_val_d.end(), sum_d.data());
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed);
   double cuda_time(timed);
 
   hr_clock.start();
   hipStream_t s;
   thrust::device_vector<T> sum_a(1, 0.0);
-  cudaStreamCreate(&s);
+  hipStreamCreate(&s);
   test_sum<<<1, 1, 0, s>>>(csr_val_d.begin(), csr_val_d.end(), sum_a.data());
-  cudaStreamSynchronize(s);
+  hipStreamSynchronize(s);
   hr_clock.stop(&timed);
   double asyn_time(timed);
 
@@ -92,10 +93,10 @@ void thrust_passing_arg_test(thrust::host_vector<int> &csr_ptr_h,
   T *csr_val_ptr = thrust::raw_pointer_cast(csr_val_d.data());
   double *raw_sum;
   double sum_cast;
-  cudaMalloc((void **)&raw_sum, sizeof(double));
+  hipMalloc((void **)&raw_sum, sizeof(double));
   test_sum_cast<<<block_size, grid_size>>>(csr_val_ptr, csr_val_d.size(), raw_sum);
   hipMemcpy(&sum_cast, raw_sum, sizeof(double), hipMemcpyDeviceToHost);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed);
   double cast_time(timed);
   hipFree(raw_sum);

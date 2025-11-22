@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <utility>
-#include <curand.h>
+#include <hiprand.h>
 
 #include "valued_csr_graph.hxx"
 #include "nvgraph_vector.hxx"
@@ -277,10 +277,10 @@ namespace nvgraph
         {
             const ValueType_ one = 1;
             const ValueType_ zero = 0;
-            curandGenerator_t randGen;
+            hiprandGenerator_t randGen;
             // Initialize random number generator
-            CHECK_HIPRAND(curandCreateGenerator(&randGen, CURAND_RNG_PSEUDO_PHILOX4_32_10));
-            CHECK_HIPRAND(curandSetPseudoRandomGeneratorSeed(randGen, 123456 /*time(NULL)*/));
+            CHECK_HIPRAND(hiprandCreateGenerator(&randGen, HIPRAND_RNG_PSEUDO_PHILOX4_32_10));
+            CHECK_HIPRAND(hiprandSetPseudoRandomGeneratorSeed(randGen, 123456 /*time(NULL)*/));
             // Initialize initial  vector
             CHECK_HIPRAND(curandGenerateNormalX(randGen, m_V.raw(), n, zero, one));
             ValueType_ normQ1 = Hipblas::nrm2(n, m_V.raw(), 1);
@@ -1113,7 +1113,7 @@ namespace nvgraph
         ////m_V.dump(4*n,n);
         // COUT() <<std::endl;
 
-        // cudaDeviceSynchronize();
+        // hipDeviceSynchronize();
 
         Hipblas::gemm(false, false, n, nev, nk, &alpha, m_V.raw(), n, m_Q_d.raw(), nk,
                       &beta, m_V_tmp.raw(), n);

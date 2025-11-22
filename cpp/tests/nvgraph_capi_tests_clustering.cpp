@@ -71,7 +71,7 @@ template <typename T>
 bool enough_device_memory(int n, int nnz, size_t add)
 {
     size_t mtotal, mfree;
-    cudaMemGetInfo(&mfree, &mtotal);
+    hipMemGetInfo(&mfree, &mtotal);
     if (mfree > add + sizeof(T) * 3 * (n + nnz))
         return true;
     return false;
@@ -223,7 +223,7 @@ public:
             return;
         }
 
-        cudaMalloc((void **)&clustering_d, n * sizeof(int));
+        hipMalloc((void **)&clustering_d, n * sizeof(int));
 
         nvgraphGraphDescr_t g1 = NULL;
         status = nvgraphCreateGraphDescr(handle, &g1);
@@ -548,7 +548,7 @@ public:
             return;
         }
         // int *aggregates_d;
-        // cudaMalloc((void**)&aggregates_d , n*sizeof(int));
+        // hipMalloc((void**)&aggregates_d , n*sizeof(int));
 
         nvgraphGraphDescr_t g1 = NULL;
         status = nvgraphCreateGraphDescr(handle, &g1);

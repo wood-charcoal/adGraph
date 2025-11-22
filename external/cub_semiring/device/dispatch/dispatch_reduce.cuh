@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
@@ -29,7 +30,7 @@
 
 /**
  * \file
- * cub::DeviceReduce provides device-wide, parallel operations for computing a reduction across a sequence of data items residing within device-accessible memory.
+ * hipcub::DeviceReduce provides device-wide, parallel operations for computing a reduction across a sequence of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -375,7 +376,7 @@ namespace cub
         //------------------------------------------------------------------------------
 
         /// Constructor
-        CUB_RUNTIME_FUNCTION __forceinline__
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
         DispatchReduce(
             void *d_temp_storage,
             size_t &temp_storage_bytes,
@@ -407,19 +408,19 @@ namespace cub
         /// Invoke a single block block to reduce in-core
         template <
             typename ActivePolicyT,     ///< Umbrella policy active for the target device
-            typename SingleTileKernelT> ///< Function type of cub::DeviceReduceSingleTileKernel
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+            typename SingleTileKernelT> ///< Function type of hipcub::DeviceReduceSingleTileKernel
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             InvokeSingleTile(
-                SingleTileKernelT single_tile_kernel) ///< [in] Kernel function pointer to parameterization of cub::DeviceReduceSingleTileKernel
+                SingleTileKernelT single_tile_kernel) ///< [in] Kernel function pointer to parameterization of hipcub::DeviceReduceSingleTileKernel
         {
 #ifndef CUB_RUNTIME_ENABLED
             (void)single_tile_kernel;
 
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 #else
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Return if the caller is simply requesting the size of the storage allocation
@@ -431,7 +432,7 @@ namespace cub
 
                 // Log single_reduce_sweep_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), %d items per thread\n",
+                    _HipcubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), %d items per thread\n",
                             ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
                             (long long)stream,
                             ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
@@ -445,11 +446,11 @@ namespace cub
                     init);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
             } while (0);
 
@@ -465,38 +466,38 @@ namespace cub
         /// Invoke two-passes to reduce
         template <
             typename ActivePolicyT,     ///< Umbrella policy active for the target device
-            typename ReduceKernelT,     ///< Function type of cub::DeviceReduceKernel
-            typename SingleTileKernelT> ///< Function type of cub::DeviceReduceSingleTileKernel
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+            typename ReduceKernelT,     ///< Function type of hipcub::DeviceReduceKernel
+            typename SingleTileKernelT> ///< Function type of hipcub::DeviceReduceSingleTileKernel
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             InvokePasses(
-                ReduceKernelT reduce_kernel,          ///< [in] Kernel function pointer to parameterization of cub::DeviceReduceKernel
-                SingleTileKernelT single_tile_kernel) ///< [in] Kernel function pointer to parameterization of cub::DeviceReduceSingleTileKernel
+                ReduceKernelT reduce_kernel,          ///< [in] Kernel function pointer to parameterization of hipcub::DeviceReduceKernel
+                SingleTileKernelT single_tile_kernel) ///< [in] Kernel function pointer to parameterization of hipcub::DeviceReduceSingleTileKernel
         {
 #ifndef CUB_RUNTIME_ENABLED
             (void)reduce_kernel;
             (void)single_tile_kernel;
 
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 #else
 
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get device ordinal
                 int device_ordinal;
-                if (CubDebug(error = hipGetDevice(&device_ordinal)))
+                if (HipcubDebug(error = hipGetDevice(&device_ordinal)))
                     break;
 
                 // Get SM count
                 int sm_count;
-                if (CubDebug(error = cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
+                if (HipcubDebug(error = hipDeviceGetAttribute(&sm_count, hipDeviceAttributeMultiprocessorCount, device_ordinal)))
                     break;
 
                 // Init regular kernel configuration
                 KernelConfig reduce_config;
-                if (CubDebug(error = reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel)))
+                if (HipcubDebug(error = reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel)))
                     break;
                 int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
 
@@ -513,7 +514,7 @@ namespace cub
                     };
 
                 // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-                if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                if (HipcubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
                     break;
                 if (d_temp_storage == NULL)
                 {
@@ -529,7 +530,7 @@ namespace cub
 
                 // Log device_reduce_sweep_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking DeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
+                    _HipcubLog("Invoking DeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                             reduce_grid_size,
                             ActivePolicyT::ReducePolicy::BLOCK_THREADS,
                             (long long)stream,
@@ -545,16 +546,16 @@ namespace cub
                     reduction_op);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
                 // Log single_reduce_sweep_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), %d items per thread\n",
+                    _HipcubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), %d items per thread\n",
                             ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
                             (long long)stream,
                             ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
@@ -568,11 +569,11 @@ namespace cub
                     init);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
             } while (0);
 
@@ -587,8 +588,8 @@ namespace cub
 
         /// Invocation
         template <typename ActivePolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             Invoke()
         {
             typedef typename ActivePolicyT::SingleTilePolicy SingleTilePolicyT;
@@ -617,7 +618,7 @@ namespace cub
         /**
          * Internal dispatch routine for computing a device-wide reduction
          */
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Dispatch(
             void *d_temp_storage,       ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes, ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,        ///< [in] Pointer to the input sequence of data items
@@ -630,12 +631,12 @@ namespace cub
         {
             typedef typename DispatchReduce::MaxPolicy MaxPolicyT;
 
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get PTX version
                 int ptx_version;
-                if (CubDebug(error = PtxVersion(ptx_version)))
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 
                 // Create dispatch functor
@@ -645,7 +646,7 @@ namespace cub
                     stream, debug_synchronous, ptx_version);
 
                 // Dispatch to chained policy
-                if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+                if (HipcubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
                     break;
             } while (0);
 
@@ -702,7 +703,7 @@ namespace cub
         //------------------------------------------------------------------------------
 
         /// Constructor
-        CUB_RUNTIME_FUNCTION __forceinline__
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
         DispatchSegmentedReduce(
             void *d_temp_storage,
             size_t &temp_storage_bytes,
@@ -738,18 +739,18 @@ namespace cub
         /// Invocation
         template <
             typename ActivePolicyT,                ///< Umbrella policy active for the target device
-            typename DeviceSegmentedReduceKernelT> ///< Function type of cub::DeviceSegmentedReduceKernel
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+            typename DeviceSegmentedReduceKernelT> ///< Function type of hipcub::DeviceSegmentedReduceKernel
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             InvokePasses(
-                DeviceSegmentedReduceKernelT segmented_reduce_kernel) ///< [in] Kernel function pointer to parameterization of cub::DeviceSegmentedReduceKernel
+                DeviceSegmentedReduceKernelT segmented_reduce_kernel) ///< [in] Kernel function pointer to parameterization of hipcub::DeviceSegmentedReduceKernel
         {
 #ifndef CUB_RUNTIME_ENABLED
             (void)segmented_reduce_kernel;
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 #else
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Return if the caller is simply requesting the size of the storage allocation
@@ -761,12 +762,12 @@ namespace cub
 
                 // Init kernel configuration
                 KernelConfig segmented_reduce_config;
-                if (CubDebug(error = segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(segmented_reduce_kernel)))
+                if (HipcubDebug(error = segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(segmented_reduce_kernel)))
                     break;
 
                 // Log device_reduce_sweep_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking SegmentedDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
+                    _HipcubLog("Invoking SegmentedDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                             num_segments,
                             ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
                             (long long)stream,
@@ -784,11 +785,11 @@ namespace cub
                     init);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
             } while (0);
 
@@ -799,8 +800,8 @@ namespace cub
 
         /// Invocation
         template <typename ActivePolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             Invoke()
         {
             typedef typename DispatchSegmentedReduce::MaxPolicy MaxPolicyT;
@@ -817,7 +818,7 @@ namespace cub
         /**
          * Internal dispatch routine for computing a device-wide reduction
          */
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Dispatch(
             void *d_temp_storage,            ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,      ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,             ///< [in] Pointer to the input sequence of data items
@@ -835,12 +836,12 @@ namespace cub
             if (num_segments <= 0)
                 return hipSuccess;
 
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get PTX version
                 int ptx_version;
-                if (CubDebug(error = PtxVersion(ptx_version)))
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 
                 // Create dispatch functor
@@ -852,7 +853,7 @@ namespace cub
                     stream, debug_synchronous, ptx_version);
 
                 // Dispatch to chained policy
-                if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+                if (HipcubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
                     break;
             } while (0);
 

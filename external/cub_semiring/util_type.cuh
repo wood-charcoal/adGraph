@@ -41,7 +41,7 @@
 #include "util_arch.cuh"
 #include "util_namespace.cuh"
 
-#include "cuComplex.h"
+#include "hip/hip_complex.h"
 
 /// Optional outer namespace(s)
 CUB_NS_PREFIX
@@ -305,36 +305,36 @@ struct AlignBytes
 // with device C++ compilers (EDG) on types passed as template parameters through
 // kernel functions
 
-#define __CUB_ALIGN_BYTES(t, b)         \
+#define __HIPCUB_ALIGN_BYTES(t, b)         \
     template <> struct AlignBytes<t>    \
     { enum { ALIGN_BYTES = b }; typedef __align__(b) t Type; };
 
-__CUB_ALIGN_BYTES(short4, 8)
-__CUB_ALIGN_BYTES(ushort4, 8)
-__CUB_ALIGN_BYTES(int2, 8)
-__CUB_ALIGN_BYTES(uint2, 8)
-__CUB_ALIGN_BYTES(long long, 8)
-__CUB_ALIGN_BYTES(unsigned long long, 8)
-__CUB_ALIGN_BYTES(float2, 8)
-__CUB_ALIGN_BYTES(double, 8)
+__HIPCUB_ALIGN_BYTES(short4, 8)
+__HIPCUB_ALIGN_BYTES(ushort4, 8)
+__HIPCUB_ALIGN_BYTES(int2, 8)
+__HIPCUB_ALIGN_BYTES(uint2, 8)
+__HIPCUB_ALIGN_BYTES(long long, 8)
+__HIPCUB_ALIGN_BYTES(unsigned long long, 8)
+__HIPCUB_ALIGN_BYTES(float2, 8)
+__HIPCUB_ALIGN_BYTES(double, 8)
 #ifdef _WIN32
-    __CUB_ALIGN_BYTES(long2, 8)
-    __CUB_ALIGN_BYTES(ulong2, 8)
+    __HIPCUB_ALIGN_BYTES(long2, 8)
+    __HIPCUB_ALIGN_BYTES(ulong2, 8)
 #else
-    __CUB_ALIGN_BYTES(long2, 16)
-    __CUB_ALIGN_BYTES(ulong2, 16)
+    __HIPCUB_ALIGN_BYTES(long2, 16)
+    __HIPCUB_ALIGN_BYTES(ulong2, 16)
 #endif
-__CUB_ALIGN_BYTES(int4, 16)
-__CUB_ALIGN_BYTES(uint4, 16)
-__CUB_ALIGN_BYTES(float4, 16)
-__CUB_ALIGN_BYTES(long4, 16)
-__CUB_ALIGN_BYTES(ulong4, 16)
-__CUB_ALIGN_BYTES(longlong2, 16)
-__CUB_ALIGN_BYTES(ulonglong2, 16)
-__CUB_ALIGN_BYTES(double2, 16)
-__CUB_ALIGN_BYTES(longlong4, 16)
-__CUB_ALIGN_BYTES(ulonglong4, 16)
-__CUB_ALIGN_BYTES(double4, 16)
+__HIPCUB_ALIGN_BYTES(int4, 16)
+__HIPCUB_ALIGN_BYTES(uint4, 16)
+__HIPCUB_ALIGN_BYTES(float4, 16)
+__HIPCUB_ALIGN_BYTES(long4, 16)
+__HIPCUB_ALIGN_BYTES(ulong4, 16)
+__HIPCUB_ALIGN_BYTES(longlong2, 16)
+__HIPCUB_ALIGN_BYTES(ulonglong2, 16)
+__HIPCUB_ALIGN_BYTES(double2, 16)
+__HIPCUB_ALIGN_BYTES(longlong4, 16)
+__HIPCUB_ALIGN_BYTES(ulonglong4, 16)
+__HIPCUB_ALIGN_BYTES(double4, 16)
 
 template <typename T> struct AlignBytes<volatile T> : AlignBytes<T> {};
 template <typename T> struct AlignBytes<const T> : AlignBytes<T> {};
@@ -389,7 +389,7 @@ template <>
 struct UnitWord <float2>
 {
     typedef int         ShuffleWord;
-#if (CUB_PTX_ARCH > 0) && (CUB_PTX_ARCH <= 130)
+#if (HIPCUB_ARCH > 0) && (HIPCUB_ARCH <= 130)
     typedef float       VolatileWord;
     typedef uint2       DeviceWord;
 #else
@@ -404,7 +404,7 @@ template <>
 struct UnitWord <float4>
 {
     typedef int         ShuffleWord;
-#if (CUB_PTX_ARCH > 0) && (CUB_PTX_ARCH <= 130)
+#if (HIPCUB_ARCH > 0) && (HIPCUB_ARCH <= 130)
     typedef float               VolatileWord;
     typedef uint4               DeviceWord;
 #else
@@ -420,7 +420,7 @@ template <>
 struct UnitWord <char2>
 {
     typedef unsigned short      ShuffleWord;
-#if (CUB_PTX_ARCH > 0) && (CUB_PTX_ARCH <= 130)
+#if (HIPCUB_ARCH > 0) && (HIPCUB_ARCH <= 130)
     typedef unsigned short      VolatileWord;
     typedef short               DeviceWord;
 #else
@@ -1062,28 +1062,28 @@ template <typename _T>
 struct TypeConst;
 
 template <>
-struct TypeConst<cuComplex>
+struct TypeConst<hipComplex>
 {
-    static __host__ __device__ __forceinline__ cuComplex Zero()
+    static __host__ __device__ __forceinline__ hipComplex Zero()
     {
-        return make_cuComplex(0.f, 0.f);
+        return make_hipComplex(0.f, 0.f);
     }
-    static __host__ __device__ __forceinline__ cuComplex One()
+    static __host__ __device__ __forceinline__ hipComplex One()
     {
-        return make_cuComplex(1.f, 0.f);
+        return make_hipComplex(1.f, 0.f);
     }
 };
 
 template <>
-struct TypeConst<cuDoubleComplex>
+struct TypeConst<hipDoubleComplex>
 {
-    static __host__ __device__ __forceinline__ cuDoubleComplex Zero()
+    static __host__ __device__ __forceinline__ hipDoubleComplex Zero()
     {
-        return make_cuDoubleComplex(0.f, 0.f);
+        return make_hipDoubleComplex(0.f, 0.f);
     }
-    static __host__ __device__ __forceinline__ cuDoubleComplex One()
+    static __host__ __device__ __forceinline__ hipDoubleComplex One()
     {
-        return make_cuDoubleComplex(1.f, 0.f);
+        return make_hipDoubleComplex(1.f, 0.f);
     }
 };
 
@@ -1181,8 +1181,8 @@ template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTE
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-template <> struct NumericTraits<cuComplex> :           BaseTraits<FLOATING_POINT, false, false, void, cuComplex> {};
-template <> struct NumericTraits<cuDoubleComplex> :     BaseTraits<FLOATING_POINT, false, false, void, cuDoubleComplex> {};
+template <> struct NumericTraits<hipComplex> :           BaseTraits<FLOATING_POINT, false, false, void, hipComplex> {};
+template <> struct NumericTraits<hipDoubleComplex> :     BaseTraits<FLOATING_POINT, false, false, void, hipDoubleComplex> {};
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 

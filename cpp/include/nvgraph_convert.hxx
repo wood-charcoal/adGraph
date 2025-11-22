@@ -33,12 +33,12 @@ namespace nvgraph
   void csr2csc(int m, int n, int nnz,
                const void *csrVal, const int *csrRowPtr, const int *csrColInd,
                void *cscVal, int *cscRowInd, int *cscColPtr,
-               cusparseAction_t copyValues, hipsparseIndexBase_t idxBase,
+               hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipblasDatatype_t *dataType);
   void csc2csr(int m, int n, int nnz,
                const void *cscVal, const int *cscRowInd, const int *cscColPtr,
                void *csrVal, int *csrRowPtr, int *csrColInd,
-               cusparseAction_t copyValues, hipsparseIndexBase_t idxBase,
+               hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipblasDatatype_t *dataType);
 
   void csr2cscP(int m, int n, int nnz,

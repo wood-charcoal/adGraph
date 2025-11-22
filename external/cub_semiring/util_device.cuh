@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2017, NVIDIA CORPORATION.  All rights reserved.
@@ -58,7 +59,7 @@ namespace cub
      */
     template <int ALLOCATIONS>
     __host__ __device__ __forceinline__
-        cudaError_t
+        hipError_t
         AliasTemporaries(
             void *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,              ///< [in,out] Size in bytes of \t d_temp_storage allocation
@@ -89,7 +90,7 @@ namespace cub
         // Check if enough storage provided
         if (temp_storage_bytes < bytes_needed)
         {
-            return CubDebug(cudaErrorInvalidValue);
+            return HipcubDebug(hipErrorInvalidValue);
         }
 
         // Alias
@@ -113,7 +114,7 @@ namespace cub
     /**
      * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10)
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t PtxVersion(int &ptx_version)
+    HIPCUB_RUNTIME_FUNCTION __forceinline__ hipError_t PtxVersion(int &ptx_version)
     {
         struct Dummy
         {
@@ -121,7 +122,7 @@ namespace cub
             typedef void (*EmptyKernelPtr)();
 
             /// Force EmptyKernel<void> to be generated if this class is used
-            CUB_RUNTIME_FUNCTION __forceinline__
+            HIPCUB_RUNTIME_FUNCTION __forceinline__
                 EmptyKernelPtr
                 Empty()
             {
@@ -133,20 +134,20 @@ namespace cub
         (void)ptx_version;
 
         // CUDA API calls not supported from this device
-        return cudaErrorInvalidConfiguration;
+        return hipErrorInvalidConfiguration;
 
-#elif (CUB_PTX_ARCH > 0)
+#elif (HIPCUB_ARCH > 0)
 
-        ptx_version = CUB_PTX_ARCH;
+        ptx_version = HIPCUB_ARCH;
         return hipSuccess;
 
 #else
 
-        cudaError_t error = hipSuccess;
+        hipError_t error = hipSuccess;
         do
         {
-            cudaFuncAttributes empty_kernel_attrs;
-            if (CubDebug(error = cudaFuncGetAttributes(&empty_kernel_attrs, EmptyKernel<void>)))
+            hipFuncAttributes empty_kernel_attrs;
+            if (HipcubDebug(error = hipFuncGetAttributes(&empty_kernel_attrs, EmptyKernel<void>)))
                 break;
             ptx_version = empty_kernel_attrs.ptxVersion * 10;
         } while (0);
@@ -159,25 +160,25 @@ namespace cub
     /**
      * \brief Retrieves the SM version (major * 100 + minor * 10)
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t SmVersion(int &sm_version, int device_ordinal)
+    HIPCUB_RUNTIME_FUNCTION __forceinline__ hipError_t SmVersion(int &sm_version, int device_ordinal)
     {
 #ifndef CUB_RUNTIME_ENABLED
         (void)sm_version;
         (void)device_ordinal;
 
         // CUDA API calls not supported from this device
-        return cudaErrorInvalidConfiguration;
+        return hipErrorInvalidConfiguration;
 
 #else
 
-        cudaError_t error = hipSuccess;
+        hipError_t error = hipSuccess;
         do
         {
             // Fill in SM version
             int major, minor;
-            if (CubDebug(error = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device_ordinal)))
+            if (HipcubDebug(error = hipDeviceGetAttribute(&major, hipDeviceAttributeComputeCapabilityMajor, device_ordinal)))
                 break;
-            if (CubDebug(error = cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device_ordinal)))
+            if (HipcubDebug(error = hipDeviceGetAttribute(&minor, hipDeviceAttributeComputeCapabilityMinor, device_ordinal)))
                 break;
             sm_version = major * 100 + minor * 10;
         } while (0);
@@ -192,14 +193,14 @@ namespace cub
     /**
      * Synchronize the stream if specified
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t SyncStream(hipStream_t stream)
+    HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t SyncStream(hipStream_t stream)
     {
-#if (CUB_PTX_ARCH == 0)
-        return cudaStreamSynchronize(stream);
+#if (HIPCUB_ARCH == 0)
+        return hipStreamSynchronize(stream);
 #else
         (void)stream;
         // Device can't yet sync on a specific stream
-        return cudaDeviceSynchronize();
+        return hipDeviceSynchronize();
 #endif
     }
 
@@ -210,7 +211,7 @@ namespace cub
      * The code snippet below illustrates the use of the MaxSmOccupancy function.
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/util_device.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/util_device.cuh>
      *
      * template <typename T>
      * __global__ void ExampleKernel()
@@ -235,8 +236,8 @@ namespace cub
      *
      */
     template <typename KernelPtr>
-    CUB_RUNTIME_FUNCTION __forceinline__
-        cudaError_t
+    HIPCUB_RUNTIME_FUNCTION __forceinline__
+        hipError_t
         MaxSmOccupancy(
             int &max_sm_occupancy, ///< [out] maximum number of thread blocks that can reside on a single SM
             KernelPtr kernel_ptr,  ///< [in] Kernel pointer for which to compute SM occupancy
@@ -250,11 +251,11 @@ namespace cub
         (void)max_sm_occupancy;
 
         // CUDA API calls not supported from this device
-        return CubDebug(cudaErrorInvalidConfiguration);
+        return HipcubDebug(hipErrorInvalidConfiguration);
 
 #else
 
-        return cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+        return hipOccupancyMaxActiveBlocksPerMultiprocessor(
             &max_sm_occupancy,
             kernel_ptr,
             block_threads,
@@ -277,18 +278,18 @@ namespace cub
         int tile_size;
         int sm_occupancy;
 
-        CUB_RUNTIME_FUNCTION __forceinline__
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
         KernelConfig() : block_threads(0), items_per_thread(0), tile_size(0), sm_occupancy(0) {}
 
         template <typename AgentPolicyT, typename KernelPtrT>
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             Init(KernelPtrT kernel_ptr)
         {
             block_threads = AgentPolicyT::BLOCK_THREADS;
             items_per_thread = AgentPolicyT::ITEMS_PER_THREAD;
             tile_size = block_threads * items_per_thread;
-            cudaError_t retval = MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
+            hipError_t retval = MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
             return retval;
         }
     };
@@ -298,11 +299,11 @@ namespace cub
     struct ChainedPolicy
     {
         /// The policy for the active compiler pass
-        typedef typename If<(CUB_PTX_ARCH < PTX_VERSION), typename PrevPolicyT::ActivePolicy, PolicyT>::Type ActivePolicy;
+        typedef typename If<(HIPCUB_ARCH < PTX_VERSION), typename PrevPolicyT::ActivePolicy, PolicyT>::Type ActivePolicy;
 
         /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
         template <typename FunctorT>
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Invoke(int ptx_version, FunctorT &op)
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Invoke(int ptx_version, FunctorT &op)
         {
             if (ptx_version < PTX_VERSION)
             {
@@ -321,7 +322,7 @@ namespace cub
 
         /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
         template <typename FunctorT>
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Invoke(int /*ptx_version*/, FunctorT &op)
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Invoke(int /*ptx_version*/, FunctorT &op)
         {
             return op.template Invoke<PolicyT>();
         }

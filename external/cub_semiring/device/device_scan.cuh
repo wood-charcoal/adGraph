@@ -29,7 +29,7 @@
 
 /**
  * \file
- * cub::DeviceScan provides device-wide, parallel operations for computing a prefix scan across a sequence of data items residing within device-accessible memory.
+ * hipcub::DeviceScan provides device-wide, parallel operations for computing a prefix scan across a sequence of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -116,7 +116,7 @@ namespace cub
          * The code snippet below illustrates the exclusive prefix sum of an \p int device vector.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_scan.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input and output
          * int  num_items;      // e.g., 7
@@ -127,13 +127,13 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
+         * hipcub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run exclusive prefix sum
-         * cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
+         * hipcub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
          *
          * // d_out s<-- [0, 8, 14, 21, 26, 29, 29]
          *
@@ -145,7 +145,7 @@ namespace cub
         template <
             typename InputIteratorT,
             typename OutputIteratorT>
-        CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t ExclusiveSum(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,            ///< [in] Pointer to the input sequence of data items
@@ -193,13 +193,13 @@ namespace cub
          * The code snippet below illustrates the exclusive prefix min-scan of an \p int device vector
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_scan.cuh>
          *
          * // CustomMin functor
          * struct CustomMin
          * {
          *     template <typename T>
-         *     CUB_RUNTIME_FUNCTION __forceinline__
+         *     HIPCUB_RUNTIME_FUNCTION __forceinline__
          *     T operator()(const T &a, const T &b) const {
          *         return (b < a) ? b : a;
          *     }
@@ -215,13 +215,13 @@ namespace cub
          * // Determine temporary device storage requirements for exclusive prefix scan
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceScan::ExclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, min_op, (int) MAX_INT, num_items);
+         * hipcub::DeviceScan::ExclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, min_op, (int) MAX_INT, num_items);
          *
          * // Allocate temporary storage for exclusive prefix scan
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run exclusive prefix min-scan
-         * cub::DeviceScan::ExclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, min_op, (int) MAX_INT, num_items);
+         * hipcub::DeviceScan::ExclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, min_op, (int) MAX_INT, num_items);
          *
          * // d_out <-- [2147483647, 8, 6, 6, 5, 3, 0]
          *
@@ -237,7 +237,7 @@ namespace cub
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT>
-        CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t ExclusiveScan(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,            ///< [in] Pointer to the input sequence of data items
@@ -285,7 +285,7 @@ namespace cub
          * The code snippet below illustrates the inclusive prefix sum of an \p int device vector.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_scan.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input and output
          * int  num_items;      // e.g., 7
@@ -296,13 +296,13 @@ namespace cub
          * // Determine temporary device storage requirements for inclusive prefix sum
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
+         * hipcub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
          *
          * // Allocate temporary storage for inclusive prefix sum
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run inclusive prefix sum
-         * cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
+         * hipcub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
          *
          * // d_out <-- [8, 14, 21, 26, 29, 29, 38]
          *
@@ -314,7 +314,7 @@ namespace cub
         template <
             typename InputIteratorT,
             typename OutputIteratorT>
-        CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t InclusiveSum(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,            ///< [in] Pointer to the input sequence of data items
@@ -354,13 +354,13 @@ namespace cub
          * The code snippet below illustrates the inclusive prefix min-scan of an \p int device vector.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_scan.cuh>
          *
          * // CustomMin functor
          * struct CustomMin
          * {
          *     template <typename T>
-         *     CUB_RUNTIME_FUNCTION __forceinline__
+         *     HIPCUB_RUNTIME_FUNCTION __forceinline__
          *     T operator()(const T &a, const T &b) const {
          *         return (b < a) ? b : a;
          *     }
@@ -376,13 +376,13 @@ namespace cub
          * // Determine temporary device storage requirements for inclusive prefix scan
          * void *d_temp_storage = NULL;
          * size_t temp_storage_bytes = 0;
-         * cub::DeviceScan::InclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, min_op, num_items);
+         * hipcub::DeviceScan::InclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, min_op, num_items);
          *
          * // Allocate temporary storage for inclusive prefix scan
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run inclusive prefix min-scan
-         * cub::DeviceScan::InclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, min_op, num_items);
+         * hipcub::DeviceScan::InclusiveScan(d_temp_storage, temp_storage_bytes, d_in, d_out, min_op, num_items);
          *
          * // d_out <-- [8, 6, 6, 5, 3, 0, 0]
          *
@@ -396,7 +396,7 @@ namespace cub
             typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT>
-        CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t InclusiveScan(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,            ///< [in] Pointer to the input sequence of data items

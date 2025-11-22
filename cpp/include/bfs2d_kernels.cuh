@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -13,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <cub/cub.cuh>
+#include <hipcub/hipcub.hpp>
 #include "nvgraph_error.hxx"
 
 #define MAXBLOCKS 65535
@@ -173,7 +174,7 @@ namespace bfs_kernels
 		void *d_temp_storage = NULL;
 		size_t temp_storage_bytes = 0;
 		IndexType *d_in = NULL, *d_out = NULL;
-		cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, n);
+		hipcub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, n);
 		return temp_storage_bytes;
 	}
 
@@ -184,7 +185,7 @@ namespace bfs_kernels
 		size_t temp_storage_bytes = 0;
 		IndexType *d_in = NULL, *d_out = NULL, *size_out = NULL;
 		degreeIterator<IndexType> degreeIt(NULL);
-		cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, degreeIt, d_out, size_out, n);
+		hipcub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, degreeIt, d_out, size_out, n);
 		return temp_storage_bytes;
 	}
 
@@ -203,7 +204,7 @@ namespace bfs_kernels
 												   IndexType *outputQueue,
 												   IndexType *output_cnt)
 	{
-		typedef cub::BlockScan<int, FILL_QUEUE_DIMX> BlockScan;
+		typedef hipcub::BlockScan<int, FILL_QUEUE_DIMX> BlockScan;
 		__shared__ typename BlockScan::TempStorage scan_temp_storage;
 
 		// When filling the output queue, we use output_cnt to know where to write in the queue

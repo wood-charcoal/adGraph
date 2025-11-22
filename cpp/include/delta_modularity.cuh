@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -15,9 +16,9 @@
  */
 #pragma once
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <cuda_profiler_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/generate.h>
@@ -28,7 +29,7 @@
 #include "functor.cuh"
 // #include "block_delta_modularity.cuh"
 
-#include <cusparse.h>
+#include <hipsparse.h>
 
 namespace nvlouvain
 {
@@ -389,7 +390,7 @@ namespace nvlouvain
     kernel_compute_cluster_sum<<<block_size_1d, grid_size_1d>>>(n_vertex, c_size,
                                                                 cluster_inv_ptr_ptr, cluster_inv_ind_ptr,
                                                                 k_vec_ptr, cluster_sum_vec_ptr);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     thrust::fill(thrust::cuda::par, delta_Q_arr_ptr, delta_Q_arr_ptr + n_edges, 0.0);
 
@@ -407,14 +408,14 @@ namespace nvlouvain
                                                                 cluster_d.begin(),
                                                                 cluster_sum_vec_ptr,
                                                                 k_vec_ptr, delta_Q_arr_ptr);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     block_size_1d = dim3((n_vertex + BLOCK_SIZE_1D * 4 - 1) / BLOCK_SIZE_1D * 4, 1, 1);
     grid_size_1d = dim3(BLOCK_SIZE_1D * 4, 1, 1);
 
     // zero out non maximum delta modularity for each vertex i grid size are now (128, 1, 1)
     max_delta_modularity_vec<<<block_size_1d, grid_size_1d>>>(n_vertex, csr_ptr_d.begin(), csr_ind_d.begin(), csr_val_d.begin(), delta_Q_arr_ptr);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
   }
 
   //
@@ -439,7 +440,7 @@ namespace nvlouvain
     kernel_compute_cluster_sum<<<block_size_1d, grid_size_1d>>>(n_vertex, c_size,
                                                                 cluster_inv_ptr_ptr, cluster_inv_ind_ptr,
                                                                 k_vec_ptr, cluster_sum_vec_ptr);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     thrust::fill(thrust::cuda::par, delta_Q_arr_ptr, delta_Q_arr_ptr + n_edges, 0.0);
     IdxType *csr_ptr_ptr = thrust::raw_pointer_cast(csr_ptr_d.data());
@@ -462,14 +463,14 @@ namespace nvlouvain
                                                                      cluster_ptr,
                                                                      cluster_sum_vec_ptr,
                                                                      k_vec_ptr, delta_Q_arr_ptr);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
 
     // Done compute delta modularity vec
     block_size_1d = dim3(n_vertex, 1, 1);
     grid_size_1d = dim3(WARP_SIZE, 1, 1);
 
     max_delta_modularity_vec_stride<<<block_size_1d, grid_size_1d>>>(n_vertex, n_edges, csr_ptr_d.begin(), csr_ind_d.begin(), csr_val_d.begin(), cluster_d.begin(), delta_Q_arr_ptr);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
   }
 
 } // nvlouvain

@@ -48,7 +48,7 @@
 #include <sstream>
 #include <cstdint>
 #include <math.h>
-#include "cuda_profiler_api.h"
+#include "hip/hip_runtime_api.h"
 
 // do the perf measurements, enabled by command line parameter '--perf'
 static int PERF = 0;
@@ -201,15 +201,15 @@ public:
 
 		int source_vert = param.source_vert;
 		std::cout << "Starting from vertex: " << source_vert << "\n";
-		cudaProfilerStart();
+		hipProfilerStart();
 		status = nvgraph2dBfs(handle,
 							  g1,
 							  source_vert,
 							  &calculated_distances_res[0],
 							  &calculated_predecessors_res[0]);
-		cudaProfilerStop();
+		hipProfilerStop();
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		if (PERF && n > PERF_ROWS_LIMIT)
 		{
@@ -225,7 +225,7 @@ public:
 									  &calculated_predecessors_res[0]);
 				ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			}
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 			stop = second();
 			printf("&&&& PERF Time_%s %10.8f -ms\n",
 				   test_id.c_str(),

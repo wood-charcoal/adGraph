@@ -47,23 +47,23 @@ namespace cub {
     #define CUB_USE_COOPERATIVE_GROUPS
 #endif
 
-/// CUB_PTX_ARCH reflects the PTX version targeted by the active compiler pass (or zero during the host pass).
-#ifndef CUB_PTX_ARCH
+/// HIPCUB_ARCH reflects the PTX version targeted by the active compiler pass (or zero during the host pass).
+#ifndef HIPCUB_ARCH
     #ifndef __CUDA_ARCH__
-        #define CUB_PTX_ARCH 0
+        #define HIPCUB_ARCH 0
     #else
-        #define CUB_PTX_ARCH __CUDA_ARCH__
+        #define HIPCUB_ARCH __CUDA_ARCH__
     #endif
 #endif
 
 
 /// Whether or not the source targeted by the active compiler pass is allowed to  invoke device kernels or methods from the CUDA runtime API.
-#ifndef CUB_RUNTIME_FUNCTION
+#ifndef HIPCUB_RUNTIME_FUNCTION
     #if !defined(__CUDA_ARCH__) || (__CUDA_ARCH__>= 350 && defined(__CUDACC_RDC__))
         #define CUB_RUNTIME_ENABLED
-        #define CUB_RUNTIME_FUNCTION __host__ __device__
+        #define HIPCUB_RUNTIME_FUNCTION __host__ __device__
     #else
-        #define CUB_RUNTIME_FUNCTION __host__
+        #define HIPCUB_RUNTIME_FUNCTION __host__
     #endif
 #endif
 
@@ -75,8 +75,8 @@ namespace cub {
     #define CUB_WARP_THREADS(arch)                          \
         (1 << CUB_LOG_WARP_THREADS(arch))
 
-    #define CUB_PTX_WARP_THREADS        CUB_WARP_THREADS(CUB_PTX_ARCH)
-    #define CUB_PTX_LOG_WARP_THREADS    CUB_LOG_WARP_THREADS(CUB_PTX_ARCH)
+    #define HIPCUB_WARP_THREADS        CUB_WARP_THREADS(HIPCUB_ARCH)
+    #define CUB_PTX_LOG_WARP_THREADS    CUB_LOG_WARP_THREADS(HIPCUB_ARCH)
 #endif
 
 
@@ -89,8 +89,8 @@ namespace cub {
     #define CUB_SMEM_BANKS(arch)                            \
         (1 << CUB_LOG_SMEM_BANKS(arch))
 
-    #define CUB_PTX_LOG_SMEM_BANKS      CUB_LOG_SMEM_BANKS(CUB_PTX_ARCH)
-    #define CUB_PTX_SMEM_BANKS          CUB_SMEM_BANKS(CUB_PTX_ARCH)
+    #define CUB_PTX_LOG_SMEM_BANKS      CUB_LOG_SMEM_BANKS(HIPCUB_ARCH)
+    #define CUB_PTX_SMEM_BANKS          CUB_SMEM_BANKS(HIPCUB_ARCH)
 #endif
 
 
@@ -102,7 +102,7 @@ namespace cub {
             ((arch >= 200) ?                                \
                 (3) :                                       \
                 (10)))
-    #define CUB_PTX_SUBSCRIPTION_FACTOR             CUB_SUBSCRIPTION_FACTOR(CUB_PTX_ARCH)
+    #define CUB_PTX_SUBSCRIPTION_FACTOR             CUB_SUBSCRIPTION_FACTOR(HIPCUB_ARCH)
 #endif
 
 
@@ -112,7 +112,7 @@ namespace cub {
         ((arch >= 300) ?                                    \
             (1) :                                           \
             (4))
-    #define CUB_PTX_PREFER_CONFLICT_OVER_PADDING    CUB_PREFER_CONFLICT_OVER_PADDING(CUB_PTX_ARCH)
+    #define CUB_PTX_PREFER_CONFLICT_OVER_PADDING    CUB_PREFER_CONFLICT_OVER_PADDING(HIPCUB_ARCH)
 #endif
 
 

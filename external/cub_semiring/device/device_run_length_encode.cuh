@@ -29,7 +29,7 @@
 
 /**
  * \file
- * cub::DeviceRunLengthEncode provides device-wide, parallel operations for computing a run-length encoding across a sequence of data items residing within device-accessible memory.
+ * hipcub::DeviceRunLengthEncode provides device-wide, parallel operations for computing a run-length encoding across a sequence of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -107,7 +107,7 @@ namespace cub
          * The code snippet below illustrates the run-length encoding of a sequence of \p int values.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_run_length_encode.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_run_length_encode.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input and output
          * int          num_items;          // e.g., 8
@@ -120,13 +120,13 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items);
+         * hipcub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run encoding
-         * cub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items);
+         * hipcub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items);
          *
          * // d_unique_out      <-- [0, 2, 9, 5, 8]
          * // d_counts_out      <-- [1, 2, 1, 3, 1]
@@ -144,7 +144,7 @@ namespace cub
             typename UniqueOutputIteratorT,
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT>
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Encode(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Encode(
             void *d_temp_storage,                  ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,            ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,                   ///< [in] Pointer to the input sequence of keys
@@ -159,7 +159,7 @@ namespace cub
             typedef NullType *FlagIterator; // FlagT iterator type (not used)
             typedef NullType SelectOp;      // Selection op (not used)
             typedef Equality EqualityOp;    // Default == operator
-            typedef cub::Sum ReductionOp;   // Value reduction operator
+            typedef hipcub::Sum ReductionOp;   // Value reduction operator
 
             // The lengths output value type
             typedef typename If<(Equals<typename std::iterator_traits<LengthsOutputIteratorT>::value_type, void>::VALUE), // LengthT =  (if output iterator's value type is void) ?
@@ -201,7 +201,7 @@ namespace cub
          * The code snippet below illustrates the identification of non-trivial runs within a sequence of \p int values.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_run_length_encode.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_run_length_encode.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for input and output
          * int          num_items;          // e.g., 8
@@ -214,13 +214,13 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRunLengthEncode::NonTrivialRuns(d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items);
+         * hipcub::DeviceRunLengthEncode::NonTrivialRuns(d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run encoding
-         * cub::DeviceRunLengthEncode::NonTrivialRuns(d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items);
+         * hipcub::DeviceRunLengthEncode::NonTrivialRuns(d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items);
          *
          * // d_offsets_out         <-- [1, 4]
          * // d_lengths_out         <-- [2, 3]
@@ -238,7 +238,7 @@ namespace cub
             typename OffsetsOutputIteratorT,
             typename LengthsOutputIteratorT,
             typename NumRunsOutputIteratorT>
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t NonTrivialRuns(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t NonTrivialRuns(
             void *d_temp_storage,                  ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,            ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,                   ///< [in] Pointer to input sequence of data items

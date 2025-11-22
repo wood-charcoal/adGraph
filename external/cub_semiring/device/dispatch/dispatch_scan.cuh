@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
@@ -29,7 +30,7 @@
 
 /**
  * \file
- * cub::DeviceScan provides device-wide, parallel operations for computing a prefix scan across a sequence of data items residing within device-accessible memory.
+ * hipcub::DeviceScan provides device-wide, parallel operations for computing a prefix scan across a sequence of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -97,7 +98,7 @@ namespace cub
         typename OutputIteratorT, ///< Random-access output iterator type for writing scan outputs \iterator
         typename ScanTileStateT,  ///< Tile status interface type
         typename ScanOpT,         ///< Binary scan functor type having member <tt>T operator()(const T &a, const T &b)</tt>
-        typename InitValueT,      ///< Initial value to seed the exclusive scan (cub::NullType for inclusive scans)
+        typename InitValueT,      ///< Initial value to seed the exclusive scan (hipcub::NullType for inclusive scans)
         typename OffsetT>         ///< Signed integer type for global offsets
     __launch_bounds__(int(ScanPolicyT::BLOCK_THREADS))
         __global__ void DeviceScanKernel(
@@ -137,7 +138,7 @@ namespace cub
         typename InputIteratorT,  ///< Random-access input iterator type for reading scan inputs \iterator
         typename OutputIteratorT, ///< Random-access output iterator type for writing scan outputs \iterator
         typename ScanOpT,         ///< Binary scan functor type having member <tt>T operator()(const T &a, const T &b)</tt>
-        typename InitValueT,      ///< The init_value element type for ScanOpT (cub::NullType for inclusive scans)
+        typename InitValueT,      ///< The init_value element type for ScanOpT (hipcub::NullType for inclusive scans)
         typename OffsetT>         ///< Signed integer type for global offsets
     struct DispatchScan
     {
@@ -253,22 +254,22 @@ namespace cub
         // Tuning policies of current PTX compiler pass
         //---------------------------------------------------------------------
 
-#if (CUB_PTX_ARCH >= 600)
+#if (HIPCUB_ARCH >= 600)
         typedef Policy600 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 520)
+#elif (HIPCUB_ARCH >= 520)
         typedef Policy520 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 350)
+#elif (HIPCUB_ARCH >= 350)
         typedef Policy350 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 300)
+#elif (HIPCUB_ARCH >= 300)
         typedef Policy300 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 200)
+#elif (HIPCUB_ARCH >= 200)
         typedef Policy200 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 130)
+#elif (HIPCUB_ARCH >= 130)
         typedef Policy130 PtxPolicy;
 
 #else
@@ -289,11 +290,11 @@ namespace cub
          * Initialize kernel dispatch configurations with the policies corresponding to the PTX assembly we will use
          */
         template <typename KernelConfig>
-        CUB_RUNTIME_FUNCTION __forceinline__ static void InitConfigs(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static void InitConfigs(
             int ptx_version,
             KernelConfig &scan_kernel_config)
         {
-#if (CUB_PTX_ARCH > 0)
+#if (HIPCUB_ARCH > 0)
             (void)ptx_version;
 
             // We're on the device, so initialize the kernel dispatch configurations with the current PTX policy
@@ -344,7 +345,7 @@ namespace cub
             int tile_items;
 
             template <typename PolicyT>
-            CUB_RUNTIME_FUNCTION __forceinline__ void Init()
+            HIPCUB_RUNTIME_FUNCTION __forceinline__ void Init()
             {
                 block_threads = PolicyT::BLOCK_THREADS;
                 items_per_thread = PolicyT::ITEMS_PER_THREAD;
@@ -361,9 +362,9 @@ namespace cub
          * specified kernel functions.
          */
         template <
-            typename ScanInitKernelPtrT,  ///< Function type of cub::DeviceScanInitKernel
-            typename ScanSweepKernelPtrT> ///< Function type of cub::DeviceScanKernelPtrT
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+            typename ScanInitKernelPtrT,  ///< Function type of hipcub::DeviceScanInitKernel
+            typename ScanSweepKernelPtrT> ///< Function type of hipcub::DeviceScanKernelPtrT
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Dispatch(
             void *d_temp_storage,            ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,      ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,             ///< [in] Pointer to the input sequence of data items
@@ -374,8 +375,8 @@ namespace cub
             hipStream_t stream,              ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
             bool debug_synchronous,          ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
             int /*ptx_version*/,             ///< [in] PTX version of dispatch kernels
-            ScanInitKernelPtrT init_kernel,  ///< [in] Kernel function pointer to parameterization of cub::DeviceScanInitKernel
-            ScanSweepKernelPtrT scan_kernel, ///< [in] Kernel function pointer to parameterization of cub::DeviceScanKernel
+            ScanInitKernelPtrT init_kernel,  ///< [in] Kernel function pointer to parameterization of hipcub::DeviceScanInitKernel
+            ScanSweepKernelPtrT scan_kernel, ///< [in] Kernel function pointer to parameterization of hipcub::DeviceScanKernel
             KernelConfig scan_kernel_config) ///< [in] Dispatch parameters that match the policy that \p scan_kernel was compiled for
         {
 
@@ -394,20 +395,20 @@ namespace cub
             (void)scan_kernel_config;
 
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 
 #else
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get device ordinal
                 int device_ordinal;
-                if (CubDebug(error = hipGetDevice(&device_ordinal)))
+                if (HipcubDebug(error = hipGetDevice(&device_ordinal)))
                     break;
 
                 // Get SM count
                 int sm_count;
-                if (CubDebug(error = cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
+                if (HipcubDebug(error = hipDeviceGetAttribute(&sm_count, hipDeviceAttributeMultiprocessorCount, device_ordinal)))
                     break;
 
                 // Number of input tiles
@@ -416,12 +417,12 @@ namespace cub
 
                 // Specify temporary storage allocation requirements
                 size_t allocation_sizes[1];
-                if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
+                if (HipcubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
                     break; // bytes needed for tile status descriptors
 
                 // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
                 void *allocations[1];
-                if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                if (HipcubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
                     break;
                 if (d_temp_storage == NULL)
                 {
@@ -435,13 +436,13 @@ namespace cub
 
                 // Construct the tile status interface
                 ScanTileStateT tile_state;
-                if (CubDebug(error = tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
+                if (HipcubDebug(error = tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
                     break;
 
                 // Log init_kernel configuration
                 int init_grid_size = (num_tiles + INIT_KERNEL_THREADS - 1) / INIT_KERNEL_THREADS;
                 if (debug_synchronous)
-                    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long)stream);
+                    _HipcubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long)stream);
 
                 // Invoke init_kernel to initialize tile descriptors
                 init_kernel<<<init_grid_size, INIT_KERNEL_THREADS, 0, stream>>>(
@@ -449,16 +450,16 @@ namespace cub
                     num_tiles);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
                 // Get SM occupancy for scan_kernel
                 int scan_sm_occupancy;
-                if (CubDebug(error = MaxSmOccupancy(
+                if (HipcubDebug(error = MaxSmOccupancy(
                                  scan_sm_occupancy, // out
                                  scan_kernel,
                                  scan_kernel_config.block_threads)))
@@ -466,7 +467,7 @@ namespace cub
 
                 // Get max x-dimension of grid
                 int max_dim_x;
-                if (CubDebug(error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+                if (HipcubDebug(error = hipDeviceGetAttribute(&max_dim_x, hipDeviceAttributeMaxGridDimX, device_ordinal)))
                     break;
                 ;
 
@@ -476,7 +477,7 @@ namespace cub
                 {
                     // Log scan_kernel configuration
                     if (debug_synchronous)
-                        _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
+                        _HipcubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                                 start_tile, scan_grid_size, scan_kernel_config.block_threads, (long long)stream, scan_kernel_config.items_per_thread, scan_sm_occupancy);
 
                     // Invoke scan_kernel
@@ -490,11 +491,11 @@ namespace cub
                         num_items);
 
                     // Check for failure to launch
-                    if (CubDebug(error = cudaPeekAtLastError()))
+                    if (HipcubDebug(error = hipPeekAtLastError()))
                         break;
 
                     // Sync the stream if specified to flush runtime errors
-                    if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                    if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                         break;
                 }
             } while (0);
@@ -507,7 +508,7 @@ namespace cub
         /**
          * Internal dispatch routine
          */
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Dispatch(
             void *d_temp_storage,       ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes, ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             InputIteratorT d_in,        ///< [in] Pointer to the input sequence of data items
@@ -518,12 +519,12 @@ namespace cub
             hipStream_t stream,         ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
             bool debug_synchronous)     ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
         {
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get PTX version
                 int ptx_version;
-                if (CubDebug(error = PtxVersion(ptx_version)))
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 
                 // Get kernel kernel dispatch configurations
@@ -531,7 +532,7 @@ namespace cub
                 InitConfigs(ptx_version, scan_kernel_config);
 
                 // Dispatch
-                if (CubDebug(error = Dispatch(
+                if (HipcubDebug(error = Dispatch(
                                  d_temp_storage,
                                  temp_storage_bytes,
                                  d_in,

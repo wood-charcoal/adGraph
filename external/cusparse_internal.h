@@ -84,16 +84,16 @@ extern "C"
     hipsparseStatus_t CUSPARSEAPI cusparseCgather(
         hipsparseHandle_t handle,
         int n,
-        const cuComplex *src,
+        const hipComplex *src,
         const int *map,
-        cuComplex *dst);
+        hipComplex *dst);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZgather(
         hipsparseHandle_t handle,
         int n,
-        const cuDoubleComplex *src,
+        const hipDoubleComplex *src,
         const int *map,
-        cuDoubleComplex *dst);
+        hipDoubleComplex *dst);
 
     //------- scatter: dst(map) = src ---------------------
 
@@ -121,15 +121,15 @@ extern "C"
     hipsparseStatus_t CUSPARSEAPI cusparseCscatter(
         hipsparseHandle_t handle,
         int n,
-        const cuComplex *src,
-        cuComplex *dst,
+        const hipComplex *src,
+        hipComplex *dst,
         const int *map);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZscatter(
         hipsparseHandle_t handle,
         int n,
-        const cuDoubleComplex *src,
-        cuDoubleComplex *dst,
+        const hipDoubleComplex *src,
+        hipDoubleComplex *dst,
         const int *map);
 
     // x[j] = j
@@ -169,10 +169,10 @@ extern "C"
      *
      * Error Status
      * ------------
-     * CUSPARSE_STATUS_SUCCESS          the operation completed successfully.
-     * CUSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
-     * CUSPARSE_STATUS_INVALID_VALUE    n is too big or negative
-     * CUSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
+     * HIPSPARSE_STATUS_SUCCESS          the operation completed successfully.
+     * HIPSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
+     * HIPSPARSE_STATUS_INVALID_VALUE    n is too big or negative
+     * HIPSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
      *                                  If n is normal, we should not have this internal error.
      *
      * ---------
@@ -210,11 +210,11 @@ extern "C"
      *
      * Error Status
      * ------------
-     * CUSPARSE_STATUS_SUCCESS          the operation completed successfully.
-     * CUSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
-     * CUSPARSE_STATUS_ALLOC_FAILED     the resources could not be allocated.
+     * HIPSPARSE_STATUS_SUCCESS          the operation completed successfully.
+     * HIPSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
+     * HIPSPARSE_STATUS_ALLOC_FAILED     the resources could not be allocated.
      *                                  it is possible if pBuffer is NULL.
-     * CUSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
+     * HIPSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
      *
      *
      */
@@ -243,10 +243,10 @@ extern "C"
      *
      * Error Status
      * ------------
-     * CUSPARSE_STATUS_SUCCESS          the operation completed successfully.
-     * CUSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
-     * CUSPARSE_STATUS_INVALID_VALUE    n is too big or negative
-     * CUSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
+     * HIPSPARSE_STATUS_SUCCESS          the operation completed successfully.
+     * HIPSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
+     * HIPSPARSE_STATUS_INVALID_VALUE    n is too big or negative
+     * HIPSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
      *                                  If n is normal, we should not have this internal error.
      *
      * ---------
@@ -288,11 +288,11 @@ extern "C"
      *
      * Error Status
      * ------------
-     * CUSPARSE_STATUS_SUCCESS          the operation completed successfully.
-     * CUSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
-     * CUSPARSE_STATUS_ALLOC_FAILED     the resources could not be allocated.
+     * HIPSPARSE_STATUS_SUCCESS          the operation completed successfully.
+     * HIPSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
+     * HIPSPARSE_STATUS_ALLOC_FAILED     the resources could not be allocated.
      *                                  it is possible if pBuffer is NULL.
-     * CUSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
+     * HIPSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
      *
      */
     hipsparseStatus_t CUSPARSEAPI cusparseIinclusiveScan(
@@ -322,10 +322,10 @@ extern "C"
      *
      * Error Status
      * ------------
-     * CUSPARSE_STATUS_SUCCESS          the operation completed successfully.
-     * CUSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
-     * CUSPARSE_STATUS_INVALID_VALUE    n is too big or negative
-     * CUSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
+     * HIPSPARSE_STATUS_SUCCESS          the operation completed successfully.
+     * HIPSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
+     * HIPSPARSE_STATUS_INVALID_VALUE    n is too big or negative
+     * HIPSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
      *                                  If n is normal, we should not have this internal error.
      *
      * ---------
@@ -364,10 +364,10 @@ extern "C"
      *
      * Error Status
      * ------------
-     * CUSPARSE_STATUS_SUCCESS          the operation completed successfully.
-     * CUSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
-     * CUSPARSE_STATUS_ALLOC_FAILED     the resources could not be allocated.
-     * CUSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
+     * HIPSPARSE_STATUS_SUCCESS          the operation completed successfully.
+     * HIPSPARSE_STATUS_NOT_INITIALIZED  the library was not initialized.
+     * HIPSPARSE_STATUS_ALLOC_FAILED     the resources could not be allocated.
+     * HIPSPARSE_STATUS_INTERNAL_ERROR   an internal operation failed.
      *
      * -----
      * Assumption:
@@ -377,15 +377,15 @@ extern "C"
      * Usage:
      *   int nBufferSize = 0;
      *   status = cusparseIstableSortByKey_bufferSize(handle, n, &nBufferSize);
-     *   assert(CUSPARSE_STATUS_SUCCESS == status);
+     *   assert(HIPSPARSE_STATUS_SUCCESS == status);
      *
      *   int *pBuffer;
-     *   cudaStat = cudaMalloc((void**)&pBuffer, (size_t)nBufferSize);
+     *   cudaStat = hipMalloc((void**)&pBuffer, (size_t)nBufferSize);
      *   assert(hipSuccess == cudaStat);
      *
      *   d_P = 0:n-1 ;
      *   status = cusparseIstableSortByKey(handle, n, d_csrRowPtrA, d_P, pBuffer);
-     *   assert(CUSPARSE_STATUS_SUCCESS == status);
+     *   assert(HIPSPARSE_STATUS_SUCCESS == status);
      *
      */
     hipsparseStatus_t CUSPARSEAPI cusparseIstableSortByKey(
@@ -479,16 +479,16 @@ extern "C"
         hipsparseHandle_t handle,
         int m,
         int n,
-        const cuComplex *alpha,
+        const hipComplex *alpha,
         const hipsparseMatDescr_t descrA,
         int nnzA,
-        const cuComplex *csrValA,
+        const hipComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrEndPtrA,
         const int *csrColIndA,
 
         const hipsparseMatDescr_t descrC,
-        cuComplex *csrValC,
+        hipComplex *csrValC,
         const int *csrRowPtrC,
         const int *csrEndPtrC,
         const int *csrColIndC,
@@ -498,16 +498,16 @@ extern "C"
         hipsparseHandle_t handle,
         int m,
         int n,
-        const cuDoubleComplex *alpha,
+        const hipDoubleComplex *alpha,
         const hipsparseMatDescr_t descrA,
         int nnzA,
-        const cuDoubleComplex *csrValA,
+        const hipDoubleComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrEndPtrA,
         const int *csrColIndA,
 
         const hipsparseMatDescr_t descrC,
-        cuDoubleComplex *csrValC,
+        hipDoubleComplex *csrValC,
         const int *csrRowPtrC,
         const int *csrEndPtrC,
         const int *csrColIndC,
@@ -551,14 +551,14 @@ extern "C"
         int m,
         int n,
         int nnz,
-        const cuComplex *alpha,
+        const hipComplex *alpha,
         const hipsparseMatDescr_t descra,
-        const cuComplex *csrVal,
+        const hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
-        const cuComplex *x,
-        const cuComplex *beta,
-        cuComplex *y);
+        const hipComplex *x,
+        const hipComplex *beta,
+        hipComplex *y);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrmv_hyb(
         hipsparseHandle_t handle,
@@ -566,14 +566,14 @@ extern "C"
         int m,
         int n,
         int nnz,
-        const cuDoubleComplex *alpha,
+        const hipDoubleComplex *alpha,
         const hipsparseMatDescr_t descra,
-        const cuDoubleComplex *csrVal,
+        const hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
-        const cuDoubleComplex *x,
-        const cuDoubleComplex *beta,
-        cuDoubleComplex *y);
+        const hipDoubleComplex *x,
+        const hipDoubleComplex *beta,
+        hipDoubleComplex *y);
 
     // ------------- getrf_ilu ---------------------
 
@@ -605,25 +605,25 @@ extern "C"
         hipsparseHandle_t handle,
         const int submatrix_k,
         const int n,
-        cuComplex *A,
+        hipComplex *A,
         const int *pattern,
         const int lda,
         int *d_status,
         int enable_boost,
         double *tol_ptr,
-        cuComplex *boost_ptr);
+        hipComplex *boost_ptr);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZgetrf_ilu(
         hipsparseHandle_t handle,
         const int submatrix_k,
         const int n,
-        cuDoubleComplex *A,
+        hipDoubleComplex *A,
         const int *pattern,
         const int lda,
         int *d_status,
         int enable_boost,
         double *tol_ptr,
-        cuDoubleComplex *boost_ptr);
+        hipDoubleComplex *boost_ptr);
 
     // ------------- potrf_ic ---------------------
 
@@ -649,7 +649,7 @@ extern "C"
         hipsparseHandle_t handle,
         const int submatrix_k,
         const int n,
-        cuComplex *A,
+        hipComplex *A,
         const int *pattern,
         const int lda,
         int *d_status);
@@ -658,7 +658,7 @@ extern "C"
         hipsparseHandle_t handle,
         const int submatrix_k,
         const int n,
-        cuDoubleComplex *A,
+        hipDoubleComplex *A,
         const int *pattern,
         const int lda,
         int *d_status);
@@ -715,7 +715,7 @@ extern "C"
         const int *csrRowPtr,
         const int *csrColInd,
         csric02Info_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseDcsric02_internal(
@@ -732,7 +732,7 @@ extern "C"
         const int *csrRowPtr,
         const int *csrColInd,
         csric02Info_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseCcsric02_internal(
@@ -745,11 +745,11 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        cuComplex *csrVal,
+        hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         csric02Info_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsric02_internal(
@@ -762,11 +762,11 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        cuDoubleComplex *csrVal,
+        hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         csric02Info_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     // csrilu02 internal
@@ -811,14 +811,14 @@ extern "C"
         csrilu02BatchInfo_t info,
         int enable_boost,
         double *tol,
-        cuComplex *numeric_boost);
+        hipComplex *numeric_boost);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrilu02Batch_numericBoost(
         hipsparseHandle_t handle,
         csrilu02BatchInfo_t info,
         int enable_boost,
         double *tol,
-        cuDoubleComplex *numeric_boost);
+        hipDoubleComplex *numeric_boost);
 
     hipsparseStatus_t CUSPARSEAPI cusparseScsrilu02Batch_bufferSizeExt(
         hipsparseHandle_t handle,
@@ -849,7 +849,7 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        cuComplex *csrVal,
+        hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
@@ -861,7 +861,7 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        cuDoubleComplex *csrVal,
+        hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
@@ -878,7 +878,7 @@ extern "C"
         const int *csrColInd,
         int batchSize,
         csrilu02BatchInfo_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseDcsrilu02Batch_analysis(
@@ -891,7 +891,7 @@ extern "C"
         const int *csrColInd,
         int batchSize,
         csrilu02BatchInfo_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseCcsrilu02Batch_analysis(
@@ -899,12 +899,12 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        const cuComplex *csrVal,
+        const hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
         csrilu02BatchInfo_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrilu02Batch_analysis(
@@ -912,12 +912,12 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        const cuDoubleComplex *csrVal,
+        const hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
         csrilu02BatchInfo_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseScsrilu02Batch(
@@ -930,7 +930,7 @@ extern "C"
         const int *csrColInd,
         int batchSize,
         csrilu02BatchInfo_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseDcsrilu02Batch(
@@ -943,7 +943,7 @@ extern "C"
         const int *csrColInd,
         int batchSize,
         csrilu02BatchInfo_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseCcsrilu02Batch(
@@ -951,12 +951,12 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descra,
-        cuComplex *csrVal,
+        hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
         csrilu02BatchInfo_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrilu02Batch(
@@ -964,12 +964,12 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descra,
-        cuDoubleComplex *csrVal,
+        hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
         csrilu02BatchInfo_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     // --------------- csrsv2 batch --------------
@@ -1006,7 +1006,7 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        cuComplex *csrVal,
+        hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
@@ -1019,7 +1019,7 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        cuDoubleComplex *csrVal,
+        hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
@@ -1037,7 +1037,7 @@ extern "C"
         const int *csrColInd,
         int batchSize,
         csrsv2Info_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseDcsrsv2Batch_analysis(
@@ -1051,7 +1051,7 @@ extern "C"
         const int *csrColInd,
         int batchSize,
         csrsv2Info_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseCcsrsv2Batch_analysis(
@@ -1060,12 +1060,12 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        const cuComplex *csrVal,
+        const hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
         csrsv2Info_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrsv2Batch_analysis(
@@ -1074,12 +1074,12 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        const cuDoubleComplex *csrVal,
+        const hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         int batchSize,
         csrsv2Info_t info,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseXcsrsv2Batch_zeroPivot(
@@ -1100,7 +1100,7 @@ extern "C"
         const float *x,
         float *y,
         int batchSize,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseDcsrsv2Batch_solve(
@@ -1116,7 +1116,7 @@ extern "C"
         const double *x,
         double *y,
         int batchSize,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseCcsrsv2Batch_solve(
@@ -1125,14 +1125,14 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descra,
-        const cuComplex *csrVal,
+        const hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         csrsv2Info_t info,
-        const cuComplex *x,
-        cuComplex *y,
+        const hipComplex *x,
+        hipComplex *y,
         int batchSize,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrsv2Batch_solve(
@@ -1141,14 +1141,14 @@ extern "C"
         int m,
         int nnz,
         const hipsparseMatDescr_t descra,
-        const cuDoubleComplex *csrVal,
+        const hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         csrsv2Info_t info,
-        const cuDoubleComplex *x,
-        cuDoubleComplex *y,
+        const hipDoubleComplex *x,
+        hipDoubleComplex *y,
         int batchSize,
-        cusparseSolvePolicy_t policy,
+        hipsparseSolvePolicy_t policy,
         void *pBuffer);
 
     //-------------- csrgemm2 -------------
@@ -1345,33 +1345,33 @@ extern "C"
         int n,
         int k,
 
-        const cuComplex *alpha,
+        const hipComplex *alpha,
 
         const hipsparseMatDescr_t descrA,
         int nnzA,
-        const cuComplex *csrValA,
+        const hipComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrEndPtrA,
         const int *csrColIndA,
 
         const hipsparseMatDescr_t descrB,
         int nnzB,
-        const cuComplex *csrValB,
+        const hipComplex *csrValB,
         const int *csrRowPtrB,
         const int *csrEndPtrB,
         const int *csrColIndB,
 
         const hipsparseMatDescr_t descrD,
         int nnzD,
-        const cuComplex *csrValD,
+        const hipComplex *csrValD,
         const int *csrRowPtrD,
         const int *csrEndPtrD,
         const int *csrColIndD,
 
-        const cuComplex *beta,
+        const hipComplex *beta,
 
         const hipsparseMatDescr_t descrC,
-        cuComplex *csrValC,
+        hipComplex *csrValC,
         const int *csrRowPtrC,
         const int *csrEndPtrC,
         const int *csrColIndC,
@@ -1385,33 +1385,33 @@ extern "C"
         int n,
         int k,
 
-        const cuDoubleComplex *alpha,
+        const hipDoubleComplex *alpha,
 
         const hipsparseMatDescr_t descrA,
         int nnzA,
-        const cuDoubleComplex *csrValA,
+        const hipDoubleComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrEndPtrA,
         const int *csrColIndA,
 
         const hipsparseMatDescr_t descrB,
         int nnzB,
-        const cuDoubleComplex *csrValB,
+        const hipDoubleComplex *csrValB,
         const int *csrRowPtrB,
         const int *csrEndPtrB,
         const int *csrColIndB,
 
         const hipsparseMatDescr_t descrD,
         int nnzD,
-        const cuDoubleComplex *csrValD,
+        const hipDoubleComplex *csrValD,
         const int *csrRowPtrD,
         const int *csrEndPtrD,
         const int *csrColIndD,
 
-        const cuDoubleComplex *beta,
+        const hipDoubleComplex *beta,
 
         const hipsparseMatDescr_t descrC,
-        cuDoubleComplex *csrValC,
+        hipDoubleComplex *csrValC,
         const int *csrRowPtrC,
         const int *csrEndPtrC,
         const int *csrColIndC,
@@ -1484,14 +1484,14 @@ hipsparseStatus_t CUSPARSEAPI cusparseCcscilu02_numericBoost(
     cscilu02Info_t info,
     int enable_boost,
     double *tol,
-    cuComplex *numeric_boost);
+    hipComplex *numeric_boost);
 
 hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02_numericBoost(
     hipsparseHandle_t handle,
     cscilu02Info_t info,
     int enable_boost,
     double *tol,
-    cuDoubleComplex *numeric_boost);
+    hipDoubleComplex *numeric_boost);
 
 hipsparseStatus_t CUSPARSEAPI cusparseScscilu02_bufferSize(
     hipsparseHandle_t handle,
@@ -1522,7 +1522,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseCcscilu02_bufferSize(
     int m,
     int nnz,
     const hipsparseMatDescr_t descrA,
-    cuComplex *cscVal,
+    hipComplex *cscVal,
     const int *cscColPtr,
     const int *cscEndPtr,
     const int *cscRowInd,
@@ -1534,7 +1534,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02_bufferSize(
     int m,
     int nnz,
     const hipsparseMatDescr_t descrA,
-    cuDoubleComplex *cscVal,
+    hipDoubleComplex *cscVal,
     const int *cscColPtr,
     const int *cscEndPtr,
     const int *cscRowInd,
@@ -1552,7 +1552,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseScscilu02_analysis(
     const int *cscEndPtr,
     const int *cscRowInd,
     cscilu02Info_t info,
-    cusparseSolvePolicy_t policy,
+    hipsparseSolvePolicy_t policy,
     void *pBuffer);
 
 hipsparseStatus_t CUSPARSEAPI cusparseDcscilu02_analysis(
@@ -1565,7 +1565,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseDcscilu02_analysis(
     const int *cscEndPtr,
     const int *cscRowInd,
     cscilu02Info_t info,
-    cusparseSolvePolicy_t policy,
+    hipsparseSolvePolicy_t policy,
     void *pBuffer);
 
 hipsparseStatus_t CUSPARSEAPI cusparseCcscilu02_analysis(
@@ -1573,12 +1573,12 @@ hipsparseStatus_t CUSPARSEAPI cusparseCcscilu02_analysis(
     int m,
     int nnz,
     const hipsparseMatDescr_t descrA,
-    const cuComplex *cscVal,
+    const hipComplex *cscVal,
     const int *cscColPtr,
     const int *cscEndPtr,
     const int *cscRowInd,
     cscilu02Info_t info,
-    cusparseSolvePolicy_t policy,
+    hipsparseSolvePolicy_t policy,
     void *pBuffer);
 
 hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02_analysis(
@@ -1586,12 +1586,12 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02_analysis(
     int m,
     int nnz,
     const hipsparseMatDescr_t descrA,
-    const cuDoubleComplex *cscVal,
+    const hipDoubleComplex *cscVal,
     const int *cscColPtr,
     const int *cscEndPtr,
     const int *cscRowInd,
     cscilu02Info_t info,
-    cusparseSolvePolicy_t policy,
+    hipsparseSolvePolicy_t policy,
     void *pBuffer);
 
 
@@ -1605,7 +1605,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseScscilu02(
     const int *cscEndPtr,
     const int *cscRowInd,
     cscilu02Info_t info,
-    cusparseSolvePolicy_t policy,
+    hipsparseSolvePolicy_t policy,
     void *pBuffer);
 
 hipsparseStatus_t CUSPARSEAPI cusparseDcscilu02(
@@ -1618,7 +1618,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseDcscilu02(
     const int *cscEndPtr,
     const int *cscRowInd,
     cscilu02Info_t info,
-    cusparseSolvePolicy_t policy,
+    hipsparseSolvePolicy_t policy,
     void *pBuffer);
 
 hipsparseStatus_t CUSPARSEAPI cusparseCcscilu02(
@@ -1626,12 +1626,12 @@ hipsparseStatus_t CUSPARSEAPI cusparseCcscilu02(
     int m,
     int nnz,
     const hipsparseMatDescr_t descrA,
-    cuComplex *cscVal,
+    hipComplex *cscVal,
     const int *cscColPtr,
     const int *cscEndPtr,
     const int *cscRowInd,
     cscilu02Info_t info,
-    cusparseSolvePolicy_t policy,
+    hipsparseSolvePolicy_t policy,
     void *pBuffer);
 
 hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
@@ -1639,12 +1639,12 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
     int m,
     int nnz,
     const hipsparseMatDescr_t descrA,
-    cuDoubleComplex *cscVal,
+    hipDoubleComplex *cscVal,
     const int *cscColPtr,
     const int *cscEndPtr,
     const int *cscRowInd,
     cscilu02Info_t info,
-    cusparseSolvePolicy_t policy,
+    hipsparseSolvePolicy_t policy,
     void *pBuffer);
 #endif
 
@@ -1694,14 +1694,14 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         csrxilu0Info_t info,
         int enable_boost,
         double *tol,
-        cuComplex *numeric_boost);
+        hipComplex *numeric_boost);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrxilu0_numericBoost(
         hipsparseHandle_t handle,
         csrxilu0Info_t info,
         int enable_boost,
         double *tol,
-        cuDoubleComplex *numeric_boost);
+        hipDoubleComplex *numeric_boost);
 
     hipsparseStatus_t CUSPARSEAPI cusparseXcsrxilu0_bufferSizeExt(
         hipsparseHandle_t handle,
@@ -1755,7 +1755,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         int n,
         int k,
         const hipsparseMatDescr_t descrA,
-        cuComplex *csrVal,
+        hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrEndPtr,
         const int *csrColInd,
@@ -1770,7 +1770,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         int n,
         int k,
         const hipsparseMatDescr_t descrA,
-        cuDoubleComplex *csrVal,
+        hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrEndPtr,
         const int *csrColInd,
@@ -1900,7 +1900,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         int iay,
         const hipsparseMatDescr_t descrA,
         int nnzA,
-        const cuComplex *csrValA,
+        const hipComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrEndPtrA,
         const int *csrColIndA,
@@ -1909,7 +1909,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         int iby,
         const hipsparseMatDescr_t descrB,
         int nnzB,
-        const cuComplex *csrValB,
+        const hipComplex *csrValB,
         const int *csrRowPtrB,
         const int *csrEndPtrB,
         const int *csrColIndB,
@@ -1918,7 +1918,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         int icy,
         const hipsparseMatDescr_t descrC,
         int nnzC,
-        cuComplex *csrValC,
+        hipComplex *csrValC,
         const int *csrRowPtrC,
         const int *csrEndPtrC,
         const int *csrColIndC,
@@ -1936,7 +1936,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         int iay,
         const hipsparseMatDescr_t descrA,
         int nnzA,
-        const cuDoubleComplex *csrValA,
+        const hipDoubleComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrEndPtrA,
         const int *csrColIndA,
@@ -1945,7 +1945,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         int iby,
         const hipsparseMatDescr_t descrB,
         int nnzB,
-        const cuDoubleComplex *csrValB,
+        const hipDoubleComplex *csrValB,
         const int *csrRowPtrB,
         const int *csrEndPtrB,
         const int *csrColIndB,
@@ -1954,7 +1954,7 @@ hipsparseStatus_t CUSPARSEAPI cusparseZcscilu02(
         int icy,
         const hipsparseMatDescr_t descrC,
         int nnzC,
-        cuDoubleComplex *csrValC,
+        hipDoubleComplex *csrValC,
         const int *csrRowPtrC,
         const int *csrEndPtrC,
         const int *csrColIndC,
@@ -2060,7 +2060,7 @@ hipsparseStatus_t  CUSPARSEAPI cusparseCcsrxtrsm(
     int iax,
     int iay,
     const hipsparseMatDescr_t descrA,
-    const cuComplex *csrValA,
+    const hipComplex *csrValA,
     const int *csrRowPtrA,
     const int *csrEndPtrA,
     const int *csrColIndA,
@@ -2068,7 +2068,7 @@ hipsparseStatus_t  CUSPARSEAPI cusparseCcsrxtrsm(
     int ibx,
     int iby,
     const hipsparseMatDescr_t descrB,
-    cuComplex *csrValB,
+    hipComplex *csrValB,
     const int *csrRowPtrB,
     const int *csrEndPtrB,
     const int *csrColIndB,
@@ -2088,7 +2088,7 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
     int iax,
     int iay,
     const hipsparseMatDescr_t descrA,
-    const cuDoubleComplex *csrValA,
+    const hipDoubleComplex *csrValA,
     const int *csrRowPtrA,
     const int *csrEndPtrA,
     const int *csrColIndA,
@@ -2096,7 +2096,7 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
     int ibx,
     int iby,
     const hipsparseMatDescr_t descrB,
-    cuDoubleComplex *csrValB,
+    hipDoubleComplex *csrValB,
     const int *csrRowPtrB,
     const int *csrEndPtrB,
     const int *csrColIndB,
@@ -2146,14 +2146,14 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         csrilu03Info_t info,
         int enable_boost,
         double *tol,
-        cuComplex *numeric_boost);
+        hipComplex *numeric_boost);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrilu03_numericBoost(
         hipsparseHandle_t handle,
         csrilu03Info_t info,
         int enable_boost,
         double *tol,
-        cuDoubleComplex *numeric_boost);
+        hipDoubleComplex *numeric_boost);
 
     hipsparseStatus_t CUSPARSEAPI cusparseScsrilu03(
         hipsparseHandle_t handle,
@@ -2182,7 +2182,7 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        cuComplex *csrVal,
+        hipComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         csrilu03Info_t info,
@@ -2193,7 +2193,7 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         int m,
         int nnz,
         const hipsparseMatDescr_t descrA,
-        cuDoubleComplex *csrVal,
+        hipDoubleComplex *csrVal,
         const int *csrRowPtr,
         const int *csrColInd,
         csrilu03Info_t info,
@@ -2257,15 +2257,15 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         int n,
         int k,
         int nnz,
-        const cuComplex *alpha,
+        const hipComplex *alpha,
         const hipsparseMatDescr_t descrA,
-        const cuComplex *csrValA,
+        const hipComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrColIndA,
-        const cuComplex *B,
+        const hipComplex *B,
         int ldb,
-        const cuComplex *beta,
-        cuComplex *C,
+        const hipComplex *beta,
+        hipComplex *C,
         int ldc,
         void *buffer);
 
@@ -2277,15 +2277,15 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         int n,
         int k,
         int nnz,
-        const cuDoubleComplex *alpha,
+        const hipDoubleComplex *alpha,
         const hipsparseMatDescr_t descrA,
-        const cuDoubleComplex *csrValA,
+        const hipDoubleComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrColIndA,
-        const cuDoubleComplex *B,
+        const hipDoubleComplex *B,
         int ldb,
-        const cuDoubleComplex *beta,
-        cuDoubleComplex *C,
+        const hipDoubleComplex *beta,
+        hipDoubleComplex *C,
         int ldc,
         void *buffer);
 
@@ -2316,10 +2316,10 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         hipsparseOperation_t transa,
         int m,
         int n,
-        const cuComplex *alpha,
-        const cuComplex *A,
+        const hipComplex *alpha,
+        const hipComplex *A,
         int lda,
-        cuComplex *C,
+        hipComplex *C,
         int ldc);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZtranspose(
@@ -2327,10 +2327,10 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         hipsparseOperation_t transa,
         int m,
         int n,
-        const cuDoubleComplex *alpha,
-        const cuDoubleComplex *A,
+        const hipDoubleComplex *alpha,
+        const hipDoubleComplex *A,
         int lda,
-        cuDoubleComplex *C,
+        hipDoubleComplex *C,
         int ldc);
 
     hipsparseStatus_t CUSPARSEAPI cusparseScsrmv_binary(
@@ -2367,13 +2367,13 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         int m,
         int n,
         int nnz,
-        const cuComplex *alpha,
+        const hipComplex *alpha,
         const hipsparseMatDescr_t descra,
         const int *csrRowPtr,
         const int *csrColInd,
-        const cuComplex *x,
-        const cuComplex *beta,
-        cuComplex *y);
+        const hipComplex *x,
+        const hipComplex *beta,
+        hipComplex *y);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZcsrmv_binary(
         hipsparseHandle_t handle,
@@ -2381,13 +2381,13 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         int m,
         int n,
         int nnz,
-        const cuDoubleComplex *alpha,
+        const hipDoubleComplex *alpha,
         const hipsparseMatDescr_t descra,
         const int *csrRowPtr,
         const int *csrColInd,
-        const cuDoubleComplex *x,
-        const cuDoubleComplex *beta,
-        cuDoubleComplex *y);
+        const hipDoubleComplex *x,
+        const hipDoubleComplex *beta,
+        hipDoubleComplex *y);
 
     hipsparseStatus_t CUSPARSEAPI cusparseCreateCsrmmInfo(
         csrmmInfo_t *info);
@@ -2457,15 +2457,15 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         int n,
         int k,
         int nnz,
-        const cuComplex *alpha,
+        const hipComplex *alpha,
         const hipsparseMatDescr_t descrA,
-        const cuComplex *csrValA,
+        const hipComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrColIndA,
-        const cuComplex *B,
+        const hipComplex *B,
         int ldb,
-        const cuComplex *beta,
-        cuComplex *C,
+        const hipComplex *beta,
+        hipComplex *C,
         int ldc,
         csrmmInfo_t info,
         void *buffer);
@@ -2478,15 +2478,15 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
         int n,
         int k,
         int nnz,
-        const cuDoubleComplex *alpha,
+        const hipDoubleComplex *alpha,
         const hipsparseMatDescr_t descrA,
-        const cuDoubleComplex *csrValA,
+        const hipDoubleComplex *csrValA,
         const int *csrRowPtrA,
         const int *csrColIndA,
-        const cuDoubleComplex *B,
+        const hipDoubleComplex *B,
         int ldb,
-        const cuDoubleComplex *beta,
-        cuDoubleComplex *C,
+        const hipDoubleComplex *beta,
+        hipDoubleComplex *C,
         int ldc,
         csrmmInfo_t info,
         void *buffer);
@@ -2818,19 +2818,19 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
     hipsparseStatus_t CUSPARSEAPI cusparseCgtsv2Batch(
         hipsparseHandle_t handle,
         int n,
-        cuComplex *dl,
-        cuComplex *d,
-        cuComplex *du,
-        cuComplex *x,
+        hipComplex *dl,
+        hipComplex *d,
+        hipComplex *du,
+        hipComplex *x,
         int batchCount);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZgtsv2Batch(
         hipsparseHandle_t handle,
         int n,
-        cuDoubleComplex *dl,
-        cuDoubleComplex *d,
-        cuDoubleComplex *du,
-        cuDoubleComplex *x,
+        hipDoubleComplex *dl,
+        hipDoubleComplex *d,
+        hipDoubleComplex *du,
+        hipDoubleComplex *x,
         int batchCount);
 
     hipsparseStatus_t CUSPARSEAPI cusparseSgtsv3Batch_bufferSizeExt(
@@ -2856,20 +2856,20 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
     hipsparseStatus_t CUSPARSEAPI cusparseCgtsv3Batch_bufferSizeExt(
         hipsparseHandle_t handle,
         int n,
-        const cuComplex *dl,
-        const cuComplex *d,
-        const cuComplex *du,
-        const cuComplex *x,
+        const hipComplex *dl,
+        const hipComplex *d,
+        const hipComplex *du,
+        const hipComplex *x,
         int batchSize,
         size_t *pBufferSizeInBytes);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZgtsv3Batch_bufferSizeExt(
         hipsparseHandle_t handle,
         int n,
-        const cuDoubleComplex *dl,
-        const cuDoubleComplex *d,
-        const cuDoubleComplex *du,
-        const cuDoubleComplex *x,
+        const hipDoubleComplex *dl,
+        const hipDoubleComplex *d,
+        const hipDoubleComplex *du,
+        const hipDoubleComplex *x,
         int batchSize,
         size_t *pBufferSizeInBytes);
 
@@ -2896,20 +2896,20 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
     hipsparseStatus_t CUSPARSEAPI cusparseCgtsv3Batch(
         hipsparseHandle_t handle,
         int n,
-        cuComplex *dl,
-        cuComplex *d,
-        cuComplex *du,
-        cuComplex *x,
+        hipComplex *dl,
+        hipComplex *d,
+        hipComplex *du,
+        hipComplex *x,
         int batchSize,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZgtsv3Batch(
         hipsparseHandle_t handle,
         int n,
-        cuDoubleComplex *dl,
-        cuDoubleComplex *d,
-        cuDoubleComplex *du,
-        cuDoubleComplex *x,
+        hipDoubleComplex *dl,
+        hipDoubleComplex *d,
+        hipDoubleComplex *du,
+        hipDoubleComplex *x,
         int batchSize,
         void *pBuffer);
 
@@ -2936,20 +2936,20 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
     hipsparseStatus_t CUSPARSEAPI cusparseCgtsv4Batch_bufferSizeExt(
         hipsparseHandle_t handle,
         int n,
-        const cuComplex *dl,
-        const cuComplex *d,
-        const cuComplex *du,
-        const cuComplex *x,
+        const hipComplex *dl,
+        const hipComplex *d,
+        const hipComplex *du,
+        const hipComplex *x,
         int batchSize,
         size_t *pBufferSizeInBytes);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZgtsv4Batch_bufferSizeExt(
         hipsparseHandle_t handle,
         int n,
-        const cuDoubleComplex *dl,
-        const cuDoubleComplex *d,
-        const cuDoubleComplex *du,
-        const cuDoubleComplex *x,
+        const hipDoubleComplex *dl,
+        const hipDoubleComplex *d,
+        const hipDoubleComplex *du,
+        const hipDoubleComplex *x,
         int batchSize,
         size_t *pBufferSizeInBytes);
 
@@ -2976,20 +2976,20 @@ hipsparseStatus_t  CUSPARSEAPI cusparseZcsrxtrsm(
     hipsparseStatus_t CUSPARSEAPI cusparseCgtsv4Batch(
         hipsparseHandle_t handle,
         int n,
-        cuComplex *dl,
-        cuComplex *d,
-        cuComplex *du,
-        cuComplex *x,
+        hipComplex *dl,
+        hipComplex *d,
+        hipComplex *du,
+        hipComplex *x,
         int batchSize,
         void *pBuffer);
 
     hipsparseStatus_t CUSPARSEAPI cusparseZgtsv4Batch(
         hipsparseHandle_t handle,
         int n,
-        cuDoubleComplex *dl,
-        cuDoubleComplex *d,
-        cuDoubleComplex *du,
-        cuDoubleComplex *x,
+        hipDoubleComplex *dl,
+        hipDoubleComplex *d,
+        hipDoubleComplex *du,
+        hipDoubleComplex *x,
         int batchSize,
         void *pBuffer);
 

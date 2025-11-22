@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -100,10 +101,10 @@ namespace nvgraph
 		// Allocate local memory for operating on
 		T *srcs, *dests;
 		W *weights = NULL;
-		cudaMalloc(&srcs, sizeof(T) * nnz);
-		cudaMalloc(&dests, sizeof(T) * nnz);
+		hipMalloc(&srcs, sizeof(T) * nnz);
+		hipMalloc(&dests, sizeof(T) * nnz);
 		if (edgeWeights)
-			cudaMalloc(&weights, sizeof(W) * nnz);
+			hipMalloc(&weights, sizeof(W) * nnz);
 		hipMemcpy(srcs, sources, sizeof(T) * nnz, hipMemcpyDefault);
 		hipMemcpy(dests, destinations, sizeof(T) * nnz, hipMemcpyDefault);
 		if (edgeWeights)
@@ -121,23 +122,23 @@ namespace nvgraph
 		result.size = maxId + 1;
 
 		// Allocate offsets array
-		cudaMalloc(&result.rowOffsets, (maxId + 2) * sizeof(T));
+		hipMalloc(&result.rowOffsets, (maxId + 2) * sizeof(T));
 
 		// Set all values in offsets array to zeros
-		cudaMemset(result.rowOffsets, 0, (maxId + 2) * sizeof(T));
+		hipMemset(result.rowOffsets, 0, (maxId + 2) * sizeof(T));
 
 		// Allocate temporary arrays same size as sources array, and single value to get run counts
 		T *unique, *counts, *runCount;
-		cudaMalloc(&unique, (maxId + 1) * sizeof(T));
-		cudaMalloc(&counts, (maxId + 1) * sizeof(T));
-		cudaMalloc(&runCount, sizeof(T));
+		hipMalloc(&unique, (maxId + 1) * sizeof(T));
+		hipMalloc(&counts, (maxId + 1) * sizeof(T));
+		hipMalloc(&runCount, sizeof(T));
 
 		// Use CUB run length encoding to get unique values and run lengths
 		void *tmpStorage = NULL;
 		size_t tmpBytes = 0;
-		cub::DeviceRunLengthEncode::Encode(tmpStorage, tmpBytes, srcs, unique, counts, runCount, nnz);
-		cudaMalloc(&tmpStorage, tmpBytes);
-		cub::DeviceRunLengthEncode::Encode(tmpStorage, tmpBytes, srcs, unique, counts, runCount, nnz);
+		hipcub::DeviceRunLengthEncode::Encode(tmpStorage, tmpBytes, srcs, unique, counts, runCount, nnz);
+		hipMalloc(&tmpStorage, tmpBytes);
+		hipcub::DeviceRunLengthEncode::Encode(tmpStorage, tmpBytes, srcs, unique, counts, runCount, nnz);
 		hipFree(tmpStorage);
 
 		// Set offsets to run sizes for each index
@@ -246,14 +247,14 @@ namespace nvgraph
 			{
 				int device = devices[i % devices.size()];
 				deviceAssignments[i] = device;
-				cudaSetDevice(device);
+				hipSetDevice(device);
 				hipStream_t stream;
-				cudaStreamCreate(&stream);
+				hipStreamCreate(&stream);
 				blockStreams[i] = stream;
 			}
 
 			// Restoring to current device when called
-			cudaSetDevice(currentDevice);
+			hipSetDevice(currentDevice);
 		}
 
 		// Gets the row id for the block containing the given global row id
@@ -393,10 +394,10 @@ namespace nvgraph
 			hipGetDevice(&current_device);
 			for (int32_t i = 0; i < numBlocks; i++)
 			{
-				cudaSetDevice(deviceAssignments[i]);
-				cudaStreamSynchronize(blockStreams[i]);
+				hipSetDevice(deviceAssignments[i]);
+				hipStreamSynchronize(blockStreams[i]);
 			}
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -510,7 +511,7 @@ namespace nvgraph
 	{
 		const MatrixDecompositionDescription<GlobalType, LocalType> *description;
 		int32_t n;
-		std::vector<cub::DoubleBuffer<ValueType>> values;
+		std::vector<hipcub::DoubleBuffer<ValueType>> values;
 
 	public:
 		/**
@@ -533,16 +534,16 @@ namespace nvgraph
 			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++)
 			{
 				int device = descr->getDeviceAssignments()[i];
-				cudaSetDevice(device);
+				hipSetDevice(device);
 				ValueType *d_current, *d_alternate;
-				cudaMalloc(&d_current, sizeof(ValueType) * n);
-				cudaMalloc(&d_alternate, sizeof(ValueType) * n);
+				hipMalloc(&d_current, sizeof(ValueType) * n);
+				hipMalloc(&d_alternate, sizeof(ValueType) * n);
 				values[i].d_buffers[0] = d_current;
 				values[i].d_buffers[1] = d_alternate;
 			}
 
 			// Set the device back to what it was initially
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -566,16 +567,16 @@ namespace nvgraph
 			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++)
 			{
 				int device = descr->getDeviceAssignments()[i];
-				cudaSetDevice(device);
+				hipSetDevice(device);
 				ValueType *d_current, *d_alternate;
-				cudaMalloc(&d_current, sizeof(ValueType) * n);
-				cudaMalloc(&d_alternate, sizeof(ValueType) * n);
+				hipMalloc(&d_current, sizeof(ValueType) * n);
+				hipMalloc(&d_alternate, sizeof(ValueType) * n);
 				values[i].d_buffers[0] = d_current;
 				values[i].d_buffers[1] = d_alternate;
 			}
 
 			// Set the device back to what it was initially
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		~VertexData2D()
@@ -685,11 +686,11 @@ namespace nvgraph
 				ValueType *vals = getCurrent(blockId);
 				int deviceId = description->getDeviceAssignments()[blockId];
 				hipStream_t stream = description->getBlockStreams()[blockId];
-				cudaSetDevice(deviceId);
+				hipSetDevice(deviceId);
 				thrust::fill(thrust::cuda::par.on(stream), vals, vals + n, val);
 			}
 			description->syncAllStreams();
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -718,7 +719,7 @@ namespace nvgraph
 				{
 					int32_t bId = description->getBlockId(i, i);
 					hipStream_t stream = description->getBlockStreams()[bId];
-					cudaStreamSynchronize(stream);
+					hipStreamSynchronize(stream);
 				}
 			}
 		}
@@ -782,7 +783,7 @@ namespace nvgraph
 										   stream);
 
 							// Invoke the reduction operator on the receiver's GPU and values arrays.
-							cudaSetDevice(description->getDeviceAssignments()[receiverId]);
+							hipSetDevice(description->getDeviceAssignments()[receiverId]);
 							ValueType *input1 = values[receiverId].Alternate();
 							ValueType *input2 = values[receiverId].Current();
 							thrust::transform(thrust::cuda::par.on(stream),
@@ -802,14 +803,14 @@ namespace nvgraph
 							int32_t receiverId = blockIds[id];
 
 							// Set the device to the receiver and sync the stream
-							cudaSetDevice(description->getDeviceAssignments()[receiverId]);
-							cudaStreamSynchronize(description->getBlockStreams()[receiverId]);
+							hipSetDevice(description->getDeviceAssignments()[receiverId]);
+							hipStreamSynchronize(description->getBlockStreams()[receiverId]);
 						}
 					}
 				}
 			}
 
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -871,7 +872,7 @@ namespace nvgraph
 										   stream);
 
 							// Invoke the reduction operator on the receiver's GPU and values arrays.
-							cudaSetDevice(description->getDeviceAssignments()[receiverId]);
+							hipSetDevice(description->getDeviceAssignments()[receiverId]);
 							ValueType *input1 = values[receiverId].Alternate();
 							ValueType *input2 = values[receiverId].Current();
 							thrust::transform(thrust::cuda::par.on(stream),
@@ -891,14 +892,14 @@ namespace nvgraph
 							int32_t receiverId = blockIds[id];
 
 							// Set the device to the receiver and sync the stream
-							cudaSetDevice(description->getDeviceAssignments()[receiverId]);
-							cudaStreamSynchronize(description->getBlockStreams()[receiverId]);
+							hipSetDevice(description->getDeviceAssignments()[receiverId]);
+							hipStreamSynchronize(description->getBlockStreams()[receiverId]);
 						}
 					}
 				}
 			}
 
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -972,14 +973,14 @@ namespace nvgraph
 							int32_t receiverId = blockIds[id + j / 2];
 
 							// Set device and sync receiver's stream
-							cudaSetDevice(description->getDeviceAssignments()[receiverId]);
-							cudaStreamSynchronize(description->getBlockStreams()[receiverId]);
+							hipSetDevice(description->getDeviceAssignments()[receiverId]);
+							hipStreamSynchronize(description->getBlockStreams()[receiverId]);
 						}
 					}
 				}
 			}
 
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -1053,14 +1054,14 @@ namespace nvgraph
 							int32_t receiverId = blockIds[id + j / 2];
 
 							// Set device and sync receiver's stream
-							cudaSetDevice(description->getDeviceAssignments()[receiverId]);
-							cudaStreamSynchronize(description->getBlockStreams()[receiverId]);
+							hipSetDevice(description->getDeviceAssignments()[receiverId]);
+							hipStreamSynchronize(description->getBlockStreams()[receiverId]);
 						}
 					}
 				}
 			}
 
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -1124,12 +1125,12 @@ namespace nvgraph
 			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++)
 			{
 				int device = descr->getDeviceAssignments()[i];
-				cudaSetDevice(device);
-				cudaMalloc(&(values[i]), sizeof(ValueType) * n);
+				hipSetDevice(device);
+				hipMalloc(&(values[i]), sizeof(ValueType) * n);
 			}
 
 			// Set the device back to what it was initially
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -1151,12 +1152,12 @@ namespace nvgraph
 			for (size_t i = 0; i < descr->getDeviceAssignments().size(); i++)
 			{
 				int device = descr->getDeviceAssignments()[i];
-				cudaSetDevice(device);
-				cudaMalloc(&(values[i]), sizeof(ValueType) * n);
+				hipSetDevice(device);
+				hipMalloc(&(values[i]), sizeof(ValueType) * n);
 			}
 
 			// Set the device back to what it was initially
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -1191,11 +1192,11 @@ namespace nvgraph
 				ValueType *vals = get(blockId);
 				int deviceId = description->getDeviceAssignments()[blockId];
 				hipStream_t stream = description->getBlockStreams()[blockId];
-				cudaSetDevice(deviceId);
+				hipSetDevice(deviceId);
 				thrust::fill(thrust::cuda::par.on(stream), vals, vals + n, val);
 			}
 			description->syncAllStreams();
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -1269,14 +1270,14 @@ namespace nvgraph
 							int32_t receiverId = blockIds[id + j / 2];
 
 							// Set device and sync receiver's stream
-							cudaSetDevice(description->getDeviceAssignments()[receiverId]);
-							cudaStreamSynchronize(description->getBlockStreams()[receiverId]);
+							hipSetDevice(description->getDeviceAssignments()[receiverId]);
+							hipStreamSynchronize(description->getBlockStreams()[receiverId]);
 						}
 					}
 				}
 			}
 
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -1350,14 +1351,14 @@ namespace nvgraph
 							int32_t receiverId = blockIds[id + j / 2];
 
 							// Set device and sync receiver's stream
-							cudaSetDevice(description->getDeviceAssignments()[receiverId]);
-							cudaStreamSynchronize(description->getBlockStreams()[receiverId]);
+							hipSetDevice(description->getDeviceAssignments()[receiverId]);
+							hipStreamSynchronize(description->getBlockStreams()[receiverId]);
 						}
 					}
 				}
 			}
 
-			cudaSetDevice(current_device);
+			hipSetDevice(current_device);
 		}
 
 		/**
@@ -1454,7 +1455,7 @@ namespace nvgraph
 		for (int i = 0; i < blockCount; i++)
 		{
 			// Set the device as indicated so the data ends up on the right GPU
-			cudaSetDevice(descr.getDeviceAssignments()[i]);
+			hipSetDevice(descr.getDeviceAssignments()[i]);
 			hipStream_t stream = descr.getBlockStreams()[i];
 
 			if (blockCounts[i] > 0)
@@ -1490,7 +1491,7 @@ namespace nvgraph
 			{
 				MultiValuedCsrGraph<LocalType, ValueType> *csrGraph = new MultiValuedCsrGraph<LocalType,
 																							  ValueType>((size_t)descr.getOffset(), (size_t)0, stream);
-				cudaMemset(csrGraph->get_raw_row_offsets(),
+				hipMemset(csrGraph->get_raw_row_offsets(),
 						   0,
 						   sizeof(LocalType) * (descr.getOffset() + 1));
 				blockVector[i] = csrGraph;
@@ -1510,7 +1511,7 @@ namespace nvgraph
 		if (values)
 			free(blockValues);
 
-		cudaSetDevice(current_device);
+		hipSetDevice(current_device);
 
 		// Put it all together into a Matrix2d object for return
 		return Matrix2d<GlobalType, LocalType, ValueType>(descr, blockVector);

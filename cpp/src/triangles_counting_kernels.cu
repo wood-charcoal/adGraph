@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -19,7 +20,7 @@
 #define __STDC_LIMIT_MACROS 1
 #define __STDC_FORMAT_MACROS 1
 #endif
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 
 #include <assert.h>
 
@@ -28,10 +29,10 @@
 
 #include <nvgraph_error.hxx>
 
-#include "cub/cub.cuh"
+#include "hipcub/hipcub.hpp"
 #include <thrust/iterator/counting_iterator.h>
 #include "sm_utils.h"
-using namespace cub;
+using namespace hipcub;
 
 #include "cnmem.h"
 
@@ -101,14 +102,14 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::Reduce(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Reduce(d_temp_storage, temp_storage_bytes,
                                 d_in,
                                 d_out, num_items, reduction_op,
                                 init,
                                 stream, debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::Reduce(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Reduce(d_temp_storage, temp_storage_bytes,
                                 d_in,
                                 d_out, num_items, reduction_op,
                                 init,
@@ -129,13 +130,13 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
@@ -156,7 +157,7 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes,
                                      d_keys_in,
                                      d_keys_out, num_items,
                                      begin_bit,
@@ -164,7 +165,7 @@ namespace nvgraph
                                      debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes,
                                      d_keys_in,
                                      d_keys_out, num_items,
                                      begin_bit,
@@ -189,7 +190,7 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
                                       d_keys_in,
                                       d_keys_out, d_values_in,
                                       d_values_out,
@@ -198,7 +199,7 @@ namespace nvgraph
                                       stream, debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
                                       d_keys_in,
                                       d_keys_out, d_values_in,
                                       d_values_out,
@@ -223,7 +224,7 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
                                                 d_keys_in,
                                                 d_keys_out, d_values_in,
                                                 d_values_out,
@@ -232,7 +233,7 @@ namespace nvgraph
                                                 stream, debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
                                                 d_keys_in,
                                                 d_keys_out, d_values_in,
                                                 d_values_out,
@@ -257,14 +258,14 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes,
                                 d_in,
                                 d_out, d_num_selected_out,
                                 num_items,
                                 stream, debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::Unique(d_temp_storage, temp_storage_bytes,
                                 d_in,
                                 d_out, d_num_selected_out,
                                 num_items,
@@ -289,7 +290,7 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes,
                                          d_in,
                                          d_unique_out, d_counts_out,
                                          d_num_runs_out,
@@ -297,7 +298,7 @@ namespace nvgraph
                                          debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceRunLengthEncode::Encode(d_temp_storage, temp_storage_bytes,
                                          d_in,
                                          d_unique_out, d_counts_out,
                                          d_num_runs_out,
@@ -320,13 +321,13 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Min(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
@@ -347,13 +348,13 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes,
                              d_in,
                              d_out, num_items, stream,
                              debug_synchronous);
@@ -377,7 +378,7 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::If(d_temp_storage, temp_storage_bytes,
                             d_in,
                             d_out, d_num_selected_out,
                             num_items,
@@ -385,7 +386,7 @@ namespace nvgraph
                             debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceSelect::If(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::If(d_temp_storage, temp_storage_bytes,
                             d_in,
                             d_out, d_num_selected_out,
                             num_items,
@@ -412,14 +413,14 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes,
                                  d_in,
                                  d_flags, d_out, d_num_selected_out,
                                  num_items,
                                  stream, debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes,
                                  d_in,
                                  d_flags, d_out, d_num_selected_out,
                                  num_items,
@@ -441,13 +442,13 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
                                     d_in,
                                     d_out, num_items, stream,
                                     debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
                                     d_in,
                                     d_out, num_items, stream,
                                     debug_synchronous);
@@ -468,13 +469,13 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
                                     d_in,
                                     d_out, num_items, stream,
                                     debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
                                     d_in,
                                     d_out, num_items, stream,
                                     debug_synchronous);
@@ -504,7 +505,7 @@ namespace nvgraph
       void *d_temp_storage = NULL;
       size_t temp_storage_bytes = 0;
 
-      cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes,
                                      d_keys_in,
                                      d_unique_out,
                                      d_values_in,
@@ -515,7 +516,7 @@ namespace nvgraph
                                      stream, debug_synchronous);
       hipCheckError();
       d_temp_storage = tmp_get(temp_storage_bytes, stream);
-      cub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes,
+      hipcub::DeviceReduce::ReduceByKey(d_temp_storage, temp_storage_bytes,
                                      d_keys_in,
                                      d_unique_out,
                                      d_values_in,
@@ -1185,9 +1186,9 @@ namespace nvgraph
     void tricnt_thr(T nblock, spmat_t<T> *m, uint64_t *ocnt_d, hipStream_t stream)
     {
 
-      cudaFuncSetCacheConfig(tricnt_thr_k<THREADS, TH_CENT_K_LOCLEN, typename type_utils<T>::LOCINT,
+      hipFuncSetCacheConfig(tricnt_thr_k<THREADS, TH_CENT_K_LOCLEN, typename type_utils<T>::LOCINT,
                                           typename type_utils<T>::LOCINT, uint64_t>,
-                             cudaFuncCachePreferL1);
+                             hipFuncCachePreferL1);
 
       tricnt_thr_k<THREADS, TH_CENT_K_LOCLEN><<<nblock, THREADS, 0, stream>>>(m->nrows, m->rows_d,
                                                                               m->roff_d,

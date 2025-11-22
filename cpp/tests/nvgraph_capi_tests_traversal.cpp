@@ -75,7 +75,7 @@ static int STRESS_MULTIPLIER = 10;
 bool enough_device_memory(int n, int nnz, size_t add)
 {
     size_t mtotal, mfree;
-    cudaMemGetInfo(&mfree, &mtotal);
+    hipMemGetInfo(&mfree, &mtotal);
     if (mfree > add + sizeof(int) * (4 * n)) // graph + pred + distances + 2n (working data)
         return true;
     return false;
@@ -266,7 +266,7 @@ public:
 
         status = nvgraphTraversal(handle, g1, NVGRAPH_TRAVERSAL_BFS, &source_vert, traversal_param);
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
 
         if (PERF && n > PERF_ROWS_LIMIT)
         {
@@ -278,7 +278,7 @@ public:
                 status = nvgraphTraversal(handle, g1, NVGRAPH_TRAVERSAL_BFS, &source_vert, traversal_param);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0 * (stop - start) / repeat);
         }
@@ -650,13 +650,13 @@ public:
 
             if (i == std::min(50, (int)(repeat / 2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat - 1)
             {
                 status = nvgraphGetVertexData(handle, g1, (void *)&calculated_res_last[0], traversal_distances_index);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
         }
 

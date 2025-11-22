@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
@@ -29,7 +30,7 @@
 
 /**
  * \file
- * cub::DeviceHistogram provides device-wide parallel operations for constructing histogram(s) from a sequence of samples data residing within device-accessible memory.
+ * hipcub::DeviceHistogram provides device-wide parallel operations for constructing histogram(s) from a sequence of samples data residing within device-accessible memory.
  */
 
 #pragma once
@@ -405,16 +406,16 @@ namespace cub
         // Tuning policies of current PTX compiler pass
         //---------------------------------------------------------------------
 
-#if (CUB_PTX_ARCH >= 500)
+#if (HIPCUB_ARCH >= 500)
         typedef Policy500 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 350)
+#elif (HIPCUB_ARCH >= 350)
         typedef Policy350 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 300)
+#elif (HIPCUB_ARCH >= 300)
         typedef Policy300 PtxPolicy;
 
-#elif (CUB_PTX_ARCH >= 200)
+#elif (HIPCUB_ARCH >= 200)
         typedef Policy200 PtxPolicy;
 
 #else
@@ -435,11 +436,11 @@ namespace cub
          * Initialize kernel dispatch configurations with the policies corresponding to the PTX assembly we will use
          */
         template <typename KernelConfig>
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t InitConfigs(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t InitConfigs(
             int ptx_version,
             KernelConfig &histogram_sweep_config)
         {
-#if (CUB_PTX_ARCH > 0)
+#if (HIPCUB_ARCH > 0)
 
             // We're on the device, so initialize the kernel dispatch configurations with the current PTX policy
             return histogram_sweep_config.template Init<PtxHistogramSweepPolicy>();
@@ -470,7 +471,7 @@ namespace cub
             else
             {
                 // No global atomic support
-                return cudaErrorNotSupported;
+                return hipErrorNotSupported;
             }
 
 #endif
@@ -485,8 +486,8 @@ namespace cub
             int pixels_per_thread;
 
             template <typename BlockPolicy>
-            CUB_RUNTIME_FUNCTION __forceinline__
-                cudaError_t
+            HIPCUB_RUNTIME_FUNCTION __forceinline__
+                hipError_t
                 Init()
             {
                 block_threads = BlockPolicy::BLOCK_THREADS;
@@ -506,9 +507,9 @@ namespace cub
         template <
             typename PrivatizedDecodeOpT,         ///< The transform operator type for determining privatized counter indices from samples, one for each channel
             typename OutputDecodeOpT,             ///< The transform operator type for determining output bin-ids from privatized counter indices, one for each channel
-            typename DeviceHistogramInitKernelT,  ///< Function type of cub::DeviceHistogramInitKernel
-            typename DeviceHistogramSweepKernelT> ///< Function type of cub::DeviceHistogramSweepKernel
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t PrivatizedDispatch(
+            typename DeviceHistogramInitKernelT,  ///< Function type of hipcub::DeviceHistogramInitKernel
+            typename DeviceHistogramSweepKernelT> ///< Function type of hipcub::DeviceHistogramSweepKernel
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t PrivatizedDispatch(
             void *d_temp_storage,                                          ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                                    ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                                     ///< [in] The pointer to the input sequence of sample items. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
@@ -521,8 +522,8 @@ namespace cub
             OffsetT num_row_pixels,                                        ///< [in] The number of multi-channel pixels per row in the region of interest
             OffsetT num_rows,                                              ///< [in] The number of rows in the region of interest
             OffsetT row_stride_samples,                                    ///< [in] The number of samples between starts of consecutive rows in the region of interest
-            DeviceHistogramInitKernelT histogram_init_kernel,              ///< [in] Kernel function pointer to parameterization of cub::DeviceHistogramInitKernel
-            DeviceHistogramSweepKernelT histogram_sweep_kernel,            ///< [in] Kernel function pointer to parameterization of cub::DeviceHistogramSweepKernel
+            DeviceHistogramInitKernelT histogram_init_kernel,              ///< [in] Kernel function pointer to parameterization of hipcub::DeviceHistogramInitKernel
+            DeviceHistogramSweepKernelT histogram_sweep_kernel,            ///< [in] Kernel function pointer to parameterization of hipcub::DeviceHistogramSweepKernel
             KernelConfig histogram_sweep_config,                           ///< [in] Dispatch parameters that match the policy that \p histogram_sweep_kernel was compiled for
             hipStream_t stream,                                            ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
             bool debug_synchronous)                                        ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  May cause significant slowdown.  Default is \p false.
@@ -530,26 +531,26 @@ namespace cub
 #ifndef CUB_RUNTIME_ENABLED
 
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 
 #else
 
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get device ordinal
                 int device_ordinal;
-                if (CubDebug(error = hipGetDevice(&device_ordinal)))
+                if (HipcubDebug(error = hipGetDevice(&device_ordinal)))
                     break;
 
                 // Get SM count
                 int sm_count;
-                if (CubDebug(error = cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
+                if (HipcubDebug(error = hipDeviceGetAttribute(&sm_count, hipDeviceAttributeMultiprocessorCount, device_ordinal)))
                     break;
 
                 // Get SM occupancy for histogram_sweep_kernel
                 int histogram_sweep_sm_occupancy;
-                if (CubDebug(error = MaxSmOccupancy(
+                if (HipcubDebug(error = MaxSmOccupancy(
                                  histogram_sweep_sm_occupancy,
                                  histogram_sweep_kernel,
                                  histogram_sweep_config.block_threads)))
@@ -589,7 +590,7 @@ namespace cub
                 allocation_sizes[NUM_ALLOCATIONS - 1] = GridQueue<int>::AllocationSize();
 
                 // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-                if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                if (HipcubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
                     break;
                 if (d_temp_storage == NULL)
                 {
@@ -635,7 +636,7 @@ namespace cub
 
                 // Log DeviceHistogramInitKernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
+                    _HipcubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
                             histogram_init_grid_dims, histogram_init_block_threads, (long long)stream);
 
                 // Invoke histogram_init_kernel
@@ -650,7 +651,7 @@ namespace cub
 
                 // Log histogram_sweep_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels per thread, %d SM occupancy\n",
+                    _HipcubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels per thread, %d SM occupancy\n",
                             sweep_grid_dims.x, sweep_grid_dims.y, sweep_grid_dims.z,
                             histogram_sweep_config.block_threads, (long long)stream, histogram_sweep_config.pixels_per_thread, histogram_sweep_sm_occupancy);
 
@@ -670,11 +671,11 @@ namespace cub
                     tile_queue);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
             } while (0);
@@ -687,8 +688,8 @@ namespace cub
         /**
          * Dispatch routine for HistogramRange, specialized for sample types larger than 8bit
          */
-        CUB_RUNTIME_FUNCTION
-        static cudaError_t DispatchRange(
+        HIPCUB_RUNTIME_FUNCTION
+        static hipError_t DispatchRange(
             void *d_temp_storage,                               ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                         ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                          ///< [in] The pointer to the multi-channel input sequence of data samples. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
@@ -702,21 +703,21 @@ namespace cub
             bool debug_synchronous,                             ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  May cause significant slowdown.  Default is \p false.
             Int2Type<false> is_byte_sample)                     ///< [in] Marker type indicating whether or not SampleT is a 8b type
         {
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get PTX version
                 int ptx_version;
-#if (CUB_PTX_ARCH == 0)
-                if (CubDebug(error = PtxVersion(ptx_version)))
+#if (HIPCUB_ARCH == 0)
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 #else
-                ptx_version = CUB_PTX_ARCH;
+                ptx_version = HIPCUB_ARCH;
 #endif
 
                 // Get kernel dispatch configurations
                 KernelConfig histogram_sweep_config;
-                if (CubDebug(error = InitConfigs(ptx_version, histogram_sweep_config)))
+                if (HipcubDebug(error = InitConfigs(ptx_version, histogram_sweep_config)))
                     break;
 
                 // Use the search transform op for converting samples to privatized bins
@@ -743,7 +744,7 @@ namespace cub
                     // Too many bins to keep in shared memory.
                     const int PRIVATIZED_SMEM_BINS = 0;
 
-                    if (CubDebug(error = PrivatizedDispatch(
+                    if (HipcubDebug(error = PrivatizedDispatch(
                                      d_temp_storage,
                                      temp_storage_bytes,
                                      d_samples,
@@ -768,7 +769,7 @@ namespace cub
                     // Dispatch shared-privatized approach
                     const int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-                    if (CubDebug(error = PrivatizedDispatch(
+                    if (HipcubDebug(error = PrivatizedDispatch(
                                      d_temp_storage,
                                      temp_storage_bytes,
                                      d_samples,
@@ -797,8 +798,8 @@ namespace cub
         /**
          * Dispatch routine for HistogramRange, specialized for 8-bit sample types (computes 256-bin privatized histograms and then reduces to user-specified levels)
          */
-        CUB_RUNTIME_FUNCTION
-        static cudaError_t DispatchRange(
+        HIPCUB_RUNTIME_FUNCTION
+        static hipError_t DispatchRange(
             void *d_temp_storage,                               ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                         ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                          ///< [in] The pointer to the multi-channel input sequence of data samples. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
@@ -812,21 +813,21 @@ namespace cub
             bool debug_synchronous,                             ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  May cause significant slowdown.  Default is \p false.
             Int2Type<true> is_byte_sample)                      ///< [in] Marker type indicating whether or not SampleT is a 8b type
         {
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get PTX version
                 int ptx_version;
-#if (CUB_PTX_ARCH == 0)
-                if (CubDebug(error = PtxVersion(ptx_version)))
+#if (HIPCUB_ARCH == 0)
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 #else
-                ptx_version = CUB_PTX_ARCH;
+                ptx_version = HIPCUB_ARCH;
 #endif
 
                 // Get kernel dispatch configurations
                 KernelConfig histogram_sweep_config;
-                if (CubDebug(error = InitConfigs(ptx_version, histogram_sweep_config)))
+                if (HipcubDebug(error = InitConfigs(ptx_version, histogram_sweep_config)))
                     break;
 
                 // Use the pass-thru transform op for converting samples to privatized bins
@@ -852,7 +853,7 @@ namespace cub
 
                 const int PRIVATIZED_SMEM_BINS = 256;
 
-                if (CubDebug(error = PrivatizedDispatch(
+                if (HipcubDebug(error = PrivatizedDispatch(
                                  d_temp_storage,
                                  temp_storage_bytes,
                                  d_samples,
@@ -880,7 +881,7 @@ namespace cub
         /**
          * Dispatch routine for HistogramEven, specialized for sample types larger than 8-bit
          */
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t DispatchEven(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t DispatchEven(
             void *d_temp_storage,                               ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                         ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                          ///< [in] The pointer to the input sequence of sample items. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
@@ -895,21 +896,21 @@ namespace cub
             bool debug_synchronous,                             ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  May cause significant slowdown.  Default is \p false.
             Int2Type<false> is_byte_sample)                     ///< [in] Marker type indicating whether or not SampleT is a 8b type
         {
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get PTX version
                 int ptx_version;
-#if (CUB_PTX_ARCH == 0)
-                if (CubDebug(error = PtxVersion(ptx_version)))
+#if (HIPCUB_ARCH == 0)
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 #else
-                ptx_version = CUB_PTX_ARCH;
+                ptx_version = HIPCUB_ARCH;
 #endif
 
                 // Get kernel dispatch configurations
                 KernelConfig histogram_sweep_config;
-                if (CubDebug(error = InitConfigs(ptx_version, histogram_sweep_config)))
+                if (HipcubDebug(error = InitConfigs(ptx_version, histogram_sweep_config)))
                     break;
 
                 // Use the scale transform op for converting samples to privatized bins
@@ -939,7 +940,7 @@ namespace cub
                     // Dispatch shared-privatized approach
                     const int PRIVATIZED_SMEM_BINS = 0;
 
-                    if (CubDebug(error = PrivatizedDispatch(
+                    if (HipcubDebug(error = PrivatizedDispatch(
                                      d_temp_storage,
                                      temp_storage_bytes,
                                      d_samples,
@@ -964,7 +965,7 @@ namespace cub
                     // Dispatch shared-privatized approach
                     const int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-                    if (CubDebug(error = PrivatizedDispatch(
+                    if (HipcubDebug(error = PrivatizedDispatch(
                                      d_temp_storage,
                                      temp_storage_bytes,
                                      d_samples,
@@ -992,7 +993,7 @@ namespace cub
         /**
          * Dispatch routine for HistogramEven, specialized for 8-bit sample types (computes 256-bin privatized histograms and then reduces to user-specified levels)
          */
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t DispatchEven(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t DispatchEven(
             void *d_temp_storage,                               ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,                         ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             SampleIteratorT d_samples,                          ///< [in] The pointer to the input sequence of sample items. The samples from different channels are assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
@@ -1007,21 +1008,21 @@ namespace cub
             bool debug_synchronous,                             ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  May cause significant slowdown.  Default is \p false.
             Int2Type<true> is_byte_sample)                      ///< [in] Marker type indicating whether or not SampleT is a 8b type
         {
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get PTX version
                 int ptx_version;
-#if (CUB_PTX_ARCH == 0)
-                if (CubDebug(error = PtxVersion(ptx_version)))
+#if (HIPCUB_ARCH == 0)
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 #else
-                ptx_version = CUB_PTX_ARCH;
+                ptx_version = HIPCUB_ARCH;
 #endif
 
                 // Get kernel dispatch configurations
                 KernelConfig histogram_sweep_config;
-                if (CubDebug(error = InitConfigs(ptx_version, histogram_sweep_config)))
+                if (HipcubDebug(error = InitConfigs(ptx_version, histogram_sweep_config)))
                     break;
 
                 // Use the pass-thru transform op for converting samples to privatized bins
@@ -1050,7 +1051,7 @@ namespace cub
 
                 const int PRIVATIZED_SMEM_BINS = 256;
 
-                if (CubDebug(error = PrivatizedDispatch(
+                if (HipcubDebug(error = PrivatizedDispatch(
                                  d_temp_storage,
                                  temp_storage_bytes,
                                  d_samples,

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
@@ -29,7 +30,7 @@
 
 /**
  * \file
- * cub::DeviceRadixSort provides device-wide, parallel operations for computing a radix sort across a sequence of data items residing within device-accessible memory.
+ * hipcub::DeviceRadixSort provides device-wide, parallel operations for computing a radix sort across a sequence of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -123,7 +124,7 @@ namespace cub
             typename ChainedPolicyT::ActivePolicy::ScanPolicy,
             OffsetT *,
             OffsetT *,
-            cub::Sum,
+            hipcub::Sum,
             OffsetT,
             OffsetT>
             AgentScanT;
@@ -132,7 +133,7 @@ namespace cub
         __shared__ typename AgentScanT::TempStorage temp_storage;
 
         // Block scan instance
-        AgentScanT block_scan(temp_storage, d_spine, d_spine, cub::Sum(), OffsetT(0));
+        AgentScanT block_scan(temp_storage, d_spine, d_spine, hipcub::Sum(), OffsetT(0));
 
         // Process full input tiles
         int block_offset = 0;
@@ -850,7 +851,7 @@ namespace cub
         //------------------------------------------------------------------------------
 
         /// Constructor
-        CUB_RUNTIME_FUNCTION __forceinline__
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
         DispatchRadixSort(
             void *d_temp_storage,
             size_t &temp_storage_bytes,
@@ -884,18 +885,18 @@ namespace cub
         /// Invoke a single block to sort in-core
         template <
             typename ActivePolicyT,     ///< Umbrella policy active for the target device
-            typename SingleTileKernelT> ///< Function type of cub::DeviceRadixSortSingleTileKernel
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+            typename SingleTileKernelT> ///< Function type of hipcub::DeviceRadixSortSingleTileKernel
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             InvokeSingleTile(
-                SingleTileKernelT single_tile_kernel) ///< [in] Kernel function pointer to parameterization of cub::DeviceRadixSortSingleTileKernel
+                SingleTileKernelT single_tile_kernel) ///< [in] Kernel function pointer to parameterization of hipcub::DeviceRadixSortSingleTileKernel
         {
 #ifndef CUB_RUNTIME_ENABLED
             (void)single_tile_kernel;
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 #else
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Return if the caller is simply requesting the size of the storage allocation
@@ -911,7 +912,7 @@ namespace cub
 
                 // Log single_tile_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, bit_grain %d\n",
+                    _HipcubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, bit_grain %d\n",
                             1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, (long long)stream,
                             ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD, 1, begin_bit, ActivePolicyT::SingleTilePolicy::RADIX_BITS);
 
@@ -926,11 +927,11 @@ namespace cub
                     end_bit);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
                 // Update selector
@@ -951,8 +952,8 @@ namespace cub
          * Invoke a three-kernel sorting pass at the current bit.
          */
         template <typename PassConfigT>
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             InvokePass(
                 const KeyT *d_keys_in,
                 KeyT *d_keys_out,
@@ -963,14 +964,14 @@ namespace cub
                 int &current_bit,
                 PassConfigT &pass_config)
         {
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
 
                 // Log upsweep_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, bit_grain %d\n",
+                    _HipcubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, bit_grain %d\n",
                             pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, (long long)stream,
                             pass_config.upsweep_config.items_per_thread, pass_config.upsweep_config.sm_occupancy, current_bit, pass_bits);
 
@@ -984,16 +985,16 @@ namespace cub
                     pass_config.even_share);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
                 // Log scan_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
+                    _HipcubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
                             1, pass_config.scan_config.block_threads, (long long)stream, pass_config.scan_config.items_per_thread);
 
                 // Invoke scan_kernel
@@ -1002,16 +1003,16 @@ namespace cub
                     spine_length);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
                 // Log downsweep_kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
+                    _HipcubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
                             pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, (long long)stream,
                             pass_config.downsweep_config.items_per_thread, pass_config.downsweep_config.sm_occupancy);
 
@@ -1028,11 +1029,11 @@ namespace cub
                     pass_config.even_share);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
                 // Update current bit
@@ -1065,8 +1066,8 @@ namespace cub
                 typename UpsweepPolicyT,
                 typename ScanPolicyT,
                 typename DownsweepPolicyT>
-            CUB_RUNTIME_FUNCTION __forceinline__
-                cudaError_t
+            HIPCUB_RUNTIME_FUNCTION __forceinline__
+                hipError_t
                 InitPassConfig(
                     UpsweepKernelT upsweep_kernel,
                     ScanKernelT scan_kernel,
@@ -1075,7 +1076,7 @@ namespace cub
                     int sm_count,
                     int num_items)
             {
-                cudaError error = hipSuccess;
+                hipError_t error = hipSuccess;
                 do
                 {
                     this->upsweep_kernel = upsweep_kernel;
@@ -1084,11 +1085,11 @@ namespace cub
                     radix_bits = DownsweepPolicyT::RADIX_BITS;
                     radix_digits = 1 << radix_bits;
 
-                    if (CubDebug(error = upsweep_config.Init<UpsweepPolicyT>(upsweep_kernel)))
+                    if (HipcubDebug(error = upsweep_config.Init<UpsweepPolicyT>(upsweep_kernel)))
                         break;
-                    if (CubDebug(error = scan_config.Init<ScanPolicyT>(scan_kernel)))
+                    if (HipcubDebug(error = scan_config.Init<ScanPolicyT>(scan_kernel)))
                         break;
-                    if (CubDebug(error = downsweep_config.Init<DownsweepPolicyT>(downsweep_kernel)))
+                    if (HipcubDebug(error = downsweep_config.Init<DownsweepPolicyT>(downsweep_kernel)))
                         break;
 
                     max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * CUB_SUBSCRIPTION_FACTOR(ptx_version);
@@ -1106,17 +1107,17 @@ namespace cub
         /// Invocation (run multiple digit passes)
         template <
             typename ActivePolicyT,    ///< Umbrella policy active for the target device
-            typename UpsweepKernelT,   ///< Function type of cub::DeviceRadixSortUpsweepKernel
-            typename ScanKernelT,      ///< Function type of cub::SpineScanKernel
-            typename DownsweepKernelT> ///< Function type of cub::DeviceRadixSortDownsweepKernel
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+            typename UpsweepKernelT,   ///< Function type of hipcub::DeviceRadixSortUpsweepKernel
+            typename ScanKernelT,      ///< Function type of hipcub::SpineScanKernel
+            typename DownsweepKernelT> ///< Function type of hipcub::DeviceRadixSortDownsweepKernel
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             InvokePasses(
-                UpsweepKernelT upsweep_kernel,         ///< [in] Kernel function pointer to parameterization of cub::DeviceRadixSortUpsweepKernel
-                UpsweepKernelT alt_upsweep_kernel,     ///< [in] Alternate kernel function pointer to parameterization of cub::DeviceRadixSortUpsweepKernel
-                ScanKernelT scan_kernel,               ///< [in] Kernel function pointer to parameterization of cub::SpineScanKernel
-                DownsweepKernelT downsweep_kernel,     ///< [in] Kernel function pointer to parameterization of cub::DeviceRadixSortDownsweepKernel
-                DownsweepKernelT alt_downsweep_kernel) ///< [in] Alternate kernel function pointer to parameterization of cub::DeviceRadixSortDownsweepKernel
+                UpsweepKernelT upsweep_kernel,         ///< [in] Kernel function pointer to parameterization of hipcub::DeviceRadixSortUpsweepKernel
+                UpsweepKernelT alt_upsweep_kernel,     ///< [in] Alternate kernel function pointer to parameterization of hipcub::DeviceRadixSortUpsweepKernel
+                ScanKernelT scan_kernel,               ///< [in] Kernel function pointer to parameterization of hipcub::SpineScanKernel
+                DownsweepKernelT downsweep_kernel,     ///< [in] Kernel function pointer to parameterization of hipcub::DeviceRadixSortDownsweepKernel
+                DownsweepKernelT alt_downsweep_kernel) ///< [in] Alternate kernel function pointer to parameterization of hipcub::DeviceRadixSortDownsweepKernel
         {
 #ifndef CUB_RUNTIME_ENABLED
             (void)upsweep_kernel;
@@ -1126,20 +1127,20 @@ namespace cub
             (void)alt_downsweep_kernel;
 
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 #else
 
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Get device ordinal
                 int device_ordinal;
-                if (CubDebug(error = hipGetDevice(&device_ordinal)))
+                if (HipcubDebug(error = hipGetDevice(&device_ordinal)))
                     break;
 
                 // Get SM count
                 int sm_count;
-                if (CubDebug(error = cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
+                if (HipcubDebug(error = hipDeviceGetAttribute(&sm_count, hipDeviceAttributeMultiprocessorCount, device_ordinal)))
                     break;
 
                 // Init regular and alternate-digit kernel configurations
@@ -1172,7 +1173,7 @@ namespace cub
                     };
 
                 // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-                if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                if (HipcubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
                     break;
 
                 // Return if the caller is simply requesting the size of the storage allocation
@@ -1201,7 +1202,7 @@ namespace cub
 
                 // Run first pass, consuming from the input's current buffers
                 int current_bit = begin_bit;
-                if (CubDebug(error = InvokePass(
+                if (HipcubDebug(error = InvokePass(
                                  d_keys.Current(), d_keys_remaining_passes.Current(),
                                  d_values.Current(), d_values_remaining_passes.Current(),
                                  d_spine, spine_length, current_bit,
@@ -1211,7 +1212,7 @@ namespace cub
                 // Run remaining passes
                 while (current_bit < end_bit)
                 {
-                    if (CubDebug(error = InvokePass(
+                    if (HipcubDebug(error = InvokePass(
                                      d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector], d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
                                      d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector], d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
                                      d_spine, spine_length, current_bit,
@@ -1245,8 +1246,8 @@ namespace cub
 
         /// Invocation
         template <typename ActivePolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             Invoke()
         {
             typedef typename DispatchRadixSort::MaxPolicy MaxPolicyT;
@@ -1278,7 +1279,7 @@ namespace cub
         /**
          * Internal dispatch routine
          */
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Dispatch(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             DoubleBuffer<KeyT> &d_keys,     ///< [in,out] Double-buffer whose current buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
@@ -1292,12 +1293,12 @@ namespace cub
         {
             typedef typename DispatchRadixSort::MaxPolicy MaxPolicyT;
 
-            cudaError_t error;
+            hipError_t error;
             do
             {
                 // Get PTX version
                 int ptx_version;
-                if (CubDebug(error = PtxVersion(ptx_version)))
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 
                 // Create dispatch functor
@@ -1308,7 +1309,7 @@ namespace cub
                     stream, debug_synchronous, ptx_version);
 
                 // Dispatch to chained policy
-                if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+                if (HipcubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
                     break;
 
             } while (0);
@@ -1366,7 +1367,7 @@ namespace cub
         //------------------------------------------------------------------------------
 
         /// Constructor
-        CUB_RUNTIME_FUNCTION __forceinline__
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
         DispatchSegmentedRadixSort(
             void *d_temp_storage,
             size_t &temp_storage_bytes,
@@ -1405,8 +1406,8 @@ namespace cub
 
         /// Invoke a three-kernel sorting pass at the current bit.
         template <typename PassConfigT>
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             InvokePass(
                 const KeyT *d_keys_in,
                 KeyT *d_keys_out,
@@ -1415,14 +1416,14 @@ namespace cub
                 int &current_bit,
                 PassConfigT &pass_config)
         {
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
 
                 // Log kernel configuration
                 if (debug_synchronous)
-                    _CubLog("Invoking segmented_kernels<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, bit_grain %d\n",
+                    _HipcubLog("Invoking segmented_kernels<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, bit_grain %d\n",
                             num_segments, pass_config.segmented_config.block_threads, (long long)stream,
                             pass_config.segmented_config.items_per_thread, pass_config.segmented_config.sm_occupancy, current_bit, pass_bits);
 
@@ -1433,11 +1434,11 @@ namespace cub
                     current_bit, pass_bits);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError()))
+                if (HipcubDebug(error = hipPeekAtLastError()))
                     break;
 
                 // Sync the stream if specified to flush runtime errors
-                if (debug_synchronous && (CubDebug(error = SyncStream(stream))))
+                if (debug_synchronous && (HipcubDebug(error = SyncStream(stream))))
                     break;
 
                 // Update current bit
@@ -1458,37 +1459,37 @@ namespace cub
 
             /// Initialize pass configuration
             template <typename SegmentedPolicyT>
-            CUB_RUNTIME_FUNCTION __forceinline__
-                cudaError_t
+            HIPCUB_RUNTIME_FUNCTION __forceinline__
+                hipError_t
                 InitPassConfig(SegmentedKernelT segmented_kernel)
             {
                 this->segmented_kernel = segmented_kernel;
                 this->radix_bits = SegmentedPolicyT::RADIX_BITS;
                 this->radix_digits = 1 << radix_bits;
 
-                return CubDebug(segmented_config.Init<SegmentedPolicyT>(segmented_kernel));
+                return HipcubDebug(segmented_config.Init<SegmentedPolicyT>(segmented_kernel));
             }
         };
 
         /// Invocation (run multiple digit passes)
         template <
             typename ActivePolicyT,    ///< Umbrella policy active for the target device
-            typename SegmentedKernelT> ///< Function type of cub::DeviceSegmentedRadixSortKernel
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+            typename SegmentedKernelT> ///< Function type of hipcub::DeviceSegmentedRadixSortKernel
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             InvokePasses(
-                SegmentedKernelT segmented_kernel,     ///< [in] Kernel function pointer to parameterization of cub::DeviceSegmentedRadixSortKernel
-                SegmentedKernelT alt_segmented_kernel) ///< [in] Alternate kernel function pointer to parameterization of cub::DeviceSegmentedRadixSortKernel
+                SegmentedKernelT segmented_kernel,     ///< [in] Kernel function pointer to parameterization of hipcub::DeviceSegmentedRadixSortKernel
+                SegmentedKernelT alt_segmented_kernel) ///< [in] Alternate kernel function pointer to parameterization of hipcub::DeviceSegmentedRadixSortKernel
         {
 #ifndef CUB_RUNTIME_ENABLED
             (void)segmented_kernel;
             (void)alt_segmented_kernel;
 
             // Kernel launch not supported from this device
-            return CubDebug(cudaErrorNotSupported);
+            return HipcubDebug(hipErrorNotSupported);
 #else
 
-            cudaError error = hipSuccess;
+            hipError_t error = hipSuccess;
             do
             {
                 // Init regular and alternate kernel configurations
@@ -1507,7 +1508,7 @@ namespace cub
                     };
 
                 // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-                if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                if (HipcubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
                     break;
 
                 // Return if the caller is simply requesting the size of the storage allocation
@@ -1540,7 +1541,7 @@ namespace cub
                 // Run first pass, consuming from the input's current buffers
                 int current_bit = begin_bit;
 
-                if (CubDebug(error = InvokePass(
+                if (HipcubDebug(error = InvokePass(
                                  d_keys.Current(), d_keys_remaining_passes.Current(),
                                  d_values.Current(), d_values_remaining_passes.Current(),
                                  current_bit,
@@ -1550,7 +1551,7 @@ namespace cub
                 // Run remaining passes
                 while (current_bit < end_bit)
                 {
-                    if (CubDebug(error = InvokePass(
+                    if (HipcubDebug(error = InvokePass(
                                      d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector], d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
                                      d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector], d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
                                      current_bit,
@@ -1583,8 +1584,8 @@ namespace cub
 
         /// Invocation
         template <typename ActivePolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
-            cudaError_t
+        HIPCUB_RUNTIME_FUNCTION __forceinline__
+            hipError_t
             Invoke()
         {
             typedef typename DispatchSegmentedRadixSort::MaxPolicy MaxPolicyT;
@@ -1600,7 +1601,7 @@ namespace cub
         //------------------------------------------------------------------------------
 
         /// Internal dispatch routine
-        CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(
+        HIPCUB_RUNTIME_FUNCTION __forceinline__ static hipError_t Dispatch(
             void *d_temp_storage,            ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,      ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             DoubleBuffer<KeyT> &d_keys,      ///< [in,out] Double-buffer whose current buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
@@ -1617,12 +1618,12 @@ namespace cub
         {
             typedef typename DispatchSegmentedRadixSort::MaxPolicy MaxPolicyT;
 
-            cudaError_t error;
+            hipError_t error;
             do
             {
                 // Get PTX version
                 int ptx_version;
-                if (CubDebug(error = PtxVersion(ptx_version)))
+                if (HipcubDebug(error = PtxVersion(ptx_version)))
                     break;
 
                 // Create dispatch functor
@@ -1634,7 +1635,7 @@ namespace cub
                     stream, debug_synchronous, ptx_version);
 
                 // Dispatch to chained policy
-                if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+                if (HipcubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
                     break;
 
             } while (0);

@@ -142,7 +142,7 @@ void cluster_sum_test(thrust::device_vector<int> &csr_ptr_d,
                                                                      cluster_d.begin(), cluster_inv_ptr.begin(), cluster_inv_ind.begin(),
                                                                      weighted, k_vec_ptr, Q_arr_ptr, delta_Q_arr_ptr,score_ptr);
  
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
 
   double Q = score[0];
 */
@@ -169,7 +169,7 @@ void cluster_sum_test(thrust::device_vector<int> &csr_ptr_d,
   nvlouvain::build_delta_modularity_vec<<<block_size_2d, grid_size_2d>>>(n_vertex, 
                                                                          csr_ptr_d.begin(), csr_ind_d.begin(), csr_val_d.begin(), 
                                                                          cluster_d.begin(), delta_Q_arr_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed);
   diff_time = timed;
   #ifdef VERBOSE
@@ -189,7 +189,7 @@ void cluster_sum_test(thrust::device_vector<int> &csr_ptr_d,
   nvlouvain::kernel_compute_cluster_sum<<<block_size, grid_size>>>( n_vertex, c_size, 
                                                                       cluster_inv_ptr_ptr, cluster_inv_ind_ptr, 
                                                                       k_vec_ptr, cluster_sum_vec_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   #ifdef VERBOSE
     nvlouvain::display_vec(cluster_sum_vec);
   #endif
@@ -198,7 +198,7 @@ void cluster_sum_test(thrust::device_vector<int> &csr_ptr_d,
                                                                          cluster_d.begin(),
                                                                          cluster_sum_vec_ptr, 
                                                                          k_vec_ptr, delta_Q_arr_ptr);
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed);
   diff_time = timed;
   #ifdef VERBOSE

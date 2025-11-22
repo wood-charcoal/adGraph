@@ -35,7 +35,7 @@ namespace nvgraph
 
             hipGetDeviceProperties(&m_dev_props, m_dev_id);
             hipCheckError();
-            cudaSetDevice(m_dev_id);
+            hipSetDevice(m_dev_id);
             hipCheckError();
 
             // fill spmat struct;
@@ -52,7 +52,7 @@ namespace nvgraph
         template <typename IndexType>
         TrianglesCount<IndexType>::~TrianglesCount()
         {
-            cudaSetDevice(m_dev_id);
+            hipSetDevice(m_dev_id);
         }
 
         template <typename IndexType>
@@ -75,7 +75,7 @@ namespace nvgraph
             int nblock = m_mat.nrows;
 
             Vector<uint64_t> ocnt_d(nblock);
-            cudaMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
+            hipMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
             hipCheckError();
 
             tricnt_bsh(nblock, &m_mat, ocnt_d.raw(), bmld, m_stream);
@@ -92,7 +92,7 @@ namespace nvgraph
             // allocate a big enough array for output
 
             Vector<uint64_t> ocnt_d(m_mat.nrows);
-            cudaMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
+            hipMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
             hipCheckError();
 
             // allocate level 1 bitmap
@@ -104,7 +104,7 @@ namespace nvgraph
             bmldL1 /= sizeof(*bmapL1_d.raw());
 
             size_t free_bytes, total_bytes;
-            cudaMemGetInfo(&free_bytes, &total_bytes);
+            hipMemGetInfo(&free_bytes, &total_bytes);
             hipCheckError();
 
             int nblock = (free_bytes * 95 / 100) / (sizeof(*bmapL1_d.raw()) * bmldL1); //@TODO: what?
@@ -113,8 +113,8 @@ namespace nvgraph
             size_t bmapL1_sz = sizeof(*bmapL1_d.raw()) * bmldL1 * nblock;
 
             bmapL1_d.allocate(bmldL1 * nblock);
-            // cuda 8.0 : memory past 16th GB may not be set with cudaMemset(),
-            // CHECK_HIP(cudaMemset(bmapL1_d, 0, bmapL1_sz));
+            // cuda 8.0 : memory past 16th GB may not be set with hipMemset(),
+            // CHECK_HIP(hipMemset(bmapL1_d, 0, bmapL1_sz));
             myCudaMemset((unsigned long long *)bmapL1_d.raw(), 0ull, bmapL1_sz / 8, m_stream);
 
             // allocate level 0 bitmap
@@ -142,7 +142,7 @@ namespace nvgraph
             size_t ocnt_sz = DIV_UP(m_mat.nrows, (THREADS / 32));
             ocnt_d.allocate(ocnt_sz);
 
-            cudaMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
+            hipMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
             hipCheckError();
 
             Vector<unsigned int> bmap_d;
@@ -154,7 +154,7 @@ namespace nvgraph
 
             // number of blocks limited by birmap size
             size_t free_bytes, total_bytes;
-            cudaMemGetInfo(&free_bytes, &total_bytes);
+            hipMemGetInfo(&free_bytes, &total_bytes);
             hipCheckError();
 
             int nblock = (free_bytes * 95 / 100) / (sizeof(*bmap_d.raw()) * bmld * (THREADS / 32));
@@ -165,8 +165,8 @@ namespace nvgraph
             size_t bmap_sz = bmld * nblock * (THREADS / 32);
 
             bmap_d.allocate(bmap_sz);
-            // CUDA 8.0 memory past 16th GB may not be set with cudaMemset()
-            // CHECK_HIP(cudaMemset(bmap_d, 0, bmap_sz));
+            // CUDA 8.0 memory past 16th GB may not be set with hipMemset()
+            // CHECK_HIP(hipMemset(bmap_d, 0, bmap_sz));
             myCudaMemset((unsigned long long *)bmap_d.raw(), 0ull, bmap_sz * sizeof(*bmap_d.raw()) / 8, m_stream);
 
             tricnt_wrp(nblock, &m_mat, ocnt_d.raw(), bmap_d.raw(), bmld, m_stream);
@@ -184,7 +184,7 @@ namespace nvgraph
 
             Vector<uint64_t> ocnt_d(nblock);
 
-            cudaMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
+            hipMemset(ocnt_d.raw(), 0, ocnt_d.bytes());
             hipCheckError();
 
             tricnt_thr(nblock, &m_mat, ocnt_d.raw(), m_stream);

@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentSegmentFixup implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduce-value-by-key.
+ * hipcub::AgentSegmentFixup implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduce-value-by-key.
  */
 
 #pragma once
@@ -117,19 +117,19 @@ struct AgentSegmentFixup
 
         // Whether or not do fixup using RLE + global atomics
         // double atomics starting with 6.0
-        USE_ATOMIC_FIXUP    = (((CUB_PTX_ARCH >= 350) && 
+        USE_ATOMIC_FIXUP    = (((HIPCUB_ARCH >= 350) && 
                                 (Equals<ValueT, float>::VALUE || 
                                  Equals<ValueT, int>::VALUE ||
                                  Equals<ValueT, unsigned int>::VALUE ||
                                  Equals<ValueT, unsigned long long>::VALUE)) 
                                 ||
-                                ((CUB_PTX_ARCH >= 600) && 
+                                ((HIPCUB_ARCH >= 600) && 
                                 (Equals<ValueT, double>::VALUE)))
                                 && SemiringT::HAS_PLUS_ATOMICS, // don't use atomics for semirings like maxmin
 
         // Whether or not the scan operation has a zero-valued identity value (true if we're performing addition on a primitive type)
         // not used. 
-        //HAS_IDENTITY_ZERO   = (Equals<ReductionOpT, cub::Sum>::VALUE) && (Traits<ValueT>::PRIMITIVE),
+        //HAS_IDENTITY_ZERO   = (Equals<ReductionOpT, hipcub::Sum>::VALUE) && (Traits<ValueT>::PRIMITIVE),
     };
 
     // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys

@@ -21,7 +21,7 @@
 #include <thrust/sort.h>          //sort
 #include <thrust/binary_search.h> //lower_bound
 #include <thrust/unique.h>        //unique
-#include <cusparse.h>
+#include <hipsparse.h>
 #include "async_event.cuh"
 #include "graph_utils.cuh"
 #include "common_selector.cuh"
@@ -154,7 +154,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
   IndexType *row_indices_raw_ptr = row_indices.raw();
   //  Cusparse::csr2coo( n, nnz, A_row_offsets_ptr, row_indices.raw()); // note : amgx uses cusp for that
   // hipsparseHandle_t cusp_handle;
-  // cusparseCreate(&cusp_handle);
+  // hipsparseCreate(&cusp_handle);
 
   hipsparseXcsr2coo(cusp_handle, A_row_offsets_ptr,
                     nnz, n, row_indices_raw_ptr,
@@ -208,7 +208,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
     ones.fill(1.0);
     ValueType alpha = 1.0, beta =0.0;
     Cusparse::csrmv(false, false, n, n, nnz,&alpha,A_nonzero_values_ptr, A_row_offsets_ptr, A_column_indices_ptr, ones.raw(),&beta, row_sum.raw());
-    cudaFuncSetCacheConfig(computeEdgeWeightsBlockDiaCsr_V2<IndexType,ValueType,float>,cudaFuncCachePreferL1);
+    hipFuncSetCacheConfig(computeEdgeWeightsBlockDiaCsr_V2<IndexType,ValueType,float>,hipFuncCachePreferL1);
     computeEdgeWeights_simple<<<num_blocks_V2,threads_per_block,0,this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_row_sum_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, this->m_weight_formula);
     hipCheckError();
     break;
@@ -223,7 +223,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
     computeDiagonalKernelCSR<<<num_blocks, threads_per_block, 0, this->m_stream>>>(n, csr_ptr, csr_ind, diag_idx.raw());
     hipCheckError();
 
-    cudaFuncSetCacheConfig(computeEdgeWeightsBlockDiaCsr_V2<IndexType, ValueType, float>, cudaFuncCachePreferL1);
+    hipFuncSetCacheConfig(computeEdgeWeightsBlockDiaCsr_V2<IndexType, ValueType, float>, hipFuncCachePreferL1);
     computeEdgeWeightsBlockDiaCsr_V2<<<num_blocks_V2, threads_per_block, 0, this->m_stream>>>(A_row_offsets_ptr, A_row_indices_ptr, A_column_indices_ptr, A_dia_idx_ptr, A_nonzero_values_ptr, nnz, edge_weights_ptr, rand_edge_weights_ptr, n, bsize, this->m_aggregation_edge_weight_component, this->m_weight_formula);
     hipCheckError();
     break;
@@ -277,7 +277,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
       if (s == 0)
       {
         // count unaggregated vertices
-        cudaMemsetAsync(d_unaggregated, 0, sizeof(int), this->m_stream);
+        hipMemsetAsync(d_unaggregated, 0, sizeof(int), this->m_stream);
         countAggregates<IndexType, threads_per_block><<<num_blocks, threads_per_block, 0, this->m_stream>>>(n, aggregates_ptr, d_unaggregated);
         hipCheckError();
 
@@ -293,7 +293,7 @@ NVGRAPH_ERROR Size2Selector<IndexType, ValueType>::setAggregates_common_sqblocks
         numUnassigned = *unaggregated;
       }
 #else
-      cudaStreamSynchronize(this->m_stream);
+      hipStreamSynchronize(this->m_stream);
       numUnassigned_previous = numUnassigned;
       numUnassigned = (int)thrust::count(aggregates_thrust_dev_ptr, aggregates_thrust_dev_ptr + n, -1);
       hipCheckError();

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 
 /*
@@ -91,7 +92,7 @@ void phase_1_test(thrust::device_vector<int> &csr_ptr_d,
   kernel_modularity<<<block_size, grid_size>>>(size, csr_ptr_d.begin(), csr_ind_d.begin(), csr_val_d.begin(), cluster_d.begin(), matrix_raw_ptr, Q_d_raw_ptr);
 
  
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
 
   hr_clock.stop(&timed);
   double mod_time(timed);
@@ -127,7 +128,7 @@ void phase_1_test(thrust::device_vector<int> &csr_ptr_d,
                                               improve_d_raw_ptr, 
                                               n_moved_ptr);
   
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
   
     hr_clock.stop(&timed);
     mod_time = timed;
@@ -136,7 +137,7 @@ void phase_1_test(thrust::device_vector<int> &csr_ptr_d,
     std::cout<<"improvement: "<<improve_d[0]<<" runtime: "<<mod_time<<std::endl;
   
     kernel_modularity<<<block_size, grid_size>>>(size, csr_ptr_d.begin(), csr_ind_d.begin(), csr_val_d.begin(), cluster_d.begin(), matrix_raw_ptr, Q_d_raw_ptr);
-    CUDA_CALL(cudaDeviceSynchronize());
+    CUDA_CALL(hipDeviceSynchronize());
    
 
     delta_Q = Q_d[0] - Q_old[0]; 

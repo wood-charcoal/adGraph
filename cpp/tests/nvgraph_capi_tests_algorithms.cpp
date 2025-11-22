@@ -216,7 +216,7 @@ template <typename T>
 bool enough_device_memory(int n, int nnz, size_t add)
 {
     size_t mtotal, mfree;
-    cudaMemGetInfo(&mfree, &mtotal);
+    hipMemGetInfo(&mfree, &mtotal);
     if (mfree > add + sizeof(T) * 3 * (n + nnz))
         return true;
     return false;
@@ -462,7 +462,7 @@ public:
             // warmup
             status = nvgraphSrSpmv(handle, g1, weight_index, (void *)&alphaT, x_index, (void *)&betaT, y_index, param.sr);
             ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
 
             int repeat = simple_repeats;
             start = second();
@@ -473,7 +473,7 @@ public:
                 status = nvgraphSrSpmv(handle, g1, weight_index, (void *)&alphaT, x_index, (void *)&betaT, y_index, param.sr);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s_%s %10.8f -ms\n", test_id.c_str(), SR_OPS.get_name(param.sr), 1000.0 * (stop - start) / ((double)repeat));
         }
@@ -613,7 +613,7 @@ public:
         int widest_path_index = 0;
 
         status = nvgraphWidestPath(handle, g1, weight_index, &source_vert, widest_path_index);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
         // run
         if (PERF)
@@ -627,7 +627,7 @@ public:
                 status = nvgraphWidestPath(handle, g1, weight_index, &source_vert, widest_path_index);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0 * (stop - start) / repeat);
         }
@@ -761,7 +761,7 @@ public:
 
         // run
         status = nvgraphSssp(handle, g1, weight_index, &source_vert, sssp_index);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
         if (PERF)
@@ -775,7 +775,7 @@ public:
                 status = nvgraphSssp(handle, g1, weight_index, &source_vert, sssp_index);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0 * (stop - start) / repeat);
         }
@@ -861,7 +861,7 @@ public:
 
         // Waive hugebubbles test, http://nvbugs/200189611
         /*{
-            cudaDeviceProp prop;
+            hipDeviceProp_t prop;
             hipGetDeviceProperties ( &prop, 0 );
             std::string gpu(prop.name);
             if (param.graph_file.find("hugebubbles-00020") != std::string::npos &&
@@ -935,7 +935,7 @@ public:
         int max_iter = 1000;
 
         status = nvgraphPagerank(handle, g1, weight_index, (void *)&alpha, bookmark_index, has_guess, pagerank_index, tolerance, max_iter);
-        cudaDeviceSynchronize();
+        hipDeviceSynchronize();
         ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
         // run
@@ -950,7 +950,7 @@ public:
                 status = nvgraphPagerank(handle, g1, weight_index, (void *)&alpha, bookmark_index, has_guess, pagerank_index, tolerance, max_iter);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
             }
-            cudaDeviceSynchronize();
+            hipDeviceSynchronize();
             stop = second();
             printf("&&&& PERF Time_%s %10.8f -ms\n", test_id.c_str(), 1000.0 * (stop - start) / repeat);
         }
@@ -2482,7 +2482,7 @@ public:
         size_t free_mid = 0, free_last = 0, total = 0;
         for (int i = 0; i < repeat; i++)
         {
-            //            cudaMemGetInfo(&t, &total);
+            //            hipMemGetInfo(&t, &total);
             //            printf("Iteration: %d, freemem: %zu\n", i, t);
 
             status = nvgraphSrSpmv(handle, g1, weight_index, (void *)&alphaT, x_index, (void *)&betaT, y_index, param.sr);
@@ -2516,11 +2516,11 @@ public:
             }
             if (i == std::min(50, (int)(repeat / 2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat - 1)
             {
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
 
             // reset vectors
@@ -2636,7 +2636,7 @@ public:
         size_t free_mid = 0, free_last = 0, total = 0;
         for (int i = 0; i < repeat; i++)
         {
-            // cudaMemGetInfo(&t, &total);
+            // hipMemGetInfo(&t, &total);
             // printf("Iteration: %d, freemem: %zu\n", i, t);
 
             status = nvgraphWidestPath(handle, g1, weight_index, &source_vert, widest_path_index);
@@ -2671,11 +2671,11 @@ public:
 
             if (i == std::min(50, (int)(repeat / 2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat - 1)
             {
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
         }
 
@@ -2785,7 +2785,7 @@ public:
         size_t free_mid = 0, free_last = 0, total = 0;
         for (int i = 0; i < repeat; i++)
         {
-            //            cudaMemGetInfo(&t, &total);
+            //            hipMemGetInfo(&t, &total);
             //            printf("Iteration: %d, freemem: %zu\n", i, t);
 
             status = nvgraphSssp(handle, g1, weight_index, &source_vert, sssp_index);
@@ -2820,13 +2820,13 @@ public:
 
             if (i == std::min(50, (int)(repeat / 2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat - 1)
             {
                 status = nvgraphGetVertexData(handle, g1, (void *)&calculated_res_last[0], sssp_index);
                 ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
         }
 
@@ -2944,7 +2944,7 @@ public:
         size_t free_mid = 0, free_last = 0, total = 0;
         for (int i = 0; i < repeat; i++)
         {
-            // cudaMemGetInfo(&t, &total);
+            // hipMemGetInfo(&t, &total);
             // printf("Iteration: %d, freemem: %zu\n", i, t);
 
             status = nvgraphPagerank(handle, g1, weight_index, (void *)&alpha, bookmark_index, has_guess, pagerank_index, tolerance, max_iter);
@@ -2979,11 +2979,11 @@ public:
 
             if (i == std::min(50, (int)(repeat / 2)))
             {
-                cudaMemGetInfo(&free_mid, &total);
+                hipMemGetInfo(&free_mid, &total);
             }
             if (i == repeat - 1)
             {
-                cudaMemGetInfo(&free_last, &total);
+                hipMemGetInfo(&free_last, &total);
             }
         }
 

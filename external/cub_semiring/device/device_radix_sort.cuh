@@ -29,7 +29,7 @@
 
 /**
  * \file
- * cub::DeviceRadixSort provides device-wide, parallel operations for computing a radix sort across a sequence of data items residing within device-accessible memory.
+ * hipcub::DeviceRadixSort provides device-wide, parallel operations for computing a radix sort across a sequence of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -109,7 +109,7 @@ namespace cub
          * with associated vector of \p int values.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for sorting data
          * int  num_items;          // e.g., 7
@@ -122,14 +122,14 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
          *     d_keys_in, d_keys_out, d_values_in, d_values_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run sorting operation
-         * cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
          *     d_keys_in, d_keys_out, d_values_in, d_values_out, num_items);
          *
          * // d_keys_out            <-- [0, 3, 5, 6, 7, 8, 9]
@@ -143,7 +143,7 @@ namespace cub
         template <
             typename KeyT,
             typename ValueT>
-        CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t SortPairs(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             const KeyT *d_keys_in,          ///< [in] Pointer to the input data of key data to sort
@@ -206,7 +206,7 @@ namespace cub
          * with associated vector of \p int values.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for sorting data
          * int  num_items;          // e.g., 7
@@ -217,19 +217,19 @@ namespace cub
          * ...
          *
          * // Create a set of DoubleBuffers to wrap pairs of device pointers
-         * cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
-         * cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
+         * hipcub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
+         * hipcub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
          *
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
+         * hipcub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run sorting operation
-         * cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
+         * hipcub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
          *
          * // d_keys.Current()      <-- [0, 3, 5, 6, 7, 8, 9]
          * // d_values.Current()    <-- [5, 4, 3, 1, 2, 0, 6]
@@ -242,7 +242,7 @@ namespace cub
         template <
             typename KeyT,
             typename ValueT>
-        CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t SortPairs(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             DoubleBuffer<KeyT> &d_keys,     ///< [in,out] Reference to the double-buffer of keys whose "current" device-accessible buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
@@ -286,7 +286,7 @@ namespace cub
          * with associated vector of \p int values.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for sorting data
          * int  num_items;          // e.g., 7
@@ -299,14 +299,14 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
          *     d_keys_in, d_keys_out, d_values_in, d_values_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run sorting operation
-         * cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
+         * hipcub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes,
          *     d_keys_in, d_keys_out, d_values_in, d_values_out, num_items);
          *
          * // d_keys_out            <-- [9, 8, 7, 6, 5, 3, 0]
@@ -320,7 +320,7 @@ namespace cub
         template <
             typename KeyT,
             typename ValueT>
-        CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t SortPairsDescending(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             const KeyT *d_keys_in,          ///< [in] Pointer to the input data of key data to sort
@@ -378,7 +378,7 @@ namespace cub
          * with associated vector of \p int values.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for sorting data
          * int  num_items;          // e.g., 7
@@ -389,19 +389,19 @@ namespace cub
          * ...
          *
          * // Create a set of DoubleBuffers to wrap pairs of device pointers
-         * cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
-         * cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
+         * hipcub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
+         * hipcub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
          *
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
+         * hipcub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run sorting operation
-         * cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
+         * hipcub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
          *
          * // d_keys.Current()      <-- [9, 8, 7, 6, 5, 3, 0]
          * // d_values.Current()    <-- [6, 0, 2, 1, 3, 4, 5]
@@ -414,7 +414,7 @@ namespace cub
         template <
             typename KeyT,
             typename ValueT>
-        CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t SortPairsDescending(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             DoubleBuffer<KeyT> &d_keys,     ///< [in,out] Reference to the double-buffer of keys whose "current" device-accessible buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
@@ -467,7 +467,7 @@ namespace cub
          * The code snippet below illustrates the sorting of a device vector of \p int keys.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for sorting data
          * int  num_items;          // e.g., 7
@@ -478,13 +478,13 @@ namespace cub
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
+         * hipcub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run sorting operation
-         * cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
+         * hipcub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
          *
          * // d_keys_out            <-- [0, 3, 5, 6, 7, 8, 9]
          *
@@ -493,7 +493,7 @@ namespace cub
          * \tparam KeyT      <b>[inferred]</b> KeyT type
          */
         template <typename KeyT>
-        CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t SortKeys(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             const KeyT *d_keys_in,          ///< [in] Pointer to the input data of key data to sort
@@ -551,7 +551,7 @@ namespace cub
          * The code snippet below illustrates the sorting of a device vector of \p int keys.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for sorting data
          * int  num_items;          // e.g., 7
@@ -560,18 +560,18 @@ namespace cub
          * ...
          *
          * // Create a DoubleBuffer to wrap the pair of device pointers
-         * cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
+         * hipcub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
          *
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items);
+         * hipcub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run sorting operation
-         * cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items);
+         * hipcub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items);
          *
          * // d_keys.Current()      <-- [0, 3, 5, 6, 7, 8, 9]
          *
@@ -580,7 +580,7 @@ namespace cub
          * \tparam KeyT      <b>[inferred]</b> KeyT type
          */
         template <typename KeyT>
-        CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t SortKeys(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             DoubleBuffer<KeyT> &d_keys,     ///< [in,out] Reference to the double-buffer of keys whose "current" device-accessible buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys
@@ -625,7 +625,7 @@ namespace cub
          * The code snippet below illustrates the sorting of a device vector of \p int keys.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for sorting data
          * int  num_items;          // e.g., 7
@@ -634,18 +634,18 @@ namespace cub
          * ...
          *
          * // Create a DoubleBuffer to wrap the pair of device pointers
-         * cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
+         * hipcub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
          *
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
+         * hipcub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run sorting operation
-         * cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
+         * hipcub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
          *
          * // d_keys_out            <-- [9, 8, 7, 6, 5, 3, 0]s
          *
@@ -654,7 +654,7 @@ namespace cub
          * \tparam KeyT      <b>[inferred]</b> KeyT type
          */
         template <typename KeyT>
-        CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t SortKeysDescending(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             const KeyT *d_keys_in,          ///< [in] Pointer to the input data of key data to sort
@@ -707,7 +707,7 @@ namespace cub
          * The code snippet below illustrates the sorting of a device vector of \p int keys.
          * \par
          * \code
-         * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+         * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
          *
          * // Declare, allocate, and initialize device-accessible pointers for sorting data
          * int  num_items;          // e.g., 7
@@ -716,18 +716,18 @@ namespace cub
          * ...
          *
          * // Create a DoubleBuffer to wrap the pair of device pointers
-         * cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
+         * hipcub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
          *
          * // Determine temporary device storage requirements
          * void     *d_temp_storage = NULL;
          * size_t   temp_storage_bytes = 0;
-         * cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys, num_items);
+         * hipcub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys, num_items);
          *
          * // Allocate temporary storage
-         * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+         * hipMalloc(&d_temp_storage, temp_storage_bytes);
          *
          * // Run sorting operation
-         * cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys, num_items);
+         * hipcub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys, num_items);
          *
          * // d_keys.Current()      <-- [9, 8, 7, 6, 5, 3, 0]
          *
@@ -736,7 +736,7 @@ namespace cub
          * \tparam KeyT      <b>[inferred]</b> KeyT type
          */
         template <typename KeyT>
-        CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+        HIPCUB_RUNTIME_FUNCTION static hipError_t SortKeysDescending(
             void *d_temp_storage,           ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
             size_t &temp_storage_bytes,     ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
             DoubleBuffer<KeyT> &d_keys,     ///< [in,out] Reference to the double-buffer of keys whose "current" device-accessible buffer contains the unsorted input keys and, upon return, is updated to point to the sorted output keys

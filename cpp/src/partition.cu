@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 // #ifdef NVGRAPH_PARTITION
 
 /*
@@ -21,7 +22,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/reduce.h>
@@ -51,7 +52,7 @@ static double timer(void)
 {
 #ifdef COLLECT_TIME_STATISTICS
   struct timeval tv;
-  cudaDeviceSynchronize();
+  hipDeviceSynchronize();
   gettimeofday(&tv, NULL);
   return (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
 #else
@@ -213,7 +214,7 @@ namespace nvgraph
   }
 
   template <typename IndexType_, typename ValueType_>
-  cudaError_t scale_obs(IndexType_ m, IndexType_ n, ValueType_ *obs)
+  hipError_t scale_obs(IndexType_ m, IndexType_ n, ValueType_ *obs)
   {
     IndexType_ p2m;
     dim3 nthreads, nblocks;
@@ -575,7 +576,7 @@ namespace nvgraph
     // nEigVecs - nrmR
     // lwork - Workspace max Lwork value (for either potrf or gesvd)
     // 2 - devInfo
-    cudaMalloc(&lanczosVecs, (9 * nEigVecs * n + 36 * nEigVecs * nEigVecs + nEigVecs + lwork + 2) * sizeof(ValueType_));
+    hipMalloc(&lanczosVecs, (9 * nEigVecs * n + 36 * nEigVecs * nEigVecs + nEigVecs + lwork + 2) * sizeof(ValueType_));
     hipCheckError();
 
     // Setup preconditioner M for Laplacian L

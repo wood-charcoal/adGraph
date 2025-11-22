@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
  *
@@ -20,7 +21,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/reduce.h>
@@ -44,14 +45,14 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
-#include "cuda_profiler_api.h"
+#include "hip/hip_runtime_api.h"
 #endif
 
 #ifdef COLLECT_TIME_STATISTICS
 static double timer(void)
 {
   struct timeval tv;
-  cudaDeviceSynchronize();
+  hipDeviceSynchronize();
   gettimeofday(&tv, NULL);
   return (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
 }
@@ -211,7 +212,7 @@ namespace nvgraph
   }
 
   template <typename IndexType_, typename ValueType_>
-  cudaError_t scale_obs(IndexType_ m, IndexType_ n, ValueType_ *obs)
+  hipError_t scale_obs(IndexType_ m, IndexType_ n, ValueType_ *obs)
   {
     IndexType_ p2m;
     dim3 nthreads, nblocks;
@@ -367,7 +368,7 @@ namespace nvgraph
 
 #ifdef COLLECT_TIME_STATISTICS
     t1 = timer();
-    cudaProfilerStart();
+    hipProfilerStart();
 #endif
 
     CHECK_NVGRAPH(computeLargestEigenvectors(*B, nEigVecs, maxIter_lanczos,
@@ -376,7 +377,7 @@ namespace nvgraph
                                              eigVals.raw(), eigVecs.raw()));
 
 #ifdef COLLECT_TIME_STATISTICS
-    cudaProfilerStop();
+    hipProfilerStop();
     t2 = timer();
     printf("%f\n", t2 - t1);
 #endif

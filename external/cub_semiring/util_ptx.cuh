@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2017, NVIDIA CORPORATION.  All rights reserved.
@@ -90,7 +91,7 @@ __device__ __forceinline__ unsigned int SHR_ADD(
     unsigned int addend)
 {
     unsigned int ret;
-#if CUB_PTX_ARCH >= 200
+#if HIPCUB_ARCH >= 200
     asm ("vshr.u32.u32.u32.clamp.add %0, %1, %2, %3;" :
         "=r"(ret) : "r"(x), "r"(shift), "r"(addend));
 #else
@@ -109,7 +110,7 @@ __device__ __forceinline__ unsigned int SHL_ADD(
     unsigned int addend)
 {
     unsigned int ret;
-#if CUB_PTX_ARCH >= 200
+#if HIPCUB_ARCH >= 200
     asm ("vshl.u32.u32.u32.clamp.add %0, %1, %2, %3;" :
         "=r"(ret) : "r"(x), "r"(shift), "r"(addend));
 #else
@@ -131,7 +132,7 @@ __device__ __forceinline__ unsigned int BFE(
     Int2Type<BYTE_LEN>      /*byte_len*/)
 {
     unsigned int bits;
-#if CUB_PTX_ARCH >= 200
+#if HIPCUB_ARCH >= 200
     asm ("bfe.u32 %0, %1, %2, %3;" : "=r"(bits) : "r"((unsigned int) source), "r"(bit_start), "r"(num_bits));
 #else
     const unsigned int MASK = (1 << num_bits) - 1;
@@ -180,7 +181,7 @@ __device__ __forceinline__ void BFI(
     unsigned int bit_start,
     unsigned int num_bits)
 {
-#if CUB_PTX_ARCH >= 200
+#if HIPCUB_ARCH >= 200
     asm ("bfi.b32 %0, %1, %2, %3, %4;" :
         "=r"(ret) : "r"(y), "r"(x), "r"(bit_start), "r"(num_bits));
 #else
@@ -197,7 +198,7 @@ __device__ __forceinline__ void BFI(
  */
 __device__ __forceinline__ unsigned int IADD3(unsigned int x, unsigned int y, unsigned int z)
 {
-#if CUB_PTX_ARCH >= 200
+#if HIPCUB_ARCH >= 200
     asm ("vadd.u32.u32.u32.add %0, %1, %2, %3;" : "=r"(x) : "r"(x), "r"(y), "r"(z));
 #else
     x = x + y + z;
@@ -219,7 +220,7 @@ __device__ __forceinline__ unsigned int IADD3(unsigned int x, unsigned int y, un
  * The code snippet below illustrates byte-permute.
  * \par
  * \code
- * #include <cub/cub.cuh>
+ * #include <hipcub/hipcub.hpp>
  *
  * __global__ void ExampleKernel(...)
  * {
@@ -492,7 +493,7 @@ __device__ __forceinline__ unsigned int LaneMaskGe()
  * predecessor of its predecessor.
  * \par
  * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/util_ptx.cuh>
+ * #include <hipcub/hipcub.hpp>   // or equivalently <cub/util_ptx.cuh>
  *
  * __global__ void ExampleKernel(...)
  * {
@@ -550,7 +551,7 @@ __device__ __forceinline__ T ShuffleUp(
  * successor of its successor.
  * \par
  * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/util_ptx.cuh>
+ * #include <hipcub/hipcub.hpp>   // or equivalently <cub/util_ptx.cuh>
  *
  * __global__ void ExampleKernel(...)
  * {
@@ -611,7 +612,7 @@ __device__ __forceinline__ T ShuffleDown(
  *
  * \par
  * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/util_ptx.cuh>
+ * #include <hipcub/hipcub.hpp>   // or equivalently <cub/util_ptx.cuh>
  *
  * __global__ void ExampleKernel(...)
  * {

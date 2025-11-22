@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::BlockRakingLayout provides a conflict-free shared memory layout abstraction for warp-raking across thread block data.
+ * hipcub::BlockRakingLayout provides a conflict-free shared memory layout abstraction for warp-raking across thread block data.
  */
 
 
@@ -63,7 +63,7 @@ namespace cub {
 template <
     typename    T,
     int         BLOCK_THREADS,
-    int         PTX_ARCH = CUB_PTX_ARCH>
+    int         PTX_ARCH = HIPCUB_ARCH>
 struct BlockRakingLayout
 {
     //---------------------------------------------------------------------

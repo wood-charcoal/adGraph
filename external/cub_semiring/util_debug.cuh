@@ -53,29 +53,29 @@ namespace cub
  */
 
 /// CUB error reporting macro (prints error messages to stderr)
-#if (defined(DEBUG) || defined(_DEBUG)) && !defined(CUB_STDERR)
-#define CUB_STDERR
+#if (defined(DEBUG) || defined(_DEBUG)) && !defined(HIPCUB_STDERR)
+#define HIPCUB_STDERR
 #endif
 
     /**
-     * \brief %If \p CUB_STDERR is defined and \p error is not \p hipSuccess, the corresponding error message is printed to \p stderr (or \p stdout in device code) along with the supplied source context.
+     * \brief %If \p HIPCUB_STDERR is defined and \p error is not \p hipSuccess, the corresponding error message is printed to \p stderr (or \p stdout in device code) along with the supplied source context.
      *
      * \return The CUDA error.
      */
-    __host__ __device__ __forceinline__ cudaError_t Debug(
-        cudaError_t error,
+    __host__ __device__ __forceinline__ hipError_t Debug(
+        hipError_t error,
         const char *filename,
         int line)
     {
         (void)filename;
         (void)line;
-#ifdef CUB_STDERR
+#ifdef HIPCUB_STDERR
         if (error)
         {
-#if (CUB_PTX_ARCH == 0)
-            fprintf(stderr, "CUDA error %d [%s, %d]: %s\n", error, filename, line, cudaGetErrorString(error));
+#if (HIPCUB_ARCH == 0)
+            fprintf(stderr, "CUDA error %d [%s, %d]: %s\n", error, filename, line, hipGetErrorString(error));
             fflush(stderr);
-#elif (CUB_PTX_ARCH >= 200)
+#elif (HIPCUB_ARCH >= 200)
             printf("CUDA error %d [block (%d,%d,%d) thread (%d,%d,%d), %s, %d]\n", error, blockIdx.z, blockIdx.y, blockIdx.x, threadIdx.z, threadIdx.y, threadIdx.x, filename, line);
 #endif
         }
@@ -86,8 +86,8 @@ namespace cub
 /**
  * \brief Debug macro
  */
-#ifndef CubDebug
-#define CubDebug(e) cub::Debug((cudaError_t)(e), __FILE__, __LINE__)
+#ifndef HipcubDebug
+#define HipcubDebug(e) hipcub::Debug((hipError_t)(e), __FILE__, __LINE__)
 #endif
 
 /**
@@ -95,7 +95,7 @@ namespace cub
  */
 #ifndef CubDebugExit
 #define CubDebugExit(e)                                   \
-    if (cub::Debug((cudaError_t)(e), __FILE__, __LINE__)) \
+    if (hipcub::Debug((hipError_t)(e), __FILE__, __LINE__)) \
     {                                                     \
         exit(1);                                          \
     }
@@ -104,12 +104,12 @@ namespace cub
 /**
  * \brief Log macro for printf statements.
  */
-#if !defined(_CubLog)
+#if !defined(_HipcubLog)
 #if !(defined(__clang__) && defined(__CUDA__))
-#if (CUB_PTX_ARCH == 0)
-#define _CubLog(format, ...) printf(format, __VA_ARGS__);
-#elif (CUB_PTX_ARCH >= 200)
-#define _CubLog(format, ...) printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, blockIdx.z, blockIdx.y, blockIdx.x, threadIdx.z, threadIdx.y, threadIdx.x, __VA_ARGS__);
+#if (HIPCUB_ARCH == 0)
+#define _HipcubLog(format, ...) printf(format, __VA_ARGS__);
+#elif (HIPCUB_ARCH >= 200)
+#define _HipcubLog(format, ...) printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, blockIdx.z, blockIdx.y, blockIdx.x, threadIdx.z, threadIdx.y, threadIdx.x, __VA_ARGS__);
 #endif
 #else
 // XXX shameless hack for clang around variadic printf...
@@ -127,9 +127,9 @@ namespace cub
 #endif
     }
 #ifndef __CUDA_ARCH__
-#define _CubLog(format, ...) va_printf(format, __VA_ARGS__);
+#define _HipcubLog(format, ...) va_printf(format, __VA_ARGS__);
 #else
-#define _CubLog(format, ...) va_printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, __VA_ARGS__);
+#define _HipcubLog(format, ...) va_printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, __VA_ARGS__);
 #endif
 #endif
 #endif

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /*
  * Copyright (c) 2019, NVIDIA CORPORATION.
@@ -86,7 +87,7 @@ void mem_allocate_test(const int size){
   kernel_local_mem_new<<<block_size,grid_size>>>(30000);
 
 
-  CUDA_CALL(cudaDeviceSynchronize());
+  CUDA_CALL(hipDeviceSynchronize());
   hr_clock.stop(&timed); 
   double raw_ptr_time(timed);  
 

@@ -63,9 +63,9 @@ namespace nvgraph
 
     typedef enum
     {
-        CUBLAS_OP_N = 0,
-        CUBLAS_OP_T = 1,
-        CUBLAS_OP_C = 2
+        HIPBLAS_OP_N = 0,
+        HIPBLAS_OP_T = 1,
+        HIPBLAS_OP_C = 2
     } hipblasOperation_t;
 
     namespace
@@ -104,8 +104,8 @@ namespace nvgraph
                          const float *b, int ldb,
                          float beta, float *c, int ldc)
         {
-            hipblasOperation_t cublas_transa = (transa == 'N') ? CUBLAS_OP_N : CUBLAS_OP_T;
-            hipblasOperation_t cublas_transb = (transb == 'N') ? CUBLAS_OP_N : CUBLAS_OP_T;
+            hipblasOperation_t cublas_transa = (transa == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+            hipblasOperation_t cublas_transb = (transb == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
             cusolverDnSgemmHost(cublas_transa, cublas_transb, m, n, k,
                                 &alpha, (float *)a, lda, (float *)b, ldb, &beta, c, ldc);
         }
@@ -130,8 +130,8 @@ namespace nvgraph
                          const double *b, int ldb,
                          double beta, double *c, int ldc)
         {
-            hipblasOperation_t cublas_transa = (transa == 'N') ? CUBLAS_OP_N : CUBLAS_OP_T;
-            hipblasOperation_t cublas_transb = (transb == 'N') ? CUBLAS_OP_N : CUBLAS_OP_T;
+            hipblasOperation_t cublas_transa = (transa == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
+            hipblasOperation_t cublas_transb = (transb == 'N') ? HIPBLAS_OP_N : HIPBLAS_OP_T;
             cusolverDnDgemmHost(cublas_transa, cublas_transb, m, n, k,
                                 &alpha, (double *)a, lda, (double *)b, ldb, &beta, c, ldc);
         }

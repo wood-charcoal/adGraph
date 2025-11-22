@@ -536,8 +536,8 @@ public:
             }
             else if (aSpace == DEVICE)
             {
-                cudaMalloc((void **)&(p->source_offsets), sizeof(int) * (n + 1));
-                cudaMalloc((void **)&(p->destination_indices), sizeof(int) * (nnz));
+                hipMalloc((void **)&(p->source_offsets), sizeof(int) * (n + 1));
+                hipMalloc((void **)&(p->destination_indices), sizeof(int) * (nnz));
             }
             else
             {
@@ -558,8 +558,8 @@ public:
             }
             else if (aSpace == DEVICE)
             {
-                cudaMalloc((void **)&(p->destination_offsets), sizeof(int) * (n + 1));
-                cudaMalloc((void **)&(p->source_indices), sizeof(int) * (nnz));
+                hipMalloc((void **)&(p->destination_offsets), sizeof(int) * (n + 1));
+                hipMalloc((void **)&(p->source_indices), sizeof(int) * (nnz));
             }
             else
             {
@@ -580,8 +580,8 @@ public:
             }
             else if (aSpace == DEVICE)
             {
-                cudaMalloc((void **)&(p->source_indices), sizeof(int) * (nnz));
-                cudaMalloc((void **)&(p->destination_indices), sizeof(int) * (nnz));
+                hipMalloc((void **)&(p->source_indices), sizeof(int) * (nnz));
+                hipMalloc((void **)&(p->destination_indices), sizeof(int) * (nnz));
             }
             else
             {
@@ -959,8 +959,8 @@ public:
 
         // Allocate edge data in device memory
         T *srcEdgeDataDvT, *dstEdgeDataDvT;
-        ASSERT_EQ(hipSuccess, cudaMalloc((void **)&srcEdgeDataDvT, sizeof(T) * srcNNZ));
-        ASSERT_EQ(hipSuccess, cudaMalloc((void **)&dstEdgeDataDvT, sizeof(T) * refNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void **)&srcEdgeDataDvT, sizeof(T) * srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void **)&dstEdgeDataDvT, sizeof(T) * refNNZ));
         ASSERT_EQ(hipSuccess, hipMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T) * srcNNZ, hipMemcpyDefault)); // Copy edge data to device
         //////////////////////////////////////////////////
 
@@ -1118,7 +1118,7 @@ public:
         // Allocate topologies space in device memory
         void *srcTopologyDv = NULL, *resultTopologyDv = NULL;
         T *resultEdgeData = NULL;
-        ASSERT_EQ(hipSuccess, cudaMalloc((void **)&resultEdgeData, sizeof(T) * srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void **)&resultEdgeData, sizeof(T) * srcNNZ));
         allocateTopo(&srcTopologyDv, srcTestTopoType, srcN, srcNNZ, DEVICE);
         allocateTopo(&resultTopologyDv, dstTestTopoType, srcN, srcNNZ, DEVICE);
         cpyTopo(srcTopologyDv, srcTopologyHst, srcTestTopoType, hipMemcpyHostToDevice); // Copy src topology to device
@@ -1133,8 +1133,8 @@ public:
 
         // Allocate edge data in device memory
         T *srcEdgeDataDvT, *resultEdgeDataDvT;
-        ASSERT_EQ(hipSuccess, cudaMalloc((void **)&srcEdgeDataDvT, sizeof(T) * srcNNZ));
-        ASSERT_EQ(hipSuccess, cudaMalloc((void **)&resultEdgeDataDvT, sizeof(T) * srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void **)&srcEdgeDataDvT, sizeof(T) * srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void **)&resultEdgeDataDvT, sizeof(T) * srcNNZ));
         ASSERT_EQ(hipSuccess, hipMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T) * srcNNZ, hipMemcpyDefault)); // Copy edge data to device
         //////////////////////////////////////////////////
 
@@ -1177,7 +1177,7 @@ public:
         // Allocate topologies space in device memory
         void *srcTopologyDv = NULL, *resultTopologyDv = NULL;
         T *resultEdgeData = NULL;
-        ASSERT_EQ(hipSuccess, cudaMalloc((void **)&resultEdgeData, sizeof(T) * srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void **)&resultEdgeData, sizeof(T) * srcNNZ));
         allocateTopo(&srcTopologyDv, srcTestTopoType, srcN, srcNNZ, DEVICE);
         allocateTopo(&resultTopologyDv, dstTestTopoType, srcN, srcNNZ, DEVICE);
         cpyTopo(srcTopologyDv, srcTopologyHst, srcTestTopoType, hipMemcpyHostToDevice); // Copy src topology to device
@@ -1192,8 +1192,8 @@ public:
 
         // Allocate edge data in device memory
         T *srcEdgeDataDvT, *resultEdgeDataDvT;
-        ASSERT_EQ(hipSuccess, cudaMalloc((void **)&srcEdgeDataDvT, sizeof(T) * srcNNZ));
-        ASSERT_EQ(hipSuccess, cudaMalloc((void **)&resultEdgeDataDvT, sizeof(T) * srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void **)&srcEdgeDataDvT, sizeof(T) * srcNNZ));
+        ASSERT_EQ(hipSuccess, hipMalloc((void **)&resultEdgeDataDvT, sizeof(T) * srcNNZ));
         ASSERT_EQ(hipSuccess, hipMemcpy(srcEdgeDataDvT, srcEdgeDataHstT, sizeof(T) * srcNNZ, hipMemcpyDefault)); // Copy edge data to device
         //////////////////////////////////////////////////
 

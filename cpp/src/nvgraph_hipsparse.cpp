@@ -33,7 +33,7 @@ namespace nvgraph
                                      const float *beta,
                                      float *y)
     {
-      return cusparseScsrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y);
+      return hipsparseScsrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y);
     }
 
     hipsparseStatus_t cusparse_csrmv(hipsparseHandle_t handle, hipsparseOperation_t trans,
@@ -47,7 +47,7 @@ namespace nvgraph
                                      const double *beta,
                                      double *y)
     {
-      return cusparseDcsrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y);
+      return hipsparseDcsrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y);
     }
 
     hipsparseStatus_t hipsparse_csrmm(hipsparseHandle_t handle, hipsparseOperation_t trans,
@@ -79,7 +79,7 @@ namespace nvgraph
                                       double *y,
                                       const int ldy)
     {
-      return cusparseDcsrmm(handle, trans, m, n, k, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, ldx, beta, y, ldy);
+      return hipsparseDcsrmm(handle, trans, m, n, k, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, ldx, beta, y, ldy);
     }
 
   } // end anonymous namespace.
@@ -88,12 +88,12 @@ namespace nvgraph
   void Hipsparse::set_pointer_mode_device()
   {
     hipsparseHandle_t handle = Hipsparse::get_handle();
-    cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_DEVICE);
+    hipsparseSetPointerMode(handle, HIPSPARSE_POINTER_MODE_DEVICE);
   }
   void Hipsparse::set_pointer_mode_host()
   {
     hipsparseHandle_t handle = Hipsparse::get_handle();
-    cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_HOST);
+    hipsparseSetPointerMode(handle, HIPSPARSE_POINTER_MODE_HOST);
   }
 
   template <typename IndexType_, typename ValueType_>
@@ -109,7 +109,7 @@ namespace nvgraph
                         ValueType_ *y)
   {
     hipsparseHandle_t handle = Hipsparse::get_handle();
-    hipsparseOperation_t trans = transposed ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE;
+    hipsparseOperation_t trans = transposed ? HIPSPARSE_OPERATION_TRANSPOSE : HIPSPARSE_OPERATION_NON_TRANSPOSE;
     hipsparseMatDescr_t descr = 0;
     CHECK_HIPSPARSE(hipsparseCreateMatDescr(&descr)); // we should move that somewhere else
     if (sym)
@@ -118,7 +118,7 @@ namespace nvgraph
     }
     else
     {
-      CHECK_HIPSPARSE(hipsparseSetMatType(descr, CUSPARSE_MATRIX_TYPE_GENERAL));
+      CHECK_HIPSPARSE(hipsparseSetMatType(descr, HIPSPARSE_MATRIX_TYPE_GENERAL));
     }
     CHECK_HIPSPARSE(hipsparseSetMatIndexBase(descr, HIPSPARSE_INDEX_BASE_ZERO));
     CHECK_HIPSPARSE(cusparse_csrmv(handle, trans, m, n, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, beta, y));
@@ -135,7 +135,7 @@ namespace nvgraph
                         Vector<ValueType_> &y)
   {
     hipsparseHandle_t handle = Hipsparse::get_handle();
-    hipsparseOperation_t trans = transposed ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE;
+    hipsparseOperation_t trans = transposed ? HIPSPARSE_OPERATION_TRANSPOSE : HIPSPARSE_OPERATION_NON_TRANSPOSE;
     hipsparseMatDescr_t descr = 0;
     CHECK_HIPSPARSE(hipsparseCreateMatDescr(&descr)); // we should move that somewhere else
     if (sym)
@@ -144,7 +144,7 @@ namespace nvgraph
     }
     else
     {
-      CHECK_HIPSPARSE(hipsparseSetMatType(descr, CUSPARSE_MATRIX_TYPE_GENERAL));
+      CHECK_HIPSPARSE(hipsparseSetMatType(descr, HIPSPARSE_MATRIX_TYPE_GENERAL));
     }
     int n = G.get_num_vertices();
     int nnz = G.get_num_edges();
@@ -213,7 +213,7 @@ namespace nvgraph
   {
 
     hipsparseHandle_t handle = Hipsparse::get_handle();
-    hipsparseOperation_t trans = transposed ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE;
+    hipsparseOperation_t trans = transposed ? HIPSPARSE_OPERATION_TRANSPOSE : HIPSPARSE_OPERATION_NON_TRANSPOSE;
     hipsparseMatDescr_t descr = 0;
     CHECK_HIPSPARSE(hipsparseCreateMatDescr(&descr)); // we should move that somewhere else
     if (sym)
@@ -222,7 +222,7 @@ namespace nvgraph
     }
     else
     {
-      CHECK_HIPSPARSE(hipsparseSetMatType(descr, CUSPARSE_MATRIX_TYPE_GENERAL));
+      CHECK_HIPSPARSE(hipsparseSetMatType(descr, HIPSPARSE_MATRIX_TYPE_GENERAL));
     }
     CHECK_HIPSPARSE(hipsparseSetMatIndexBase(descr, HIPSPARSE_INDEX_BASE_ZERO));
     CHECK_HIPSPARSE(hipsparse_csrmm(handle, trans, m, n, k, nnz, alpha, descr, csrVal, csrRowPtr, csrColInd, x, ldx, beta, y, ldy));

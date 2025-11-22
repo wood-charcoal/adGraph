@@ -94,9 +94,9 @@ namespace nvgraph
         //                     beta   = times_ident
 
 #ifdef NEW_CSRMV
-        ValueType_ alpha = cub_semiring::cub::MaxMinSemiring<ValueType_>::times_ident();
-        ValueType_ beta = cub_semiring::cub::MaxMinSemiring<ValueType_>::times_ident();
-        SemiringDispatch<IndexType_, ValueType_>::template Dispatch<cub_semiring::cub::MaxMinSemiring<ValueType_>>(
+        ValueType_ alpha = cub_semiring::hipcub::MaxMinSemiring<ValueType_>::times_ident();
+        ValueType_ beta = cub_semiring::hipcub::MaxMinSemiring<ValueType_>::times_ident();
+        SemiringDispatch<IndexType_, ValueType_>::template Dispatch<cub_semiring::hipcub::MaxMinSemiring<ValueType_>>(
             m_network.get_raw_values(),
             m_network.get_raw_row_offsets(),
             m_network.get_raw_column_indices(),
