@@ -25,210 +25,209 @@
 #include <algorithm>
 #include <iomanip>
 
-
 #include "debug_macros.h"
 #ifdef DEBUG
-  #define PR_VERBOSE
+#define PR_VERBOSE
 #endif
 
 namespace nvgraph
 {
-template <typename IndexType_, typename ValueType_>
-Pagerank<IndexType_, ValueType_>::Pagerank(const ValuedCsrGraph <IndexType, ValueType>& network, Vector<ValueType>& dangling_nodes, cudaStream_t stream)
-    :m_network(network), m_a(dangling_nodes), m_stream(stream)
-{
-    // initialize cuda libs outside of the solve (this is slow)
-    Cusparse::get_handle();
-    Cublas::get_handle();
-    m_residual = 1000.0;
-    m_damping_factor = 0.0;
-}
+    template <typename IndexType_, typename ValueType_>
+    Pagerank<IndexType_, ValueType_>::Pagerank(const ValuedCsrGraph<IndexType, ValueType> &network, Vector<ValueType> &dangling_nodes, hipStream_t stream)
+        : m_network(network), m_a(dangling_nodes), m_stream(stream)
+    {
+        // initialize cuda libs outside of the solve (this is slow)
+        Hipsparse::get_handle();
+        Hipblas::get_handle();
+        m_residual = 1000.0;
+        m_damping_factor = 0.0;
+    }
 
-template <typename IndexType_, typename ValueType_>
-void Pagerank<IndexType_, ValueType_>::setup(ValueType damping_factor, Vector<ValueType>& initial_guess, Vector<ValueType>& pagerank_vector)
-{
-    int n = static_cast<int>(m_network.get_num_vertices());
+    template <typename IndexType_, typename ValueType_>
+    void Pagerank<IndexType_, ValueType_>::setup(ValueType damping_factor, Vector<ValueType> &initial_guess, Vector<ValueType> &pagerank_vector)
+    {
+        int n = static_cast<int>(m_network.get_num_vertices());
 //    int nnz = static_cast<int>(m_network.get_num_edges());
 #ifdef DEBUG
-    if (n != static_cast<int>(initial_guess.get_size()) || n != static_cast<int>(m_a.get_size()) || n != static_cast<int>(pagerank_vector.get_size()))
-    {
-        CERR() << "n : " << n << std::endl;
-        CERR() << "m_network.get_num_edges() " << m_network.get_num_edges() << std::endl;
-        CERR() << "m_a : " << m_a.get_size() << std::endl;
-        CERR() << "initial_guess.get_size() : " << initial_guess.get_size() << std::endl;
-        CERR() << "pagerank_vector.get_size() : " << pagerank_vector.get_size() << std::endl;
-        FatalError("Wrong input vector in Pagerank solver.", NVGRAPH_ERR_BAD_PARAMETERS);
-    }
+        if (n != static_cast<int>(initial_guess.get_size()) || n != static_cast<int>(m_a.get_size()) || n != static_cast<int>(pagerank_vector.get_size()))
+        {
+            CERR() << "n : " << n << std::endl;
+            CERR() << "m_network.get_num_edges() " << m_network.get_num_edges() << std::endl;
+            CERR() << "m_a : " << m_a.get_size() << std::endl;
+            CERR() << "initial_guess.get_size() : " << initial_guess.get_size() << std::endl;
+            CERR() << "pagerank_vector.get_size() : " << pagerank_vector.get_size() << std::endl;
+            FatalError("Wrong input vector in Pagerank solver.", NVGRAPH_ERR_BAD_PARAMETERS);
+        }
 #endif
-    if (damping_factor > 0.999 || damping_factor < 0.0001)
-        FatalError("Wrong damping factor value in Pagerank solver.", NVGRAPH_ERR_BAD_PARAMETERS);
-	m_damping_factor = damping_factor;
-    m_tmp = initial_guess;
-    m_pagerank = pagerank_vector;
-    //dump(m_a.raw(), 100, 0);
-	update_dangling_nodes(n, m_a.raw(), this->m_damping_factor, m_stream);
-    //dump(m_a.raw(), 100, 0);
-	m_b.allocate(n, m_stream);
-    //m_b.dump(0,n);
-    ValueType_ val =  static_cast<ValueType_>( 1.0/n);
+        if (damping_factor > 0.999 || damping_factor < 0.0001)
+            FatalError("Wrong damping factor value in Pagerank solver.", NVGRAPH_ERR_BAD_PARAMETERS);
+        m_damping_factor = damping_factor;
+        m_tmp = initial_guess;
+        m_pagerank = pagerank_vector;
+        // dump(m_a.raw(), 100, 0);
+        update_dangling_nodes(n, m_a.raw(), this->m_damping_factor, m_stream);
+        // dump(m_a.raw(), 100, 0);
+        m_b.allocate(n, m_stream);
+        // m_b.dump(0,n);
+        ValueType_ val = static_cast<ValueType_>(1.0 / n);
 
-    //fill_raw_vec(m_b.raw(), n, val); 
-    // auto b = m_b.raw();
-     m_b.fill(val, m_stream);
-    // WARNING force initialization of the initial guess
-    //fill(m_tmp.raw(), n, 1.1); 
-}
+        // fill_raw_vec(m_b.raw(), n, val);
+        //  auto b = m_b.raw();
+        m_b.fill(val, m_stream);
+        // WARNING force initialization of the initial guess
+        // fill(m_tmp.raw(), n, 1.1);
+    }
 
-template <typename IndexType_, typename ValueType_>
-bool Pagerank<IndexType_, ValueType_>::solve_it()
-{
-	
-    int n = static_cast<int>(m_network.get_num_vertices()), nnz = static_cast<int>(m_network.get_num_edges());
-    int inc = 1;
-    ValueType_  dot_res;
+    template <typename IndexType_, typename ValueType_>
+    bool Pagerank<IndexType_, ValueType_>::solve_it()
+    {
 
-    ValueType *a = m_a.raw(),
-         *b = m_b.raw(),
-         *pr = m_pagerank.raw(),
-         *tmp = m_tmp.raw();
-    
-    // normalize the input vector (tmp)
-    if(m_iterations == 0)
-        Cublas::scal(n, (ValueType_)1.0/Cublas::nrm2(n, tmp, inc) , tmp, inc);
-    
-    //spmv : pr = network * tmp
-    ValueType_  alpha = 1.0, beta =0.0;
+        int n = static_cast<int>(m_network.get_num_vertices()), nnz = static_cast<int>(m_network.get_num_edges());
+        int inc = 1;
+        ValueType_ dot_res;
+
+        ValueType *a = m_a.raw(),
+                  *b = m_b.raw(),
+                  *pr = m_pagerank.raw(),
+                  *tmp = m_tmp.raw();
+
+        // normalize the input vector (tmp)
+        if (m_iterations == 0)
+            Hipblas::scal(n, (ValueType_)1.0 / Hipblas::nrm2(n, tmp, inc), tmp, inc);
+
+        // spmv : pr = network * tmp
+        ValueType_ alpha = 1.0, beta = 0.0;
 #if __cplusplus > 199711L
-    Semiring SR = Semiring::PlusTimes;
+        Semiring SR = Semiring::PlusTimes;
 #else
-    Semiring SR = PlusTimes;
+        Semiring SR = PlusTimes;
 #endif
-    csrmv_mp<IndexType_, ValueType_>(n, n, nnz, 
-           alpha,
-           m_network,
-           tmp,
-           beta,
-           pr,
-           SR, 
-           m_stream);
+        csrmv_mp<IndexType_, ValueType_>(n, n, nnz,
+                                         alpha,
+                                         m_network,
+                                         tmp,
+                                         beta,
+                                         pr,
+                                         SR,
+                                         m_stream);
 #endif
-    
-    // Rank one updates
-    Cublas::scal(n, m_damping_factor, pr, inc);
-    Cublas::dot(n, a, inc, tmp, inc, &dot_res);
-    Cublas::axpy(n, dot_res, b, inc, pr, inc);
 
-    // CVG check
-    // we need to normalize pr to compare it to tmp 
-    // (tmp has been normalized and overwitted at the beginning)
-    Cublas::scal(n, (ValueType_)1.0/Cublas::nrm2(n, pr, inc) , pr, inc);
-    
-    // v = v - x
-    Cublas::axpy(n, (ValueType_)-1.0, pr, inc, tmp, inc);
-    m_residual = Cublas::nrm2(n, tmp, inc);
+        // Rank one updates
+        Hipblas::scal(n, m_damping_factor, pr, inc);
+        Hipblas::dot(n, a, inc, tmp, inc, &dot_res);
+        Hipblas::axpy(n, dot_res, b, inc, pr, inc);
 
-    if (m_residual < m_tolerance) // We know lambda = 1 for Pagerank
-    {
-        // CONVERGED
-        // WARNING Norm L1 is more standard for the output of PageRank
-        //m_pagerank.dump(0,m_pagerank.get_size());
-        Cublas::scal(m_pagerank.get_size(), (ValueType_)1.0/m_pagerank.nrm1(m_stream), pr, inc);
-        return true;
+        // CVG check
+        // we need to normalize pr to compare it to tmp
+        // (tmp has been normalized and overwitted at the beginning)
+        Hipblas::scal(n, (ValueType_)1.0 / Hipblas::nrm2(n, pr, inc), pr, inc);
+
+        // v = v - x
+        Hipblas::axpy(n, (ValueType_)-1.0, pr, inc, tmp, inc);
+        m_residual = Hipblas::nrm2(n, tmp, inc);
+
+        if (m_residual < m_tolerance) // We know lambda = 1 for Pagerank
+        {
+            // CONVERGED
+            // WARNING Norm L1 is more standard for the output of PageRank
+            // m_pagerank.dump(0,m_pagerank.get_size());
+            Hipblas::scal(m_pagerank.get_size(), (ValueType_)1.0 / m_pagerank.nrm1(m_stream), pr, inc);
+            return true;
+        }
+        else
+        {
+            // m_pagerank.dump(0,m_pagerank.get_size());
+            std::swap(m_pagerank, m_tmp);
+            return false;
+        }
     }
-    else
-    {
-        // m_pagerank.dump(0,m_pagerank.get_size());
-        std::swap(m_pagerank, m_tmp);
-        return false;
-    }
-}
 
-template <typename IndexType_, typename ValueType_>
-NVGRAPH_ERROR Pagerank<IndexType_, ValueType_>::solve(ValueType damping_factor, Vector<ValueType>& initial_guess, Vector<ValueType>& pagerank_vector, float tolerance, int max_it)
-{
-   
-    #ifdef PR_VERBOSE
+    template <typename IndexType_, typename ValueType_>
+    NVGRAPH_ERROR Pagerank<IndexType_, ValueType_>::solve(ValueType damping_factor, Vector<ValueType> &initial_guess, Vector<ValueType> &pagerank_vector, float tolerance, int max_it)
+    {
+
+#ifdef PR_VERBOSE
         std::stringstream ss;
         ss.str(std::string());
         size_t used_mem, free_mem, total_mem;
-        ss <<" ------------------PageRank------------------"<< std::endl;
-        ss <<" --------------------------------------------"<< std::endl;
+        ss << " ------------------PageRank------------------" << std::endl;
+        ss << " --------------------------------------------" << std::endl;
         ss << std::setw(10) << "Iteration" << std::setw(20) << " Mem Usage (MB)" << std::setw(15) << "Residual" << std::endl;
-        ss <<" --------------------------------------------"<< std::endl;
-        COUT()<<ss.str();
-        cuda_timer timer; timer.start();
-    #endif
-    m_max_it = max_it;
-    m_tolerance = static_cast<ValueType_>(tolerance);
-    setup(damping_factor, initial_guess, pagerank_vector);
-    bool converged = false;
-    int i = 0;
+        ss << " --------------------------------------------" << std::endl;
+        COUT() << ss.str();
+        hip_timer timer;
+        timer.start();
+#endif
+        m_max_it = max_it;
+        m_tolerance = static_cast<ValueType_>(tolerance);
+        setup(damping_factor, initial_guess, pagerank_vector);
+        bool converged = false;
+        int i = 0;
 
-    while (!converged && i < m_max_it)
-    { 
-        m_iterations = i;
-        converged = solve_it();
-        i++;
-         #ifdef PR_VERBOSE
+        while (!converged && i < m_max_it)
+        {
+            m_iterations = i;
+            converged = solve_it();
+            i++;
+#ifdef PR_VERBOSE
             ss.str(std::string());
             cnmemMemGetInfo(&free_mem, &total_mem, NULL);
-            used_mem=total_mem-free_mem;
-            ss << std::setw(10) << i ;
+            used_mem = total_mem - free_mem;
+            ss << std::setw(10) << i;
             ss.precision(3);
-            ss << std::setw(20) << std::fixed << used_mem/1024.0/1024.0;
-            ss << std::setw(15) << std::scientific << m_residual  << std::endl;
-            COUT()<<ss.str();
-        #endif
+            ss << std::setw(20) << std::fixed << used_mem / 1024.0 / 1024.0;
+            ss << std::setw(15) << std::scientific << m_residual << std::endl;
+            COUT() << ss.str();
+#endif
+        }
+        m_iterations = i;
+#ifdef PR_VERBOSE
+        COUT() << " --------------------------------------------" << std::endl;
+        // stop timer
+        COUT() << " Total Time : " << timer.stop() << "ms" << std::endl;
+        COUT() << " --------------------------------------------" << std::endl;
+#endif
+
+        if (converged)
+        {
+            pagerank_vector = m_pagerank;
+        }
+        else
+        {
+            // still return something even if we didn't converged
+            Hipblas::scal(m_pagerank.get_size(), (ValueType_)1.0 / m_tmp.nrm1(m_stream), m_tmp.raw(), 1);
+            pagerank_vector = m_tmp;
+        }
+        // m_pagerank.dump(0,m_pagerank.get_size());
+        // pagerank_vector.dump(0,pagerank_vector.get_size());
+        return converged ? NVGRAPH_OK : NVGRAPH_ERR_NOT_CONVERGED;
     }
-    m_iterations = i;
-    #ifdef PR_VERBOSE
-        COUT() <<" --------------------------------------------"<< std::endl;
-        //stop timer
-        COUT() <<" Total Time : "<< timer.stop() << "ms"<<std::endl;
-        COUT() <<" --------------------------------------------"<< std::endl;
-    #endif
-    
-    if (converged)    
-    {
-        pagerank_vector = m_pagerank;
-    }
-    else
-    {
-        // still return something even if we didn't converged 
-        Cublas::scal(m_pagerank.get_size(), (ValueType_)1.0/m_tmp.nrm1(m_stream), m_tmp.raw(), 1);
-        pagerank_vector = m_tmp;
-    }
-        //m_pagerank.dump(0,m_pagerank.get_size());
-        //pagerank_vector.dump(0,pagerank_vector.get_size());
-    return converged ? NVGRAPH_OK : NVGRAPH_ERR_NOT_CONVERGED;
-}
 
-template class Pagerank<int, double>;
-template class Pagerank<int, float>;
+    template class Pagerank<int, double>;
+    template class Pagerank<int, float>;
 
-// init :
-// We actually need the transpose (=converse =reverse) of the original network, if the inuput is the original network then we have to transopose it	
-// b is a constant and uniform vector, b = 1.0/num_vertices
-// a is a constant vector that initialy store the dangling nodes then we set : a = alpha*a + (1-alpha)e
-// pagerank is 0 
-// tmp is random
-// alpha is a constant scalar (0.85 usually)
+    // init :
+    // We actually need the transpose (=converse =reverse) of the original network, if the inuput is the original network then we have to transopose it
+    // b is a constant and uniform vector, b = 1.0/num_vertices
+    // a is a constant vector that initialy store the dangling nodes then we set : a = alpha*a + (1-alpha)e
+    // pagerank is 0
+    // tmp is random
+    // alpha is a constant scalar (0.85 usually)
 
-//loop :
-//  pagerank = csrmv (network, tmp)
-//  scal(pagerank, alpha); //pagerank =  alpha*pagerank
-//  gamma  = dot(a, tmp); //gamma  = a*tmp
-//  pagerank = axpy(b, pagerank, gamma); // pagerank = pagerank+gamma*b
+    // loop :
+    //   pagerank = csrmv (network, tmp)
+    //   scal(pagerank, alpha); //pagerank =  alpha*pagerank
+    //   gamma  = dot(a, tmp); //gamma  = a*tmp
+    //   pagerank = axpy(b, pagerank, gamma); // pagerank = pagerank+gamma*b
 
-// convergence check
-//  tmp = axpby(pagerank, tmp, -1, 1);	 // tmp = pagerank - tmp
-//  residual_norm = norm(tmp);               
-//  if converged (residual_norm)
-	  // l1 = l1_norm(pagerank);
-	  // pagerank = scal(pagerank, 1/l1);
-      // return pagerank 
-//  swap(tmp, pagerank)
-//end loop
+    // convergence check
+    //  tmp = axpby(pagerank, tmp, -1, 1);	 // tmp = pagerank - tmp
+    //  residual_norm = norm(tmp);
+    //  if converged (residual_norm)
+    // l1 = l1_norm(pagerank);
+    // pagerank = scal(pagerank, 1/l1);
+    // return pagerank
+    //  swap(tmp, pagerank)
+    // end loop
 
 } // end namespace nvgraph
-

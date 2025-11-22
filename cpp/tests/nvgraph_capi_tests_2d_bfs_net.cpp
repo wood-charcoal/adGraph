@@ -39,7 +39,7 @@
 #include "readMatrix.hxx"
 #include "nvgraphP.h"
 #include "nvgraph.h"
-#include <nvgraph_experimental.h>  // experimental header, contains hidden API entries, can be shared only under special circumstances without reveling internal things
+#include <nvgraph_experimental.h> // experimental header, contains hidden API entries, can be shared only under special circumstances without reveling internal things
 
 #include "stdlib.h"
 #include <algorithm>
@@ -57,15 +57,15 @@ static int PERF = 0;
 #define PERF_ROWS_LIMIT 10000
 
 // number of repeats = multiplier/num_vertices
-#define Traversal_ITER_MULTIPLIER     30000000
+#define Traversal_ITER_MULTIPLIER 30000000
 
-template<typename T>
+template <typename T>
 struct nvgraph_Const;
 
-template<>
+template <>
 struct nvgraph_Const<int>
 {
-	static const cudaDataType_t Type = CUDA_R_32I;
+	static const hipblasDatatype_t Type = HIPBLAS_R_32I;
 	static const int inf;
 };
 const int nvgraph_Const<int>::inf = INT_MAX;
@@ -79,18 +79,18 @@ typedef struct Traversal_Usecase_t
 	bool useMask;
 	bool undirected;
 
-	Traversal_Usecase_t(const std::string& a,
-	                    int source,
-	                    size_t _n,
-	                    size_t _nnz,
-	                    bool _useMask = false,
-	                    bool _undirected = false) :
-			source_vert(source), n(_n), nnz(_nnz), useMask(_useMask), undirected(_undirected) {
+	Traversal_Usecase_t(const std::string &a,
+						int source,
+						size_t _n,
+						size_t _nnz,
+						bool _useMask = false,
+						bool _undirected = false) : source_vert(source), n(_n), nnz(_nnz), useMask(_useMask), undirected(_undirected)
+	{
 		graph_file = a;
 	};
 
-	Traversal_Usecase_t& operator=(const Traversal_Usecase_t& rhs)
-												{
+	Traversal_Usecase_t &operator=(const Traversal_Usecase_t &rhs)
+	{
 		graph_file = rhs.graph_file;
 		source_vert = rhs.source_vert;
 		n = rhs.n;
@@ -102,19 +102,24 @@ typedef struct Traversal_Usecase_t
 
 //// Traversal tests
 
-class NVGraphCAPITests_2d_bfs: public ::testing::TestWithParam<Traversal_Usecase> {
+class NVGraphCAPITests_2d_bfs : public ::testing::TestWithParam<Traversal_Usecase>
+{
 public:
-	NVGraphCAPITests_2d_bfs() :
-			handle(NULL) {
+	NVGraphCAPITests_2d_bfs() : handle(NULL)
+	{
 	}
 
-	static void SetupTestCase() {
+	static void SetupTestCase()
+	{
 	}
-	static void TearDownTestCase() {
+	static void TearDownTestCase()
+	{
 	}
-	virtual void SetUp() {
-		if (handle == NULL) {
-			char* nvgraph_gpus = getenv("NVGRAPH_GPUS");
+	virtual void SetUp()
+	{
+		if (handle == NULL)
+		{
+			char *nvgraph_gpus = getenv("NVGRAPH_GPUS");
 			if (nvgraph_gpus)
 				printf("Value of NVGRAPH_GPUS=%s\n", nvgraph_gpus);
 			else
@@ -122,7 +127,8 @@ public:
 			std::vector<int32_t> gpus;
 			int32_t dummy;
 			std::stringstream ss(nvgraph_gpus);
-			while (ss >> dummy){
+			while (ss >> dummy)
+			{
 				gpus.push_back(dummy);
 				if (ss.peek() == ',')
 					ss.ignore();
@@ -132,7 +138,7 @@ public:
 				std::cout << gpus[i] << "  ";
 			std::cout << "\n";
 
-			devices = (int32_t*) malloc(sizeof(int32_t) * gpus.size());
+			devices = (int32_t *)malloc(sizeof(int32_t) * gpus.size());
 			for (int i = 0; i < gpus.size(); i++)
 				devices[i] = gpus[i];
 			numDevices = gpus.size();
@@ -141,8 +147,10 @@ public:
 			ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 		}
 	}
-	virtual void TearDown() {
-		if (handle != NULL) {
+	virtual void TearDown()
+	{
+		if (handle != NULL)
+		{
 			status = nvgraphDestroy(handle);
 			ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			handle = NULL;
@@ -155,15 +163,14 @@ public:
 	int32_t *devices;
 	int32_t numDevices;
 
-	template<typename EdgeT>
-	void run_current_test(const Traversal_Usecase& param) {
-		const ::testing::TestInfo* const test_info =
-				::testing::UnitTest::GetInstance()->current_test_info();
+	template <typename EdgeT>
+	void run_current_test(const Traversal_Usecase &param)
+	{
+		const ::testing::TestInfo *const test_info =
+			::testing::UnitTest::GetInstance()->current_test_info();
 		std::stringstream ss;
 		ss << param.source_vert;
-		std::string test_id = std::string(test_info->test_case_name()) + std::string(".")
-				+ std::string(test_info->name()) + std::string("_") + getFileName(param.graph_file)
-				+ std::string("_") + ss.str().c_str();
+		std::string test_id = std::string(test_info->test_case_name()) + std::string(".") + std::string(test_info->name()) + std::string("_") + getFileName(param.graph_file) + std::string("_") + ss.str().c_str();
 
 		nvgraphTopologyType_t topo = NVGRAPH_2D_32I_32I;
 		nvgraphStatus_t status;
@@ -181,12 +188,12 @@ public:
 		// set up graph
 		int n = param.n;
 		int nnz = param.nnz;
-		int blockN = std::max(2,(int)ceil(sqrt(numDevices)));
+		int blockN = std::max(2, (int)ceil(sqrt(numDevices)));
 		std::cout << "Using " << blockN << " as block N\n";
 
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, &sources[0], &destinations[0], CUDA_R_32I,
-		NULL, blockN, devices, numDevices, NVGRAPH_DEFAULT };
-		status = nvgraphSetGraphStructure(handle, g1, (void*) &topology, topo);
+		nvgraph2dCOOTopology32I_st topology = {n, nnz, &sources[0], &destinations[0], HIPBLAS_R_32I,
+											   NULL, blockN, devices, numDevices, NVGRAPH_DEFAULT};
+		status = nvgraphSetGraphStructure(handle, g1, (void *)&topology, topo);
 
 		// set up graph data
 		std::vector<int> calculated_distances_res(n);
@@ -196,38 +203,41 @@ public:
 		std::cout << "Starting from vertex: " << source_vert << "\n";
 		cudaProfilerStart();
 		status = nvgraph2dBfs(handle,
-										g1,
-										source_vert,
-										&calculated_distances_res[0],
-										&calculated_predecessors_res[0]);
+							  g1,
+							  source_vert,
+							  &calculated_distances_res[0],
+							  &calculated_predecessors_res[0]);
 		cudaProfilerStop();
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 		cudaDeviceSynchronize();
 
-		if (PERF && n > PERF_ROWS_LIMIT)	{
+		if (PERF && n > PERF_ROWS_LIMIT)
+		{
 			double start, stop;
 			start = second();
 			int repeat = 30;
-			for (int i = 0; i < repeat; i++) {
+			for (int i = 0; i < repeat; i++)
+			{
 				status = nvgraph2dBfs(handle,
-												g1,
-												source_vert,
-												&calculated_distances_res[0],
-												&calculated_predecessors_res[0]);
+									  g1,
+									  source_vert,
+									  &calculated_distances_res[0],
+									  &calculated_predecessors_res[0]);
 				ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			}
 			cudaDeviceSynchronize();
 			stop = second();
 			printf("&&&& PERF Time_%s %10.8f -ms\n",
-						test_id.c_str(),
-						1000.0 * (stop - start) / repeat);
+				   test_id.c_str(),
+				   1000.0 * (stop - start) / repeat);
 		}
 
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
-		//Checking distances
+		// Checking distances
 		int visitedCount = 0;
-		for (int i = 0; i < n; ++i) {
+		for (int i = 0; i < n; ++i)
+		{
 			if (calculated_distances_res[i] != -1)
 				visitedCount++;
 		}
@@ -238,21 +248,21 @@ public:
 	}
 };
 
-TEST_P(NVGraphCAPITests_2d_bfs, CheckResult) {
+TEST_P(NVGraphCAPITests_2d_bfs, CheckResult)
+{
 	run_current_test<float>(GetParam());
 }
 
 INSTANTIATE_TEST_CASE_P(CorrectnessCheck,
-								NVGraphCAPITests_2d_bfs,
-								::testing::Values(
-										Traversal_Usecase("/mnt/nvgraph_test_data/Rmat100Mvertices2Bedges.net", 3, 100000000, 2000000000)
-								));
+						NVGraphCAPITests_2d_bfs,
+						::testing::Values(
+							Traversal_Usecase("/mnt/nvgraph_test_data/Rmat100Mvertices2Bedges.net", 3, 100000000, 2000000000)));
 
 int main(int argc, char **argv)
-			{
+{
 
 	for (int i = 0; i < argc; i++)
-			{
+	{
 		if (strcmp(argv[i], "--perf") == 0)
 			PERF = 1;
 	}

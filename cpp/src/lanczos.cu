@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//#ifdef NVGRAPH_PARTITION
+// #ifdef NVGRAPH_PARTITION
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -28,7 +28,7 @@
 #define USE_CURAND 1
 
 #ifdef USE_CURAND
-  #include <curand.h>
+#include <curand.h>
 #endif
 
 #include "nvgraph_error.hxx"
@@ -42,13 +42,13 @@
 // =========================================================
 
 // Get index of matrix entry
-#define IDX(i,j,lda) ((i)+(j)*(lda))
+#define IDX(i, j, lda) ((i) + (j) * (lda))
 
 // =========================================================
 // Macros and functions for cuRAND
 // =========================================================
-//#ifdef USE_CURAND
-//namespace {
+// #ifdef USE_CURAND
+// namespace {
 //
 //  /// Get message string from cuRAND status code
 //  //static
@@ -86,7 +86,7 @@
 //  //}
 //
 //  // curandGeneratorNormalX
-//  inline static 
+//  inline static
 //  curandStatus_t
 //  curandGenerateNormalX(curandGenerator_t generator,
 //      float * outputPtr, size_t n,
@@ -103,11 +103,13 @@
 //  }
 //
 //}
-//#endif
+// #endif
 
-namespace nvgraph {
+namespace nvgraph
+{
 
-  namespace {
+  namespace
+  {
 
     // =========================================================
     // Helper functions
@@ -139,128 +141,129 @@ namespace nvgraph {
      *    Workspace. Not needed if full reorthogonalization is disabled.
      *  @return Zero if successful. Otherwise non-zero.
      */
-    template <typename IndexType_, typename ValueType_> static
-    int performLanczosIteration(const Matrix<IndexType_, ValueType_> * A,
-        IndexType_ * iter,
-        IndexType_ maxIter,
-        ValueType_ shift,
-        ValueType_ tol,
-        bool reorthogonalize,
-        ValueType_ * __restrict__ alpha_host,
-        ValueType_ * __restrict__ beta_host,
-        ValueType_ * __restrict__ lanczosVecs_dev,
-        ValueType_ * __restrict__ work_dev) {
+    template <typename IndexType_, typename ValueType_>
+    static int performLanczosIteration(const Matrix<IndexType_, ValueType_> *A,
+                                       IndexType_ *iter,
+                                       IndexType_ maxIter,
+                                       ValueType_ shift,
+                                       ValueType_ tol,
+                                       bool reorthogonalize,
+                                       ValueType_ *__restrict__ alpha_host,
+                                       ValueType_ *__restrict__ beta_host,
+                                       ValueType_ *__restrict__ lanczosVecs_dev,
+                                       ValueType_ *__restrict__ work_dev)
+    {
 
       // -------------------------------------------------------
       // Variable declaration
       // -------------------------------------------------------
 
       // Useful variables
-      const ValueType_ one    = 1;
+      const ValueType_ one = 1;
       const ValueType_ negOne = -1;
-      const ValueType_ zero   = 0;
+      const ValueType_ zero = 0;
 
       IndexType_ n = A->n;
 
       // -------------------------------------------------------
       // Compute second Lanczos vector
       // -------------------------------------------------------
-      if(*iter<=0) {
-  *iter = 1;
+      if (*iter <= 0)
+      {
+        *iter = 1;
 
-  // Apply matrix
-  if(shift != 0)
-    CHECK_CUDA(cudaMemcpyAsync(lanczosVecs_dev+n, lanczosVecs_dev,
-             n*sizeof(ValueType_),
-             cudaMemcpyDeviceToDevice));
-  A->mv(1, lanczosVecs_dev, shift, lanczosVecs_dev+n);
+        // Apply matrix
+        if (shift != 0)
+          CHECK_HIP(hipMemcpyAsync(lanczosVecs_dev + n, lanczosVecs_dev,
+                                   n * sizeof(ValueType_),
+                                   hipMemcpyDeviceToDevice));
+        A->mv(1, lanczosVecs_dev, shift, lanczosVecs_dev + n);
 
-  // Orthogonalize Lanczos vector
-  Cublas::dot(n,
-        lanczosVecs_dev, 1,
-        lanczosVecs_dev+IDX(0,1,n), 1,
-        alpha_host);
-  Cublas::axpy(n, -alpha_host[0],
-         lanczosVecs_dev, 1,
-         lanczosVecs_dev+IDX(0,1,n), 1);
-  beta_host[0] = Cublas::nrm2(n, lanczosVecs_dev+IDX(0,1,n), 1);
+        // Orthogonalize Lanczos vector
+        Hipblas::dot(n,
+                     lanczosVecs_dev, 1,
+                     lanczosVecs_dev + IDX(0, 1, n), 1,
+                     alpha_host);
+        Hipblas::axpy(n, -alpha_host[0],
+                      lanczosVecs_dev, 1,
+                      lanczosVecs_dev + IDX(0, 1, n), 1);
+        beta_host[0] = Hipblas::nrm2(n, lanczosVecs_dev + IDX(0, 1, n), 1);
 
-  // Check if Lanczos has converged
-  if(beta_host[0] <= tol)
-    return 0;
+        // Check if Lanczos has converged
+        if (beta_host[0] <= tol)
+          return 0;
 
-  // Normalize Lanczos vector
-  Cublas::scal(n, 1/beta_host[0], lanczosVecs_dev+IDX(0,1,n), 1);
-
+        // Normalize Lanczos vector
+        Hipblas::scal(n, 1 / beta_host[0], lanczosVecs_dev + IDX(0, 1, n), 1);
       }
 
       // -------------------------------------------------------
       // Compute remaining Lanczos vectors
       // -------------------------------------------------------
 
-      while(*iter<maxIter) {
-  ++(*iter);
-    
-  // Apply matrix
-  if(shift != 0)
-    CHECK_CUDA(cudaMemcpyAsync(lanczosVecs_dev+(*iter)*n,
-             lanczosVecs_dev+(*iter-1)*n,
-             n*sizeof(ValueType_),
-             cudaMemcpyDeviceToDevice));
-  A->mv(1, lanczosVecs_dev+IDX(0,*iter-1,n),
-       shift, lanczosVecs_dev+IDX(0,*iter,n));
+      while (*iter < maxIter)
+      {
+        ++(*iter);
 
-  // Full reorthogonalization
-  //   "Twice is enough" algorithm per Kahan and Parlett
-  if(reorthogonalize) {
-    Cublas::gemv(true, n, *iter,
-           &one, lanczosVecs_dev, n,
-           lanczosVecs_dev+IDX(0,*iter,n), 1,
-           &zero, work_dev, 1);
-    Cublas::gemv(false, n, *iter,
-           &negOne, lanczosVecs_dev, n, work_dev, 1,
-           &one, lanczosVecs_dev+IDX(0,*iter,n), 1);
-    CHECK_CUDA(cudaMemcpyAsync(alpha_host+(*iter-1), work_dev+(*iter-1), 
-             sizeof(ValueType_), cudaMemcpyDeviceToHost));
-    Cublas::gemv(true, n, *iter,
-           &one, lanczosVecs_dev, n,
-           lanczosVecs_dev+IDX(0,*iter,n), 1,
-           &zero, work_dev, 1);
-    Cublas::gemv(false, n, *iter,
-           &negOne, lanczosVecs_dev, n, work_dev, 1,
-           &one, lanczosVecs_dev+IDX(0,*iter,n), 1);
-  }
+        // Apply matrix
+        if (shift != 0)
+          CHECK_HIP(hipMemcpyAsync(lanczosVecs_dev + (*iter) * n,
+                                   lanczosVecs_dev + (*iter - 1) * n,
+                                   n * sizeof(ValueType_),
+                                   hipMemcpyDeviceToDevice));
+        A->mv(1, lanczosVecs_dev + IDX(0, *iter - 1, n),
+              shift, lanczosVecs_dev + IDX(0, *iter, n));
 
+        // Full reorthogonalization
+        //   "Twice is enough" algorithm per Kahan and Parlett
+        if (reorthogonalize)
+        {
+          Hipblas::gemv(true, n, *iter,
+                        &one, lanczosVecs_dev, n,
+                        lanczosVecs_dev + IDX(0, *iter, n), 1,
+                        &zero, work_dev, 1);
+          Hipblas::gemv(false, n, *iter,
+                        &negOne, lanczosVecs_dev, n, work_dev, 1,
+                        &one, lanczosVecs_dev + IDX(0, *iter, n), 1);
+          CHECK_HIP(hipMemcpyAsync(alpha_host + (*iter - 1), work_dev + (*iter - 1),
+                                   sizeof(ValueType_), hipMemcpyDeviceToHost));
+          Hipblas::gemv(true, n, *iter,
+                        &one, lanczosVecs_dev, n,
+                        lanczosVecs_dev + IDX(0, *iter, n), 1,
+                        &zero, work_dev, 1);
+          Hipblas::gemv(false, n, *iter,
+                        &negOne, lanczosVecs_dev, n, work_dev, 1,
+                        &one, lanczosVecs_dev + IDX(0, *iter, n), 1);
+        }
 
-  // Orthogonalization with 3-term recurrence relation
-  else {
-    Cublas::dot(n, lanczosVecs_dev+IDX(0,*iter-1,n), 1,
-          lanczosVecs_dev+IDX(0,*iter,n), 1,
-          alpha_host+(*iter-1));
-    Cublas::axpy(n, -alpha_host[*iter-1],
-           lanczosVecs_dev+IDX(0,*iter-1,n), 1,
-           lanczosVecs_dev+IDX(0,*iter,n), 1);
-    Cublas::axpy(n, -beta_host[*iter-2],
-           lanczosVecs_dev+IDX(0,*iter-2,n), 1,
-           lanczosVecs_dev+IDX(0,*iter,n), 1);
-  }
+        // Orthogonalization with 3-term recurrence relation
+        else
+        {
+          Hipblas::dot(n, lanczosVecs_dev + IDX(0, *iter - 1, n), 1,
+                       lanczosVecs_dev + IDX(0, *iter, n), 1,
+                       alpha_host + (*iter - 1));
+          Hipblas::axpy(n, -alpha_host[*iter - 1],
+                        lanczosVecs_dev + IDX(0, *iter - 1, n), 1,
+                        lanczosVecs_dev + IDX(0, *iter, n), 1);
+          Hipblas::axpy(n, -beta_host[*iter - 2],
+                        lanczosVecs_dev + IDX(0, *iter - 2, n), 1,
+                        lanczosVecs_dev + IDX(0, *iter, n), 1);
+        }
 
-  // Compute residual
-  beta_host[*iter-1] = Cublas::nrm2(n, lanczosVecs_dev+IDX(0,*iter,n), 1);
+        // Compute residual
+        beta_host[*iter - 1] = Hipblas::nrm2(n, lanczosVecs_dev + IDX(0, *iter, n), 1);
 
-  // Check if Lanczos has converged
-  if(beta_host[*iter-1] <= tol)
-    break;
-  // Normalize Lanczos vector
-  Cublas::scal(n, 1/beta_host[*iter-1],
-         lanczosVecs_dev+IDX(0,*iter,n), 1);
-
+        // Check if Lanczos has converged
+        if (beta_host[*iter - 1] <= tol)
+          break;
+        // Normalize Lanczos vector
+        Hipblas::scal(n, 1 / beta_host[*iter - 1],
+                      lanczosVecs_dev + IDX(0, *iter, n), 1);
       }
 
-      CHECK_CUDA(cudaDeviceSynchronize());
-      
-      return 0;
+      CHECK_HIP(cudaDeviceSynchronize());
 
+      return 0;
     }
 
     /// Find Householder transform for 3-dimensional system
@@ -278,40 +281,42 @@ namespace nvgraph {
      *  @param P (Output, host memory, 9 entries) Householder transform
      *    matrix. Matrix dimensions are 3 x 3.
      */
-    template <typename IndexType_, typename ValueType_> static
-    void findHouseholder3(ValueType_ * v, ValueType_ * Pv,
-        ValueType_ * P) {
-  
+    template <typename IndexType_, typename ValueType_>
+    static void findHouseholder3(ValueType_ *v, ValueType_ *Pv,
+                                 ValueType_ *P)
+    {
+
       // Compute norm of vector
-      *Pv = std::sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+      *Pv = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 
       // Choose whether to reflect to e_1 or -e_1
       //   This choice avoids catastrophic cancellation
-      if(v[0] >= 0)
-  *Pv = -(*Pv);
+      if (v[0] >= 0)
+        *Pv = -(*Pv);
       v[0] -= *Pv;
 
       // Normalize Householder vector
-      ValueType_ normHouseholder = std::sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-      if(normHouseholder != 0) {
-  v[0] /= normHouseholder;
-  v[1] /= normHouseholder;
-  v[2] /= normHouseholder;
+      ValueType_ normHouseholder = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+      if (normHouseholder != 0)
+      {
+        v[0] /= normHouseholder;
+        v[1] /= normHouseholder;
+        v[2] /= normHouseholder;
       }
-      else {
-  v[0] = 0;
-  v[1] = 0;
-  v[2] = 0;
+      else
+      {
+        v[0] = 0;
+        v[1] = 0;
+        v[2] = 0;
       }
 
       // Construct Householder matrix
       IndexType_ i, j;
-      for(j=0; j<3; ++j)
-  for(i=0; i<3; ++i)
-    P[IDX(i,j,3)] = -2*v[i]*v[j];
-      for(i=0; i<3; ++i)
-  P[IDX(i,i,3)] += 1;
-
+      for (j = 0; j < 3; ++j)
+        for (i = 0; i < 3; ++i)
+          P[IDX(i, j, 3)] = -2 * v[i] * v[j];
+      for (i = 0; i < 3; ++i)
+        P[IDX(i, i, 3)] += 1;
     }
 
     /// Apply 3-dimensional Householder transform to 4 x 4 matrix
@@ -323,8 +328,9 @@ namespace nvgraph {
      *  @param v (Input, host memory, 3 entries) Householder vector.
      *  @param A (Input/output, host memory, 16 entries) 4 x 4 matrix.
      */
-    template <typename IndexType_, typename ValueType_> static
-    void applyHouseholder3(const ValueType_ * v, ValueType_ * A) {
+    template <typename IndexType_, typename ValueType_>
+    static void applyHouseholder3(const ValueType_ *v, ValueType_ *A)
+    {
 
       // Loop indices
       IndexType_ i, j;
@@ -332,23 +338,24 @@ namespace nvgraph {
       ValueType_ vDotA;
 
       // Pre-apply Householder transform
-      for(j=0; j<4; ++j) {
-  vDotA = 0;
-  for(i=0; i<3; ++i)
-    vDotA += v[i]*A[IDX(i,j,4)];
-  for(i=0; i<3; ++i)
-    A[IDX(i,j,4)] -= 2*v[i]*vDotA;
+      for (j = 0; j < 4; ++j)
+      {
+        vDotA = 0;
+        for (i = 0; i < 3; ++i)
+          vDotA += v[i] * A[IDX(i, j, 4)];
+        for (i = 0; i < 3; ++i)
+          A[IDX(i, j, 4)] -= 2 * v[i] * vDotA;
       }
 
       // Post-apply Householder transform
-      for(i=0; i<4; ++i) {
-  vDotA = 0;
-  for(j=0; j<3; ++j)
-    vDotA += A[IDX(i,j,4)]*v[j];
-  for(j=0; j<3; ++j)
-    A[IDX(i,j,4)] -= 2*vDotA*v[j];
+      for (i = 0; i < 4; ++i)
+      {
+        vDotA = 0;
+        for (j = 0; j < 3; ++j)
+          vDotA += A[IDX(i, j, 4)] * v[j];
+        for (j = 0; j < 3; ++j)
+          A[IDX(i, j, 4)] -= 2 * vDotA * v[j];
       }
-
     }
 
     /// Perform one step of Francis QR algorithm
@@ -369,11 +376,12 @@ namespace nvgraph {
      *  @param work (Output, host memory, 3*n entries) Workspace.
      *  @return Zero if successful. Otherwise non-zero.
      */
-    template <typename IndexType_, typename ValueType_> static
-    int francisQRIteration(IndexType_ n,
-         ValueType_ shift1, ValueType_ shift2,
-         ValueType_ * alpha, ValueType_ * beta,
-         ValueType_ * V, ValueType_ * work) {
+    template <typename IndexType_, typename ValueType_>
+    static int francisQRIteration(IndexType_ n,
+                                  ValueType_ shift1, ValueType_ shift2,
+                                  ValueType_ *alpha, ValueType_ *beta,
+                                  ValueType_ *V, ValueType_ *work)
+    {
 
       // -------------------------------------------------------
       // Variable declaration
@@ -385,11 +393,11 @@ namespace nvgraph {
       // Householder vector
       ValueType_ householder[3];
       // Householder matrix
-      ValueType_ householderMatrix[3*3];
+      ValueType_ householderMatrix[3 * 3];
 
       // Shifts are roots of the polynomial p(x)=x^2+b*x+c
       ValueType_ b = -shift1 - shift2;
-      ValueType_ c = shift1*shift2;
+      ValueType_ c = shift1 * shift2;
 
       // Loop indices
       IndexType_ i, j, pos;
@@ -401,107 +409,107 @@ namespace nvgraph {
       // -------------------------------------------------------
 
       // Compute initial Householder transform
-      householder[0] = alpha[0]*alpha[0] + beta[0]*beta[0] + b*alpha[0] + c;
-      householder[1] = beta[0]*(alpha[0]+alpha[1]+b);
-      householder[2] = beta[0]*beta[1];
-      findHouseholder3<IndexType_,ValueType_>(householder, &temp,
-                householderMatrix);
+      householder[0] = alpha[0] * alpha[0] + beta[0] * beta[0] + b * alpha[0] + c;
+      householder[1] = beta[0] * (alpha[0] + alpha[1] + b);
+      householder[2] = beta[0] * beta[1];
+      findHouseholder3<IndexType_, ValueType_>(householder, &temp,
+                                               householderMatrix);
 
       // Apply initial Householder transform to create bulge
-      memset(bulge, 0, 16*sizeof(ValueType_));
-      for(i=0; i<4; ++i)
-  bulge[IDX(i,i,4)] = alpha[i];
-      for(i=0; i<3; ++i) {
-  bulge[IDX(i+1,i,4)] = beta[i];
-  bulge[IDX(i,i+1,4)] = beta[i];
+      memset(bulge, 0, 16 * sizeof(ValueType_));
+      for (i = 0; i < 4; ++i)
+        bulge[IDX(i, i, 4)] = alpha[i];
+      for (i = 0; i < 3; ++i)
+      {
+        bulge[IDX(i + 1, i, 4)] = beta[i];
+        bulge[IDX(i, i + 1, 4)] = beta[i];
       }
-      applyHouseholder3<IndexType_,ValueType_>(householder, bulge);
+      applyHouseholder3<IndexType_, ValueType_>(householder, bulge);
       Lapack<ValueType_>::gemm(false, false, n, 3, 3,
-             1, V, n, householderMatrix, 3,
-             0, work, n);
-      memcpy(V, work, 3*n*sizeof(ValueType_));
+                               1, V, n, householderMatrix, 3,
+                               0, work, n);
+      memcpy(V, work, 3 * n * sizeof(ValueType_));
 
       // Chase bulge to bottom-right of matrix with Householder transforms
-      for(pos=0; pos<n-4; ++pos) {
+      for (pos = 0; pos < n - 4; ++pos)
+      {
 
-  // Move to next position
-  alpha[pos]     = bulge[IDX(0,0,4)];
-  householder[0] = bulge[IDX(1,0,4)];
-  householder[1] = bulge[IDX(2,0,4)];
-  householder[2] = bulge[IDX(3,0,4)];
-  for(j=0; j<3; ++j)
-    for(i=0; i<3; ++i)
-      bulge[IDX(i,j,4)] = bulge[IDX(i+1,j+1,4)];
-  bulge[IDX(3,0,4)] = 0;
-  bulge[IDX(3,1,4)] = 0;
-  bulge[IDX(3,2,4)] = beta[pos+3];
-  bulge[IDX(0,3,4)] = 0;
-  bulge[IDX(1,3,4)] = 0;
-  bulge[IDX(2,3,4)] = beta[pos+3];
-  bulge[IDX(3,3,4)] = alpha[pos+4];
+        // Move to next position
+        alpha[pos] = bulge[IDX(0, 0, 4)];
+        householder[0] = bulge[IDX(1, 0, 4)];
+        householder[1] = bulge[IDX(2, 0, 4)];
+        householder[2] = bulge[IDX(3, 0, 4)];
+        for (j = 0; j < 3; ++j)
+          for (i = 0; i < 3; ++i)
+            bulge[IDX(i, j, 4)] = bulge[IDX(i + 1, j + 1, 4)];
+        bulge[IDX(3, 0, 4)] = 0;
+        bulge[IDX(3, 1, 4)] = 0;
+        bulge[IDX(3, 2, 4)] = beta[pos + 3];
+        bulge[IDX(0, 3, 4)] = 0;
+        bulge[IDX(1, 3, 4)] = 0;
+        bulge[IDX(2, 3, 4)] = beta[pos + 3];
+        bulge[IDX(3, 3, 4)] = alpha[pos + 4];
 
-  // Apply Householder transform
-  findHouseholder3<IndexType_,ValueType_>(householder, beta+pos,
-            householderMatrix);
-  applyHouseholder3<IndexType_,ValueType_>(householder, bulge);
-  Lapack<ValueType_>::gemm(false, false, n, 3, 3,
-         1, V+IDX(0,pos+1,n), n,
-         householderMatrix, 3,
-         0, work, n);
-  memcpy(V+IDX(0,pos+1,n), work, 3*n*sizeof(ValueType_));
-
+        // Apply Householder transform
+        findHouseholder3<IndexType_, ValueType_>(householder, beta + pos,
+                                                 householderMatrix);
+        applyHouseholder3<IndexType_, ValueType_>(householder, bulge);
+        Lapack<ValueType_>::gemm(false, false, n, 3, 3,
+                                 1, V + IDX(0, pos + 1, n), n,
+                                 householderMatrix, 3,
+                                 0, work, n);
+        memcpy(V + IDX(0, pos + 1, n), work, 3 * n * sizeof(ValueType_));
       }
 
       // Apply penultimate Householder transform
       //   Values in the last row and column are zero
-      alpha[n-4]     = bulge[IDX(0,0,4)];
-      householder[0] = bulge[IDX(1,0,4)];
-      householder[1] = bulge[IDX(2,0,4)];
-      householder[2] = bulge[IDX(3,0,4)];
-      for(j=0; j<3; ++j)
-  for(i=0; i<3; ++i)
-    bulge[IDX(i,j,4)] = bulge[IDX(i+1,j+1,4)];
-      bulge[IDX(3,0,4)] = 0;
-      bulge[IDX(3,1,4)] = 0;
-      bulge[IDX(3,2,4)] = 0;
-      bulge[IDX(0,3,4)] = 0;
-      bulge[IDX(1,3,4)] = 0;
-      bulge[IDX(2,3,4)] = 0;
-      bulge[IDX(3,3,4)] = 0;
-      findHouseholder3<IndexType_,ValueType_>(householder, beta+n-4,
-                householderMatrix);
-      applyHouseholder3<IndexType_,ValueType_>(householder, bulge);
+      alpha[n - 4] = bulge[IDX(0, 0, 4)];
+      householder[0] = bulge[IDX(1, 0, 4)];
+      householder[1] = bulge[IDX(2, 0, 4)];
+      householder[2] = bulge[IDX(3, 0, 4)];
+      for (j = 0; j < 3; ++j)
+        for (i = 0; i < 3; ++i)
+          bulge[IDX(i, j, 4)] = bulge[IDX(i + 1, j + 1, 4)];
+      bulge[IDX(3, 0, 4)] = 0;
+      bulge[IDX(3, 1, 4)] = 0;
+      bulge[IDX(3, 2, 4)] = 0;
+      bulge[IDX(0, 3, 4)] = 0;
+      bulge[IDX(1, 3, 4)] = 0;
+      bulge[IDX(2, 3, 4)] = 0;
+      bulge[IDX(3, 3, 4)] = 0;
+      findHouseholder3<IndexType_, ValueType_>(householder, beta + n - 4,
+                                               householderMatrix);
+      applyHouseholder3<IndexType_, ValueType_>(householder, bulge);
       Lapack<ValueType_>::gemm(false, false, n, 3, 3,
-             1, V+IDX(0,n-3,n), n,
-             householderMatrix, 3,
-             0, work, n);
-      memcpy(V+IDX(0,n-3,n), work, 3*n*sizeof(ValueType_));
+                               1, V + IDX(0, n - 3, n), n,
+                               householderMatrix, 3,
+                               0, work, n);
+      memcpy(V + IDX(0, n - 3, n), work, 3 * n * sizeof(ValueType_));
 
       // Apply final Householder transform
       //   Values in the last two rows and columns are zero
-      alpha[n-3]     = bulge[IDX(0,0,4)];
-      householder[0] = bulge[IDX(1,0,4)];
-      householder[1] = bulge[IDX(2,0,4)];
+      alpha[n - 3] = bulge[IDX(0, 0, 4)];
+      householder[0] = bulge[IDX(1, 0, 4)];
+      householder[1] = bulge[IDX(2, 0, 4)];
       householder[2] = 0;
-      for(j=0; j<3; ++j)
-  for(i=0; i<3; ++i)
-    bulge[IDX(i,j,4)] = bulge[IDX(i+1,j+1,4)];
-      findHouseholder3<IndexType_,ValueType_>(householder, beta+n-3,
-                householderMatrix);
-      applyHouseholder3<IndexType_,ValueType_>(householder, bulge);
+      for (j = 0; j < 3; ++j)
+        for (i = 0; i < 3; ++i)
+          bulge[IDX(i, j, 4)] = bulge[IDX(i + 1, j + 1, 4)];
+      findHouseholder3<IndexType_, ValueType_>(householder, beta + n - 3,
+                                               householderMatrix);
+      applyHouseholder3<IndexType_, ValueType_>(householder, bulge);
       Lapack<ValueType_>::gemm(false, false, n, 2, 2,
-             1, V+IDX(0,n-2,n), n,
-             householderMatrix, 3,
-             0, work, n);
-      memcpy(V+IDX(0,n-2,n), work, 2*n*sizeof(ValueType_));
+                               1, V + IDX(0, n - 2, n), n,
+                               householderMatrix, 3,
+                               0, work, n);
+      memcpy(V + IDX(0, n - 2, n), work, 2 * n * sizeof(ValueType_));
 
       // Bulge has been eliminated
-      alpha[n-2] = bulge[IDX(0,0,4)];
-      alpha[n-1] = bulge[IDX(1,1,4)];
-      beta[n-2]  = bulge[IDX(1,0,4)]; 
+      alpha[n - 2] = bulge[IDX(0, 0, 4)];
+      alpha[n - 1] = bulge[IDX(1, 1, 4)];
+      beta[n - 2] = bulge[IDX(1, 0, 4)];
 
       return 0;
-
     }
 
     /// Perform implicit restart of Lanczos algorithm
@@ -533,27 +541,28 @@ namespace nvgraph {
      *  @param work_dev (Output, device memory, (n+iter)*iter entries)
      *    Workspace.
      */
-    template <typename IndexType_, typename ValueType_> static
-    int lanczosRestart(IndexType_ n,
-           IndexType_ iter,
-           IndexType_ iter_new,
-           ValueType_ * shiftUpper,
-           ValueType_ * shiftLower,
-           ValueType_ * __restrict__ alpha_host,
-           ValueType_ * __restrict__ beta_host,
-           ValueType_ * __restrict__ V_host,
-           ValueType_ * __restrict__ work_host,
-           ValueType_ * __restrict__ lanczosVecs_dev,
-           ValueType_ * __restrict__ work_dev,
-           bool smallest_eig) {
+    template <typename IndexType_, typename ValueType_>
+    static int lanczosRestart(IndexType_ n,
+                              IndexType_ iter,
+                              IndexType_ iter_new,
+                              ValueType_ *shiftUpper,
+                              ValueType_ *shiftLower,
+                              ValueType_ *__restrict__ alpha_host,
+                              ValueType_ *__restrict__ beta_host,
+                              ValueType_ *__restrict__ V_host,
+                              ValueType_ *__restrict__ work_host,
+                              ValueType_ *__restrict__ lanczosVecs_dev,
+                              ValueType_ *__restrict__ work_dev,
+                              bool smallest_eig)
+    {
 
       // -------------------------------------------------------
       // Variable declaration
       // -------------------------------------------------------
 
       // Useful constants
-      const ValueType_ zero   = 0;
-      const ValueType_ one    = 1;
+      const ValueType_ zero = 0;
+      const ValueType_ one = 1;
 
       // Loop index
       IndexType_ i;
@@ -562,104 +571,108 @@ namespace nvgraph {
       //   Assumed to be even since each call to Francis algorithm is
       //   equivalent to two calls of QR algorithm
       IndexType_ restartSteps = iter - iter_new;
- 
+
       // Ritz values from Lanczos method
-      ValueType_ * ritzVals_host = work_host + 3*iter;
+      ValueType_ *ritzVals_host = work_host + 3 * iter;
       // Shifts for implicit restart
-      ValueType_ * shifts_host;
+      ValueType_ *shifts_host;
 
       // Orthonormal matrix for similarity transform
-      ValueType_ * V_dev = work_dev + n*iter;
+      ValueType_ *V_dev = work_dev + n * iter;
 
       // -------------------------------------------------------
       // Implementation
       // -------------------------------------------------------
 
       // Compute Ritz values
-      memcpy(ritzVals_host, alpha_host, iter*sizeof(ValueType_));
-      memcpy(work_host, beta_host, (iter-1)*sizeof(ValueType_));
+      memcpy(ritzVals_host, alpha_host, iter * sizeof(ValueType_));
+      memcpy(work_host, beta_host, (iter - 1) * sizeof(ValueType_));
       Lapack<ValueType_>::sterf(iter, ritzVals_host, work_host);
 
       // Debug: Print largest eigenvalues
-      //for (int i = iter-iter_new; i < iter; ++i)
+      // for (int i = iter-iter_new; i < iter; ++i)
       //  std::cout <<*(ritzVals_host+i)<< " ";
-      //std::cout <<std::endl;
+      // std::cout <<std::endl;
 
       // Initialize similarity transform with identity matrix
-      memset(V_host, 0, iter*iter*sizeof(ValueType_));
-      for(i=0; i<iter; ++i)
-          V_host[IDX(i,i,iter)] = 1;
+      memset(V_host, 0, iter * iter * sizeof(ValueType_));
+      for (i = 0; i < iter; ++i)
+        V_host[IDX(i, i, iter)] = 1;
 
       // Determine interval to suppress eigenvalues
-      if (smallest_eig) {
-          if(*shiftLower > *shiftUpper) {
-              *shiftUpper = ritzVals_host[iter-1];
-              *shiftLower = ritzVals_host[iter_new];
-          }
-          else {
-              *shiftUpper = max(*shiftUpper, ritzVals_host[iter-1]);
-              *shiftLower = min(*shiftLower, ritzVals_host[iter_new]);
-          }
+      if (smallest_eig)
+      {
+        if (*shiftLower > *shiftUpper)
+        {
+          *shiftUpper = ritzVals_host[iter - 1];
+          *shiftLower = ritzVals_host[iter_new];
+        }
+        else
+        {
+          *shiftUpper = max(*shiftUpper, ritzVals_host[iter - 1]);
+          *shiftLower = min(*shiftLower, ritzVals_host[iter_new]);
+        }
       }
-      else {
-          if(*shiftLower > *shiftUpper) {
-              *shiftUpper = ritzVals_host[iter-iter_new-1];
-              *shiftLower = ritzVals_host[0];
-          }
-          else {
-              *shiftUpper = max(*shiftUpper, ritzVals_host[iter-iter_new-1]);
-              *shiftLower = min(*shiftLower, ritzVals_host[0]);
-          }
+      else
+      {
+        if (*shiftLower > *shiftUpper)
+        {
+          *shiftUpper = ritzVals_host[iter - iter_new - 1];
+          *shiftLower = ritzVals_host[0];
+        }
+        else
+        {
+          *shiftUpper = max(*shiftUpper, ritzVals_host[iter - iter_new - 1]);
+          *shiftLower = min(*shiftLower, ritzVals_host[0]);
+        }
       }
 
       // Calculate Chebyshev nodes as shifts
       shifts_host = ritzVals_host;
-      for(i=0; i<restartSteps; ++i) {
-          shifts_host[i] = cos((i+0.5)*static_cast<ValueType_>(M_PI)/restartSteps);
-          shifts_host[i] *= 0.5*((*shiftUpper)-(*shiftLower));
-          shifts_host[i] += 0.5*((*shiftUpper)+(*shiftLower));
+      for (i = 0; i < restartSteps; ++i)
+      {
+        shifts_host[i] = cos((i + 0.5) * static_cast<ValueType_>(M_PI) / restartSteps);
+        shifts_host[i] *= 0.5 * ((*shiftUpper) - (*shiftLower));
+        shifts_host[i] += 0.5 * ((*shiftUpper) + (*shiftLower));
       }
-    
+
       // Apply Francis QR algorithm to implicitly restart Lanczos
-      for(i=0; i<restartSteps; i+=2)
-       if(francisQRIteration(iter,
-          shifts_host[i], shifts_host[i+1],
-          alpha_host, beta_host,
-          V_host, work_host))
-            WARNING("error in implicitly shifted QR algorithm");
+      for (i = 0; i < restartSteps; i += 2)
+        if (francisQRIteration(iter,
+                               shifts_host[i], shifts_host[i + 1],
+                               alpha_host, beta_host,
+                               V_host, work_host))
+          WARNING("error in implicitly shifted QR algorithm");
 
       // Obtain new residual
-      CHECK_CUDA(cudaMemcpyAsync(V_dev, V_host,
-         iter*iter*sizeof(ValueType_),
-         cudaMemcpyHostToDevice));
+      CHECK_HIP(hipMemcpyAsync(V_dev, V_host,
+                               iter * iter * sizeof(ValueType_),
+                               hipMemcpyHostToDevice));
 
-          beta_host[iter-1]
-              = beta_host[iter-1]*V_host[IDX(iter-1,iter_new-1,iter)];
-          Cublas::gemv(false, n, iter, beta_host+iter_new-1,
-                       lanczosVecs_dev, n, V_dev+IDX(0,iter_new,iter), 1,
-                       beta_host+iter-1, lanczosVecs_dev+IDX(0,iter,n), 1);
-      
+      beta_host[iter - 1] = beta_host[iter - 1] * V_host[IDX(iter - 1, iter_new - 1, iter)];
+      Hipblas::gemv(false, n, iter, beta_host + iter_new - 1,
+                    lanczosVecs_dev, n, V_dev + IDX(0, iter_new, iter), 1,
+                    beta_host + iter - 1, lanczosVecs_dev + IDX(0, iter, n), 1);
+
       // Obtain new Lanczos vectors
-          Cublas::gemm(false, false, n, iter_new, iter,
-                       &one, lanczosVecs_dev, n, V_dev, iter,
-                       &zero, work_dev, n);
-      
-      CHECK_CUDA(cudaMemcpyAsync(lanczosVecs_dev, work_dev,
-         n*iter_new*sizeof(ValueType_),
-         cudaMemcpyDeviceToDevice));
+      Hipblas::gemm(false, false, n, iter_new, iter,
+                    &one, lanczosVecs_dev, n, V_dev, iter,
+                    &zero, work_dev, n);
+
+      CHECK_HIP(hipMemcpyAsync(lanczosVecs_dev, work_dev,
+                               n * iter_new * sizeof(ValueType_),
+                               hipMemcpyDeviceToDevice));
 
       // Normalize residual to obtain new Lanczos vector
-      CHECK_CUDA(cudaMemcpyAsync(lanczosVecs_dev+IDX(0,iter_new,n),
-         lanczosVecs_dev+IDX(0,iter,n),
-         n*sizeof(ValueType_),
-         cudaMemcpyDeviceToDevice));
-      beta_host[iter_new-1]
-  = Cublas::nrm2(n, lanczosVecs_dev+IDX(0,iter_new,n), 1);
-      Cublas::scal(n, 1/beta_host[iter_new-1],
-       lanczosVecs_dev+IDX(0,iter_new,n), 1);
+      CHECK_HIP(hipMemcpyAsync(lanczosVecs_dev + IDX(0, iter_new, n),
+                               lanczosVecs_dev + IDX(0, iter, n),
+                               n * sizeof(ValueType_),
+                               hipMemcpyDeviceToDevice));
+      beta_host[iter_new - 1] = Hipblas::nrm2(n, lanczosVecs_dev + IDX(0, iter_new, n), 1);
+      Hipblas::scal(n, 1 / beta_host[iter_new - 1],
+                    lanczosVecs_dev + IDX(0, iter_new, n), 1);
 
       return 0;
-
     }
 
   }
@@ -715,28 +728,29 @@ namespace nvgraph {
    *  @return NVGRAPH error flag.
    */
   template <typename IndexType_, typename ValueType_>
-  NVGRAPH_ERROR computeSmallestEigenvectors(const Matrix<IndexType_,ValueType_> * A,
-           IndexType_ nEigVecs,
-           IndexType_ maxIter,
-           IndexType_ restartIter,
-           ValueType_ tol,
-           bool reorthogonalize,
-           IndexType_ * effIter,
-           IndexType_ * totalIter,
-           ValueType_ * shift,
-           ValueType_ * __restrict__ alpha_host,
-           ValueType_ * __restrict__ beta_host,
-           ValueType_ * __restrict__ lanczosVecs_dev,
-           ValueType_ * __restrict__ work_dev,
-           ValueType_ * __restrict__ eigVals_dev,
-           ValueType_ * __restrict__ eigVecs_dev) {
+  NVGRAPH_ERROR computeSmallestEigenvectors(const Matrix<IndexType_, ValueType_> *A,
+                                            IndexType_ nEigVecs,
+                                            IndexType_ maxIter,
+                                            IndexType_ restartIter,
+                                            ValueType_ tol,
+                                            bool reorthogonalize,
+                                            IndexType_ *effIter,
+                                            IndexType_ *totalIter,
+                                            ValueType_ *shift,
+                                            ValueType_ *__restrict__ alpha_host,
+                                            ValueType_ *__restrict__ beta_host,
+                                            ValueType_ *__restrict__ lanczosVecs_dev,
+                                            ValueType_ *__restrict__ work_dev,
+                                            ValueType_ *__restrict__ eigVals_dev,
+                                            ValueType_ *__restrict__ eigVecs_dev)
+  {
 
     // -------------------------------------------------------
     // Variable declaration
     // -------------------------------------------------------
 
     // Useful constants
-    const ValueType_ one  = 1;
+    const ValueType_ one = 1;
     const ValueType_ zero = 0;
 
     // Matrix dimension
@@ -747,7 +761,7 @@ namespace nvgraph {
     ValueType_ shiftLower;
 
     // Lanczos iteration counters
-    IndexType_ maxIter_curr = restartIter;  // Maximum size of Lanczos system
+    IndexType_ maxIter_curr = restartIter; // Maximum size of Lanczos system
 
     // Status flags
     int status;
@@ -756,43 +770,49 @@ namespace nvgraph {
     IndexType_ i;
 
     // Host memory
-    ValueType_ * Z_host;           // Eigenvectors in Lanczos basis
-    ValueType_ * work_host;        // Workspace
-
+    ValueType_ *Z_host;    // Eigenvectors in Lanczos basis
+    ValueType_ *work_host; // Workspace
 
     // -------------------------------------------------------
     // Check that LAPACK is enabled
     // -------------------------------------------------------
-    //Lapack<ValueType_>::check_lapack_enabled();
+    // Lapack<ValueType_>::check_lapack_enabled();
 
     // -------------------------------------------------------
     // Check that parameters are valid
     // -------------------------------------------------------
-    if(A->m != A->n) {
+    if (A->m != A->n)
+    {
       WARNING("invalid parameter (matrix is not square)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(nEigVecs < 1) {
+    if (nEigVecs < 1)
+    {
       WARNING("invalid parameter (nEigVecs<1)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(restartIter < 1) {
+    if (restartIter < 1)
+    {
       WARNING("invalid parameter (restartIter<4)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(tol < 0) {
+    if (tol < 0)
+    {
       WARNING("invalid parameter (tol<0)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(nEigVecs > n) {
+    if (nEigVecs > n)
+    {
       WARNING("invalid parameters (nEigVecs>n)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(maxIter < nEigVecs) {
+    if (maxIter < nEigVecs)
+    {
       WARNING("invalid parameters (maxIter<nEigVecs)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(restartIter < nEigVecs) {
+    if (restartIter < nEigVecs)
+    {
       WARNING("invalid parameters (restartIter<nEigVecs)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
@@ -805,157 +825,155 @@ namespace nvgraph {
     *totalIter = 0;
 
     // Allocate host memory
-    Z_host = (ValueType_*) malloc(restartIter*restartIter *sizeof(ValueType_));
-    if(Z_host==NULL) WARNING("could not allocate host memory");
-    work_host = (ValueType_*) malloc(4*restartIter*sizeof(ValueType_));
-    if(work_host==NULL) WARNING("could not allocate host memory");
+    Z_host = (ValueType_ *)malloc(restartIter * restartIter * sizeof(ValueType_));
+    if (Z_host == NULL)
+      WARNING("could not allocate host memory");
+    work_host = (ValueType_ *)malloc(4 * restartIter * sizeof(ValueType_));
+    if (work_host == NULL)
+      WARNING("could not allocate host memory");
 
     // Initialize cuBLAS
-    Cublas::set_pointer_mode_host();
-
+    Hipblas::set_pointer_mode_host();
 
     // -------------------------------------------------------
     // Compute largest eigenvalue to determine shift
     // -------------------------------------------------------
 
-   
-    #ifdef USE_CURAND
-      // Random number generator
-      curandGenerator_t randGen;
-      // Initialize random number generator
-      CHECK_CURAND(curandCreateGenerator(&randGen,
-                 CURAND_RNG_PSEUDO_PHILOX4_32_10));
-      CHECK_CURAND(curandSetPseudoRandomGeneratorSeed(randGen,
-                  123456/*time(NULL)*/));
-      // Initialize initial Lanczos vector
-      CHECK_CURAND(curandGenerateNormalX(randGen, lanczosVecs_dev, n+n%2, zero, one));
-      ValueType_ normQ1 = Cublas::nrm2(n, lanczosVecs_dev, 1);
-      Cublas::scal(n, 1/normQ1, lanczosVecs_dev, 1);
-    #else
-        fill_raw_vec (lanczosVecs_dev, n, (ValueType_)1.0/n); // doesn't work
-    #endif
+#ifdef USE_CURAND
+    // Random number generator
+    curandGenerator_t randGen;
+    // Initialize random number generator
+    CHECK_HIPRAND(curandCreateGenerator(&randGen,
+                                        CURAND_RNG_PSEUDO_PHILOX4_32_10));
+    CHECK_HIPRAND(curandSetPseudoRandomGeneratorSeed(randGen,
+                                                     123456 /*time(NULL)*/));
+    // Initialize initial Lanczos vector
+    CHECK_HIPRAND(curandGenerateNormalX(randGen, lanczosVecs_dev, n + n % 2, zero, one));
+    ValueType_ normQ1 = Hipblas::nrm2(n, lanczosVecs_dev, 1);
+    Hipblas::scal(n, 1 / normQ1, lanczosVecs_dev, 1);
+#else
+    fill_raw_vec(lanczosVecs_dev, n, (ValueType_)1.0 / n); // doesn't work
+#endif
 
-
-    // Estimate number of Lanczos iterations 
+    // Estimate number of Lanczos iterations
     //   See bounds in Kuczynski and Wozniakowski (1992).
-    //const ValueType_ relError = 0.25;  // Relative error
-    //const ValueType_ failProb = 1e-4;  // Probability of failure
-    //maxIter_curr = log(n/pow(failProb,2))/(4*std::sqrt(relError)) + 1;
-    //maxIter_curr = min(maxIter_curr, restartIter);
+    // const ValueType_ relError = 0.25;  // Relative error
+    // const ValueType_ failProb = 1e-4;  // Probability of failure
+    // maxIter_curr = log(n/pow(failProb,2))/(4*std::sqrt(relError)) + 1;
+    // maxIter_curr = min(maxIter_curr, restartIter);
 
     // Obtain tridiagonal matrix with Lanczos
-    *effIter  = 0;
+    *effIter = 0;
     *shift = 0;
     status =
-      performLanczosIteration<IndexType_, ValueType_>
-      (A, effIter, maxIter_curr, *shift, 0.0, reorthogonalize, 
-       alpha_host, beta_host, lanczosVecs_dev, work_dev);
-    if(status) WARNING("error in Lanczos iteration");
+        performLanczosIteration<IndexType_, ValueType_>(A, effIter, maxIter_curr, *shift, 0.0, reorthogonalize,
+                                                        alpha_host, beta_host, lanczosVecs_dev, work_dev);
+    if (status)
+      WARNING("error in Lanczos iteration");
 
     // Determine largest eigenvalue
 
     Lapack<ValueType_>::sterf(*effIter, alpha_host, beta_host);
-    *shift = -alpha_host[*effIter-1];
-    //std::cout <<  *shift <<std::endl;
-    // -------------------------------------------------------
-    // Compute eigenvectors of shifted matrix
-    // -------------------------------------------------------
+    *shift = -alpha_host[*effIter - 1];
+    // std::cout <<  *shift <<std::endl;
+    //  -------------------------------------------------------
+    //  Compute eigenvectors of shifted matrix
+    //  -------------------------------------------------------
 
     // Obtain tridiagonal matrix with Lanczos
     *effIter = 0;
-    //maxIter_curr = min(maxIter, restartIter);
+    // maxIter_curr = min(maxIter, restartIter);
     status =
-      performLanczosIteration<IndexType_, ValueType_>
-      (A, effIter, maxIter_curr, *shift, 0, reorthogonalize,
-       alpha_host, beta_host, lanczosVecs_dev, work_dev);
-    if(status) WARNING("error in Lanczos iteration");
+        performLanczosIteration<IndexType_, ValueType_>(A, effIter, maxIter_curr, *shift, 0, reorthogonalize,
+                                                        alpha_host, beta_host, lanczosVecs_dev, work_dev);
+    if (status)
+      WARNING("error in Lanczos iteration");
     *totalIter += *effIter;
 
     // Apply Lanczos method until convergence
     shiftLower = 1;
     shiftUpper = -1;
-    while(*totalIter<maxIter && beta_host[*effIter-1]>tol*shiftLower) {
+    while (*totalIter < maxIter && beta_host[*effIter - 1] > tol * shiftLower)
+    {
 
       // Determine number of restart steps
       // Number of steps must be even due to Francis algorithm
-      IndexType_ iter_new = nEigVecs+1;
-      if(restartIter-(maxIter-*totalIter) > nEigVecs+1)
-  iter_new = restartIter-(maxIter-*totalIter);
-      if((restartIter-iter_new) % 2)
-  iter_new -= 1;
-      if(iter_new==*effIter)
-  break;
-      
+      IndexType_ iter_new = nEigVecs + 1;
+      if (restartIter - (maxIter - *totalIter) > nEigVecs + 1)
+        iter_new = restartIter - (maxIter - *totalIter);
+      if ((restartIter - iter_new) % 2)
+        iter_new -= 1;
+      if (iter_new == *effIter)
+        break;
+
       // Implicit restart of Lanczos method
-      status = 
-  lanczosRestart<IndexType_, ValueType_>
-  (n, *effIter, iter_new,
-   &shiftUpper, &shiftLower, 
-   alpha_host, beta_host, Z_host, work_host,
-   lanczosVecs_dev, work_dev, true);
-      if(status) WARNING("error in Lanczos implicit restart");
+      status =
+          lanczosRestart<IndexType_, ValueType_>(n, *effIter, iter_new,
+                                                 &shiftUpper, &shiftLower,
+                                                 alpha_host, beta_host, Z_host, work_host,
+                                                 lanczosVecs_dev, work_dev, true);
+      if (status)
+        WARNING("error in Lanczos implicit restart");
       *effIter = iter_new;
 
       // Check for convergence
-      if(beta_host[*effIter-1] <= tol*fabs(shiftLower))
-  break;
+      if (beta_host[*effIter - 1] <= tol * fabs(shiftLower))
+        break;
 
       // Proceed with Lanczos method
-      //maxIter_curr = min(restartIter, maxIter-*totalIter+*effIter);
-      status = 
-  performLanczosIteration<IndexType_, ValueType_>
-  (A, effIter, maxIter_curr,
-   *shift, tol*fabs(shiftLower), reorthogonalize,
-   alpha_host, beta_host, lanczosVecs_dev, work_dev);
-      if(status) WARNING("error in Lanczos iteration");
-      *totalIter += *effIter-iter_new;
-
+      // maxIter_curr = min(restartIter, maxIter-*totalIter+*effIter);
+      status =
+          performLanczosIteration<IndexType_, ValueType_>(A, effIter, maxIter_curr,
+                                                          *shift, tol * fabs(shiftLower), reorthogonalize,
+                                                          alpha_host, beta_host, lanczosVecs_dev, work_dev);
+      if (status)
+        WARNING("error in Lanczos iteration");
+      *totalIter += *effIter - iter_new;
     }
 
     // Warning if Lanczos has failed to converge
-    if(beta_host[*effIter-1] > tol*fabs(shiftLower))
+    if (beta_host[*effIter - 1] > tol * fabs(shiftLower))
     {
       WARNING("implicitly restarted Lanczos failed to converge");
     }
 
     // Solve tridiagonal system
-    memcpy(work_host+2*(*effIter), alpha_host, (*effIter)*sizeof(ValueType_));
-    memcpy(work_host+3*(*effIter), beta_host, (*effIter-1)*sizeof(ValueType_));
+    memcpy(work_host + 2 * (*effIter), alpha_host, (*effIter) * sizeof(ValueType_));
+    memcpy(work_host + 3 * (*effIter), beta_host, (*effIter - 1) * sizeof(ValueType_));
     Lapack<ValueType_>::steqr('I', *effIter,
-            work_host+2*(*effIter), work_host+3*(*effIter),
-            Z_host, *effIter, work_host);
+                              work_host + 2 * (*effIter), work_host + 3 * (*effIter),
+                              Z_host, *effIter, work_host);
 
     // Obtain desired eigenvalues by applying shift
-    for(i=0; i<*effIter; ++i)
-      work_host[i+2*(*effIter)] -= *shift;
-    for(i=*effIter; i<nEigVecs; ++i)
-      work_host[i+2*(*effIter)] = 0;
+    for (i = 0; i < *effIter; ++i)
+      work_host[i + 2 * (*effIter)] -= *shift;
+    for (i = *effIter; i < nEigVecs; ++i)
+      work_host[i + 2 * (*effIter)] = 0;
 
     // Copy results to device memory
-    CHECK_CUDA(cudaMemcpy(eigVals_dev, work_host+2*(*effIter),
-             nEigVecs*sizeof(ValueType_),
-             cudaMemcpyHostToDevice));
-    //for (int i = 0; i < nEigVecs; ++i)
+    CHECK_HIP(hipMemcpy(eigVals_dev, work_host + 2 * (*effIter),
+                        nEigVecs * sizeof(ValueType_),
+                        hipMemcpyHostToDevice));
+    // for (int i = 0; i < nEigVecs; ++i)
     //{
-    //  std::cout <<*(work_host+(2*(*effIter)+i))<< std::endl;
-    //}
-    CHECK_CUDA(cudaMemcpy(work_dev, Z_host,
-             (*effIter)*nEigVecs*sizeof(ValueType_),
-             cudaMemcpyHostToDevice));
+    //   std::cout <<*(work_host+(2*(*effIter)+i))<< std::endl;
+    // }
+    CHECK_HIP(hipMemcpy(work_dev, Z_host,
+                        (*effIter) * nEigVecs * sizeof(ValueType_),
+                        hipMemcpyHostToDevice));
 
     // Convert eigenvectors from Lanczos basis to standard basis
-    Cublas::gemm(false, false, n, nEigVecs, *effIter,
-     &one, lanczosVecs_dev, n, work_dev, *effIter,
-     &zero, eigVecs_dev, n);
+    Hipblas::gemm(false, false, n, nEigVecs, *effIter,
+                  &one, lanczosVecs_dev, n, work_dev, *effIter,
+                  &zero, eigVecs_dev, n);
 
     // Clean up and exit
     free(Z_host);
     free(work_host);
-    #ifdef USE_CURAND
-      CHECK_CURAND(curandDestroyGenerator(randGen));
-    #endif
+#ifdef USE_CURAND
+    CHECK_HIPRAND(curandDestroyGenerator(randGen));
+#endif
     return NVGRAPH_OK;
-  
   }
 
   /// Compute smallest eigenvectors of symmetric matrix
@@ -995,78 +1013,84 @@ namespace nvgraph {
    *  @return NVGRAPH error flag.
    */
   template <typename IndexType_, typename ValueType_>
-  NVGRAPH_ERROR computeSmallestEigenvectors(const Matrix<IndexType_,ValueType_> & A,
-           IndexType_ nEigVecs,
-           IndexType_ maxIter,
-           IndexType_ restartIter,
-           ValueType_ tol,
-           bool reorthogonalize,
-           IndexType_ & iter,
-           ValueType_ * __restrict__ eigVals_dev,
-           ValueType_ * __restrict__ eigVecs_dev) {
-    
+  NVGRAPH_ERROR computeSmallestEigenvectors(const Matrix<IndexType_, ValueType_> &A,
+                                            IndexType_ nEigVecs,
+                                            IndexType_ maxIter,
+                                            IndexType_ restartIter,
+                                            ValueType_ tol,
+                                            bool reorthogonalize,
+                                            IndexType_ &iter,
+                                            ValueType_ *__restrict__ eigVals_dev,
+                                            ValueType_ *__restrict__ eigVecs_dev)
+  {
+
     // CUDA stream
     //   TODO: handle non-zero streams
-    cudaStream_t stream = 0;
+    hipStream_t stream = 0;
 
     // Matrix dimension
     IndexType_ n = A.n;
 
     // Check that parameters are valid
-    if(A.m != A.n) {
+    if (A.m != A.n)
+    {
       WARNING("invalid parameter (matrix is not square)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(nEigVecs < 1) {
+    if (nEigVecs < 1)
+    {
       WARNING("invalid parameter (nEigVecs<1)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(restartIter < 1) {
+    if (restartIter < 1)
+    {
       WARNING("invalid parameter (restartIter<4)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(tol < 0) {
+    if (tol < 0)
+    {
       WARNING("invalid parameter (tol<0)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(nEigVecs > n) {
+    if (nEigVecs > n)
+    {
       WARNING("invalid parameters (nEigVecs>n)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(maxIter < nEigVecs) {
+    if (maxIter < nEigVecs)
+    {
       WARNING("invalid parameters (maxIter<nEigVecs)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(restartIter < nEigVecs) {
+    if (restartIter < nEigVecs)
+    {
       WARNING("invalid parameters (restartIter<nEigVecs)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
 
     // Allocate memory
-    ValueType_ * alpha_host = (ValueType_*) malloc(restartIter*sizeof(ValueType_));
-    ValueType_ * beta_host = (ValueType_*) malloc(restartIter*sizeof(ValueType_));
-    Vector<ValueType_> lanczosVecs_dev(n*(restartIter+1), stream);
-    Vector<ValueType_> work_dev((n+restartIter)*restartIter, stream);
+    ValueType_ *alpha_host = (ValueType_ *)malloc(restartIter * sizeof(ValueType_));
+    ValueType_ *beta_host = (ValueType_ *)malloc(restartIter * sizeof(ValueType_));
+    Vector<ValueType_> lanczosVecs_dev(n * (restartIter + 1), stream);
+    Vector<ValueType_> work_dev((n + restartIter) * restartIter, stream);
 
     // Perform Lanczos method
     IndexType_ effIter;
     ValueType_ shift;
-    NVGRAPH_ERROR status
-      = computeSmallestEigenvectors(&A, nEigVecs, maxIter, restartIter,
-            tol, reorthogonalize,
-            &effIter, &iter, &shift,
-            alpha_host, beta_host,
-            lanczosVecs_dev.raw(), work_dev.raw(),
-            eigVals_dev, eigVecs_dev);
+    NVGRAPH_ERROR status = computeSmallestEigenvectors(&A, nEigVecs, maxIter, restartIter,
+                                                       tol, reorthogonalize,
+                                                       &effIter, &iter, &shift,
+                                                       alpha_host, beta_host,
+                                                       lanczosVecs_dev.raw(), work_dev.raw(),
+                                                       eigVals_dev, eigVecs_dev);
 
     // Clean up and return
     free(alpha_host);
     free(beta_host);
     return status;
-
   }
 
-    // =========================================================
+  // =========================================================
   // Eigensolver
   // =========================================================
 
@@ -1082,7 +1106,7 @@ namespace nvgraph {
    *
    *  @param A Matrix.
    *  @param nEigVecs Number of eigenvectors to compute.
-   *  @param maxIter Maximum number of Lanczos steps. 
+   *  @param maxIter Maximum number of Lanczos steps.
    *  @param restartIter Maximum size of Lanczos system before
    *    performing an implicit restart. Should be at least 4.
    *  @param tol Convergence tolerance. Lanczos iteration will
@@ -1112,34 +1136,35 @@ namespace nvgraph {
    *  @return NVGRAPH error flag.
    */
   template <typename IndexType_, typename ValueType_>
-  NVGRAPH_ERROR computeLargestEigenvectors(const Matrix<IndexType_,ValueType_> * A,
-           IndexType_ nEigVecs,
-           IndexType_ maxIter,
-           IndexType_ restartIter,
-           ValueType_ tol,
-           bool reorthogonalize,
-           IndexType_ * effIter,
-           IndexType_ * totalIter,
-           ValueType_ * __restrict__ alpha_host,
-           ValueType_ * __restrict__ beta_host,
-           ValueType_ * __restrict__ lanczosVecs_dev,
-           ValueType_ * __restrict__ work_dev,
-           ValueType_ * __restrict__ eigVals_dev,
-           ValueType_ * __restrict__ eigVecs_dev) {
+  NVGRAPH_ERROR computeLargestEigenvectors(const Matrix<IndexType_, ValueType_> *A,
+                                           IndexType_ nEigVecs,
+                                           IndexType_ maxIter,
+                                           IndexType_ restartIter,
+                                           ValueType_ tol,
+                                           bool reorthogonalize,
+                                           IndexType_ *effIter,
+                                           IndexType_ *totalIter,
+                                           ValueType_ *__restrict__ alpha_host,
+                                           ValueType_ *__restrict__ beta_host,
+                                           ValueType_ *__restrict__ lanczosVecs_dev,
+                                           ValueType_ *__restrict__ work_dev,
+                                           ValueType_ *__restrict__ eigVals_dev,
+                                           ValueType_ *__restrict__ eigVecs_dev)
+  {
 
     // -------------------------------------------------------
     // Variable declaration
     // -------------------------------------------------------
 
     // Useful constants
-    const ValueType_ one  = 1;
+    const ValueType_ one = 1;
     const ValueType_ zero = 0;
 
     // Matrix dimension
     IndexType_ n = A->n;
 
     // Lanczos iteration counters
-    IndexType_ maxIter_curr = restartIter;  // Maximum size of Lanczos system
+    IndexType_ maxIter_curr = restartIter; // Maximum size of Lanczos system
 
     // Status flags
     int status;
@@ -1148,43 +1173,49 @@ namespace nvgraph {
     IndexType_ i;
 
     // Host memory
-    ValueType_ * Z_host;           // Eigenvectors in Lanczos basis
-    ValueType_ * work_host;        // Workspace
-
+    ValueType_ *Z_host;    // Eigenvectors in Lanczos basis
+    ValueType_ *work_host; // Workspace
 
     // -------------------------------------------------------
     // Check that LAPACK is enabled
     // -------------------------------------------------------
-    //Lapack<ValueType_>::check_lapack_enabled();
+    // Lapack<ValueType_>::check_lapack_enabled();
 
     // -------------------------------------------------------
     // Check that parameters are valid
     // -------------------------------------------------------
-    if(A->m != A->n) {
+    if (A->m != A->n)
+    {
       WARNING("invalid parameter (matrix is not square)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(nEigVecs < 1) {
+    if (nEigVecs < 1)
+    {
       WARNING("invalid parameter (nEigVecs<1)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(restartIter < 1) {
+    if (restartIter < 1)
+    {
       WARNING("invalid parameter (restartIter<4)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(tol < 0) {
+    if (tol < 0)
+    {
       WARNING("invalid parameter (tol<0)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(nEigVecs > n) {
+    if (nEigVecs > n)
+    {
       WARNING("invalid parameters (nEigVecs>n)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(maxIter < nEigVecs) {
+    if (maxIter < nEigVecs)
+    {
       WARNING("invalid parameters (maxIter<nEigVecs)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(restartIter <= nEigVecs) {
+    if (restartIter <= nEigVecs)
+    {
       WARNING("invalid parameters (restartIter<=nEigVecs)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
@@ -1197,166 +1228,163 @@ namespace nvgraph {
     *totalIter = 0;
 
     // Allocate host memory
-    Z_host = (ValueType_*) malloc(restartIter*restartIter *sizeof(ValueType_));
-    if(Z_host==NULL) WARNING("could not allocate host memory");
-    work_host = (ValueType_*) malloc(4*restartIter*sizeof(ValueType_));
-    if(work_host==NULL) WARNING("could not allocate host memory");
+    Z_host = (ValueType_ *)malloc(restartIter * restartIter * sizeof(ValueType_));
+    if (Z_host == NULL)
+      WARNING("could not allocate host memory");
+    work_host = (ValueType_ *)malloc(4 * restartIter * sizeof(ValueType_));
+    if (work_host == NULL)
+      WARNING("could not allocate host memory");
 
     // Initialize cuBLAS
-    Cublas::set_pointer_mode_host();
-
+    Hipblas::set_pointer_mode_host();
 
     // -------------------------------------------------------
-    // Compute largest eigenvalue 
+    // Compute largest eigenvalue
     // -------------------------------------------------------
 
-   
-    #ifdef USE_CURAND
-      // Random number generator
-      curandGenerator_t randGen;
-      // Initialize random number generator
-      CHECK_CURAND(curandCreateGenerator(&randGen,
-                 CURAND_RNG_PSEUDO_PHILOX4_32_10));
-      CHECK_CURAND(curandSetPseudoRandomGeneratorSeed(randGen,
-                  123456));
-       // Initialize initial Lanczos vector
-      CHECK_CURAND(curandGenerateNormalX(randGen, lanczosVecs_dev, n+n%2, zero, one));
-      ValueType_ normQ1 = Cublas::nrm2(n, lanczosVecs_dev, 1);
-      Cublas::scal(n, 1/normQ1, lanczosVecs_dev, 1);
-    #else
-        fill_raw_vec (lanczosVecs_dev, n, (ValueType_)1.0/n); // doesn't work
-    #endif
+#ifdef USE_CURAND
+    // Random number generator
+    curandGenerator_t randGen;
+    // Initialize random number generator
+    CHECK_HIPRAND(curandCreateGenerator(&randGen,
+                                        CURAND_RNG_PSEUDO_PHILOX4_32_10));
+    CHECK_HIPRAND(curandSetPseudoRandomGeneratorSeed(randGen,
+                                                     123456));
+    // Initialize initial Lanczos vector
+    CHECK_HIPRAND(curandGenerateNormalX(randGen, lanczosVecs_dev, n + n % 2, zero, one));
+    ValueType_ normQ1 = Hipblas::nrm2(n, lanczosVecs_dev, 1);
+    Hipblas::scal(n, 1 / normQ1, lanczosVecs_dev, 1);
+#else
+    fill_raw_vec(lanczosVecs_dev, n, (ValueType_)1.0 / n); // doesn't work
+#endif
 
-
-    // Estimate number of Lanczos iterations 
+    // Estimate number of Lanczos iterations
     //   See bounds in Kuczynski and Wozniakowski (1992).
-    //const ValueType_ relError = 0.25;  // Relative error
-    //const ValueType_ failProb = 1e-4;  // Probability of failure
-    //maxIter_curr = log(n/pow(failProb,2))/(4*std::sqrt(relError)) + 1;
-    //maxIter_curr = min(maxIter_curr, restartIter);
+    // const ValueType_ relError = 0.25;  // Relative error
+    // const ValueType_ failProb = 1e-4;  // Probability of failure
+    // maxIter_curr = log(n/pow(failProb,2))/(4*std::sqrt(relError)) + 1;
+    // maxIter_curr = min(maxIter_curr, restartIter);
 
     // Obtain tridiagonal matrix with Lanczos
-    *effIter  = 0;
-    ValueType_ shift_val=0.0;
+    *effIter = 0;
+    ValueType_ shift_val = 0.0;
     ValueType_ *shift = &shift_val;
-    //maxIter_curr = min(maxIter, restartIter);
+    // maxIter_curr = min(maxIter, restartIter);
     status =
-      performLanczosIteration<IndexType_, ValueType_>
-      (A, effIter, maxIter_curr, *shift, 0, reorthogonalize,
-       alpha_host, beta_host, lanczosVecs_dev, work_dev);
-    if(status) WARNING("error in Lanczos iteration");
+        performLanczosIteration<IndexType_, ValueType_>(A, effIter, maxIter_curr, *shift, 0, reorthogonalize,
+                                                        alpha_host, beta_host, lanczosVecs_dev, work_dev);
+    if (status)
+      WARNING("error in Lanczos iteration");
     *totalIter += *effIter;
 
     // Apply Lanczos method until convergence
     ValueType_ shiftLower = 1;
     ValueType_ shiftUpper = -1;
-    while(*totalIter<maxIter && beta_host[*effIter-1]>tol*shiftLower) {
+    while (*totalIter < maxIter && beta_host[*effIter - 1] > tol * shiftLower)
+    {
 
       // Determine number of restart steps
       //   Number of steps must be even due to Francis algorithm
-      IndexType_ iter_new = nEigVecs+1;
-      if(restartIter-(maxIter-*totalIter) > nEigVecs+1)
-  iter_new = restartIter-(maxIter-*totalIter);
-      if((restartIter-iter_new) % 2)
-  iter_new -= 1;
-      if(iter_new==*effIter)
-  break;
-      
+      IndexType_ iter_new = nEigVecs + 1;
+      if (restartIter - (maxIter - *totalIter) > nEigVecs + 1)
+        iter_new = restartIter - (maxIter - *totalIter);
+      if ((restartIter - iter_new) % 2)
+        iter_new -= 1;
+      if (iter_new == *effIter)
+        break;
+
       // Implicit restart of Lanczos method
-      status = 
-  lanczosRestart<IndexType_, ValueType_>
-  (n, *effIter, iter_new,
-   &shiftUpper, &shiftLower, 
-   alpha_host, beta_host, Z_host, work_host,
-   lanczosVecs_dev, work_dev, false);
-      if(status) WARNING("error in Lanczos implicit restart");
+      status =
+          lanczosRestart<IndexType_, ValueType_>(n, *effIter, iter_new,
+                                                 &shiftUpper, &shiftLower,
+                                                 alpha_host, beta_host, Z_host, work_host,
+                                                 lanczosVecs_dev, work_dev, false);
+      if (status)
+        WARNING("error in Lanczos implicit restart");
       *effIter = iter_new;
 
       // Check for convergence
-      if(beta_host[*effIter-1] <= tol*fabs(shiftLower))
-  break;
+      if (beta_host[*effIter - 1] <= tol * fabs(shiftLower))
+        break;
 
       // Proceed with Lanczos method
-      //maxIter_curr = min(restartIter, maxIter-*totalIter+*effIter);
-      status = 
-  performLanczosIteration<IndexType_, ValueType_>
-  (A, effIter, maxIter_curr,
-   *shift, tol*fabs(shiftLower), reorthogonalize,
-   alpha_host, beta_host, lanczosVecs_dev, work_dev);
-      if(status) WARNING("error in Lanczos iteration");
-      *totalIter += *effIter-iter_new;
-
+      // maxIter_curr = min(restartIter, maxIter-*totalIter+*effIter);
+      status =
+          performLanczosIteration<IndexType_, ValueType_>(A, effIter, maxIter_curr,
+                                                          *shift, tol * fabs(shiftLower), reorthogonalize,
+                                                          alpha_host, beta_host, lanczosVecs_dev, work_dev);
+      if (status)
+        WARNING("error in Lanczos iteration");
+      *totalIter += *effIter - iter_new;
     }
 
     // Warning if Lanczos has failed to converge
-    if(beta_host[*effIter-1] > tol*fabs(shiftLower))
+    if (beta_host[*effIter - 1] > tol * fabs(shiftLower))
     {
       WARNING("implicitly restarted Lanczos failed to converge");
     }
     for (int i = 0; i < restartIter; ++i)
     {
       for (int j = 0; j < restartIter; ++j)
-        Z_host[i*restartIter+j] = 0;
-      
+        Z_host[i * restartIter + j] = 0;
     }
     // Solve tridiagonal system
-    memcpy(work_host+2*(*effIter), alpha_host, (*effIter)*sizeof(ValueType_));
-    memcpy(work_host+3*(*effIter), beta_host, (*effIter-1)*sizeof(ValueType_));
+    memcpy(work_host + 2 * (*effIter), alpha_host, (*effIter) * sizeof(ValueType_));
+    memcpy(work_host + 3 * (*effIter), beta_host, (*effIter - 1) * sizeof(ValueType_));
     Lapack<ValueType_>::steqr('I', *effIter,
-            work_host+2*(*effIter), work_host+3*(*effIter),
-            Z_host, *effIter, work_host);
+                              work_host + 2 * (*effIter), work_host + 3 * (*effIter),
+                              Z_host, *effIter, work_host);
 
     // note: We need to pick the top nEigVecs eigenvalues
-    // but effItter can be larger than nEigVecs 
-    // hence we add an offset for that case, because we want to access top nEigVecs eigenpairs in the matrix of size effIter. 
-    // remember the array is sorted, so it is not needed for smallest eigenvalues case because the first ones are the smallest ones 
+    // but effItter can be larger than nEigVecs
+    // hence we add an offset for that case, because we want to access top nEigVecs eigenpairs in the matrix of size effIter.
+    // remember the array is sorted, so it is not needed for smallest eigenvalues case because the first ones are the smallest ones
 
     IndexType_ top_eigenparis_idx_offset = *effIter - nEigVecs;
 
-    //Debug : print nEigVecs largest eigenvalues
-    //for (int i = top_eigenparis_idx_offset; i < *effIter; ++i)
-    //  std::cout <<*(work_host+(2*(*effIter)+i))<< " ";
-    //std::cout <<std::endl;
+    // Debug : print nEigVecs largest eigenvalues
+    // for (int i = top_eigenparis_idx_offset; i < *effIter; ++i)
+    //   std::cout <<*(work_host+(2*(*effIter)+i))<< " ";
+    // std::cout <<std::endl;
 
-    //Debug : print nEigVecs largest eigenvectors
-    //for (int i = top_eigenparis_idx_offset; i < *effIter; ++i)
+    // Debug : print nEigVecs largest eigenvectors
+    // for (int i = top_eigenparis_idx_offset; i < *effIter; ++i)
     //{
-    //  for (int j = 0; j < *effIter; ++j)
-    //    std::cout <<Z_host[i*(*effIter)+j]<< " ";
-    //  std::cout <<std::endl;
-    //}
+    //   for (int j = 0; j < *effIter; ++j)
+    //     std::cout <<Z_host[i*(*effIter)+j]<< " ";
+    //   std::cout <<std::endl;
+    // }
 
     // Obtain desired eigenvalues by applying shift
-    for(i=0; i<*effIter; ++i)
-      work_host[i+2*(*effIter)] -= *shift;
-    
-    for(i=0; i<top_eigenparis_idx_offset; ++i)
-      work_host[i+2*(*effIter)] = 0;
+    for (i = 0; i < *effIter; ++i)
+      work_host[i + 2 * (*effIter)] -= *shift;
+
+    for (i = 0; i < top_eigenparis_idx_offset; ++i)
+      work_host[i + 2 * (*effIter)] = 0;
 
     // Copy results to device memory
-    // skip smallest eigenvalue if needed   
-    CHECK_CUDA(cudaMemcpy(eigVals_dev, work_host+2*(*effIter)+top_eigenparis_idx_offset,
-             nEigVecs*sizeof(ValueType_),
-             cudaMemcpyHostToDevice));
+    // skip smallest eigenvalue if needed
+    CHECK_HIP(hipMemcpy(eigVals_dev, work_host + 2 * (*effIter) + top_eigenparis_idx_offset,
+                        nEigVecs * sizeof(ValueType_),
+                        hipMemcpyHostToDevice));
 
-    // skip smallest eigenvector if needed   
-    CHECK_CUDA(cudaMemcpy(work_dev, Z_host+(top_eigenparis_idx_offset*(*effIter)),
-             (*effIter)*nEigVecs*sizeof(ValueType_),
-             cudaMemcpyHostToDevice));
+    // skip smallest eigenvector if needed
+    CHECK_HIP(hipMemcpy(work_dev, Z_host + (top_eigenparis_idx_offset * (*effIter)),
+                        (*effIter) * nEigVecs * sizeof(ValueType_),
+                        hipMemcpyHostToDevice));
 
     // Convert eigenvectors from Lanczos basis to standard basis
-    Cublas::gemm(false, false, n, nEigVecs, *effIter,
-     &one, lanczosVecs_dev, n, work_dev, *effIter,
-     &zero, eigVecs_dev, n);
+    Hipblas::gemm(false, false, n, nEigVecs, *effIter,
+                  &one, lanczosVecs_dev, n, work_dev, *effIter,
+                  &zero, eigVecs_dev, n);
 
     // Clean up and exit
     free(Z_host);
     free(work_host);
-    #ifdef USE_CURAND
-      CHECK_CURAND(curandDestroyGenerator(randGen));
-    #endif
+#ifdef USE_CURAND
+    CHECK_HIPRAND(curandDestroyGenerator(randGen));
+#endif
     return NVGRAPH_OK;
-  
   }
 
   /// Compute largest eigenvectors of symmetric matrix
@@ -1396,166 +1424,163 @@ namespace nvgraph {
    *  @return NVGRAPH error flag.
    */
   template <typename IndexType_, typename ValueType_>
-  NVGRAPH_ERROR computeLargestEigenvectors(const Matrix<IndexType_,ValueType_> & A,
-           IndexType_ nEigVecs,
-           IndexType_ maxIter,
-           IndexType_ restartIter,
-           ValueType_ tol,
-           bool reorthogonalize,
-           IndexType_ & iter,
-           ValueType_ * __restrict__ eigVals_dev,
-           ValueType_ * __restrict__ eigVecs_dev) {
-    
+  NVGRAPH_ERROR computeLargestEigenvectors(const Matrix<IndexType_, ValueType_> &A,
+                                           IndexType_ nEigVecs,
+                                           IndexType_ maxIter,
+                                           IndexType_ restartIter,
+                                           ValueType_ tol,
+                                           bool reorthogonalize,
+                                           IndexType_ &iter,
+                                           ValueType_ *__restrict__ eigVals_dev,
+                                           ValueType_ *__restrict__ eigVecs_dev)
+  {
+
     // CUDA stream
     //   TODO: handle non-zero streams
-    cudaStream_t stream = 0;
+    hipStream_t stream = 0;
 
     // Matrix dimension
     IndexType_ n = A.n;
 
     // Check that parameters are valid
-    if(A.m != A.n) {
+    if (A.m != A.n)
+    {
       WARNING("invalid parameter (matrix is not square)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(nEigVecs < 1) {
+    if (nEigVecs < 1)
+    {
       WARNING("invalid parameter (nEigVecs<1)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(restartIter < 1) {
+    if (restartIter < 1)
+    {
       WARNING("invalid parameter (restartIter<4)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(tol < 0) {
+    if (tol < 0)
+    {
       WARNING("invalid parameter (tol<0)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(nEigVecs > n) {
+    if (nEigVecs > n)
+    {
       WARNING("invalid parameters (nEigVecs>n)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(maxIter < nEigVecs) {
+    if (maxIter < nEigVecs)
+    {
       WARNING("invalid parameters (maxIter<nEigVecs)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
-    if(restartIter < nEigVecs) {
+    if (restartIter < nEigVecs)
+    {
       WARNING("invalid parameters (restartIter<nEigVecs)");
       return NVGRAPH_ERR_BAD_PARAMETERS;
     }
 
     // Allocate memory
-    ValueType_ * alpha_host = (ValueType_*) malloc(restartIter*sizeof(ValueType_));
-    ValueType_ * beta_host = (ValueType_*) malloc(restartIter*sizeof(ValueType_));
-    Vector<ValueType_> lanczosVecs_dev(n*(restartIter+1), stream);
-    Vector<ValueType_> work_dev((n+restartIter)*restartIter, stream);
+    ValueType_ *alpha_host = (ValueType_ *)malloc(restartIter * sizeof(ValueType_));
+    ValueType_ *beta_host = (ValueType_ *)malloc(restartIter * sizeof(ValueType_));
+    Vector<ValueType_> lanczosVecs_dev(n * (restartIter + 1), stream);
+    Vector<ValueType_> work_dev((n + restartIter) * restartIter, stream);
 
     // Perform Lanczos method
     IndexType_ effIter;
-    NVGRAPH_ERROR status
-      = computeLargestEigenvectors(&A, nEigVecs, maxIter, restartIter,
-            tol, reorthogonalize,
-            &effIter, &iter,
-            alpha_host, beta_host,
-            lanczosVecs_dev.raw(), work_dev.raw(),
-            eigVals_dev, eigVecs_dev);
+    NVGRAPH_ERROR status = computeLargestEigenvectors(&A, nEigVecs, maxIter, restartIter,
+                                                      tol, reorthogonalize,
+                                                      &effIter, &iter,
+                                                      alpha_host, beta_host,
+                                                      lanczosVecs_dev.raw(), work_dev.raw(),
+                                                      eigVals_dev, eigVecs_dev);
 
     // Clean up and return
     free(alpha_host);
     free(beta_host);
     return status;
-
   }
 
   // =========================================================
   // Explicit instantiation
   // =========================================================
 
-  template NVGRAPH_ERROR computeSmallestEigenvectors<int,float>
-  (const Matrix<int,float> * A,
-   int nEigVecs, int maxIter, int restartIter, float tol,
-   bool reorthogonalize,
-   int * iter, int * totalIter, float * shift,
-   float * __restrict__ alpha_host,
-   float * __restrict__ beta_host,
-   float * __restrict__ lanczosVecs_dev,
-   float * __restrict__ work_dev,
-   float * __restrict__ eigVals_dev,
-   float * __restrict__ eigVecs_dev);
-  template NVGRAPH_ERROR computeSmallestEigenvectors<int,double>
-  (const Matrix<int,double> * A,
-   int nEigVecs, int maxIter, int restartIter, double tol,
-   bool reorthogonalize,
-   int * iter, int * totalIter, double * shift,
-   double * __restrict__ alpha_host,
-   double * __restrict__ beta_host,
-   double * __restrict__ lanczosVecs_dev,
-   double * __restrict__ work_dev,
-   double * __restrict__ eigVals_dev,
-   double * __restrict__ eigVecs_dev);
-  template NVGRAPH_ERROR computeSmallestEigenvectors<int, float>
-  (const Matrix<int,float> & A,
-   int nEigVecs,
-   int maxIter,
-   int restartIter,
-   float tol,
-   bool reorthogonalize,
-   int & iter,
-   float * __restrict__ eigVals_dev,
-   float * __restrict__ eigVecs_dev);
-  template NVGRAPH_ERROR computeSmallestEigenvectors<int, double>
-  (const Matrix<int,double> & A,
-   int nEigVecs,
-   int maxIter,
-   int restartIter,
-   double tol,
-   bool reorthogonalize,
-   int & iter,
-   double * __restrict__ eigVals_dev,
-   double * __restrict__ eigVecs_dev);
+  template NVGRAPH_ERROR computeSmallestEigenvectors<int, float>(const Matrix<int, float> *A,
+                                                                 int nEigVecs, int maxIter, int restartIter, float tol,
+                                                                 bool reorthogonalize,
+                                                                 int *iter, int *totalIter, float *shift,
+                                                                 float *__restrict__ alpha_host,
+                                                                 float *__restrict__ beta_host,
+                                                                 float *__restrict__ lanczosVecs_dev,
+                                                                 float *__restrict__ work_dev,
+                                                                 float *__restrict__ eigVals_dev,
+                                                                 float *__restrict__ eigVecs_dev);
+  template NVGRAPH_ERROR computeSmallestEigenvectors<int, double>(const Matrix<int, double> *A,
+                                                                  int nEigVecs, int maxIter, int restartIter, double tol,
+                                                                  bool reorthogonalize,
+                                                                  int *iter, int *totalIter, double *shift,
+                                                                  double *__restrict__ alpha_host,
+                                                                  double *__restrict__ beta_host,
+                                                                  double *__restrict__ lanczosVecs_dev,
+                                                                  double *__restrict__ work_dev,
+                                                                  double *__restrict__ eigVals_dev,
+                                                                  double *__restrict__ eigVecs_dev);
+  template NVGRAPH_ERROR computeSmallestEigenvectors<int, float>(const Matrix<int, float> &A,
+                                                                 int nEigVecs,
+                                                                 int maxIter,
+                                                                 int restartIter,
+                                                                 float tol,
+                                                                 bool reorthogonalize,
+                                                                 int &iter,
+                                                                 float *__restrict__ eigVals_dev,
+                                                                 float *__restrict__ eigVecs_dev);
+  template NVGRAPH_ERROR computeSmallestEigenvectors<int, double>(const Matrix<int, double> &A,
+                                                                  int nEigVecs,
+                                                                  int maxIter,
+                                                                  int restartIter,
+                                                                  double tol,
+                                                                  bool reorthogonalize,
+                                                                  int &iter,
+                                                                  double *__restrict__ eigVals_dev,
+                                                                  double *__restrict__ eigVecs_dev);
 
-  template NVGRAPH_ERROR computeLargestEigenvectors<int,float>
-  (const Matrix<int,float> * A,
-   int nEigVecs, int maxIter, int restartIter, float tol,
-   bool reorthogonalize,
-   int * iter, int * totalIter,
-   float * __restrict__ alpha_host,
-   float * __restrict__ beta_host,
-   float * __restrict__ lanczosVecs_dev,
-   float * __restrict__ work_dev,
-   float * __restrict__ eigVals_dev,
-   float * __restrict__ eigVecs_dev);
-  template NVGRAPH_ERROR computeLargestEigenvectors<int,double>
-  (const Matrix<int,double> * A,
-   int nEigVecs, int maxIter, int restartIter, double tol,
-   bool reorthogonalize,
-   int * iter, int * totalIter,
-   double * __restrict__ alpha_host,
-   double * __restrict__ beta_host,
-   double * __restrict__ lanczosVecs_dev,
-   double * __restrict__ work_dev,
-   double * __restrict__ eigVals_dev,
-   double * __restrict__ eigVecs_dev);
-  template NVGRAPH_ERROR computeLargestEigenvectors<int, float>
-  (const Matrix<int,float> & A,
-   int nEigVecs,
-   int maxIter,
-   int restartIter,
-   float tol,
-   bool reorthogonalize,
-   int & iter,
-   float * __restrict__ eigVals_dev,
-   float * __restrict__ eigVecs_dev);
-  template NVGRAPH_ERROR computeLargestEigenvectors<int, double>
-  (const Matrix<int,double> & A,
-   int nEigVecs,
-   int maxIter,
-   int restartIter,
-   double tol,
-   bool reorthogonalize,
-   int & iter,
-   double * __restrict__ eigVals_dev,
-   double * __restrict__ eigVecs_dev);
+  template NVGRAPH_ERROR computeLargestEigenvectors<int, float>(const Matrix<int, float> *A,
+                                                                int nEigVecs, int maxIter, int restartIter, float tol,
+                                                                bool reorthogonalize,
+                                                                int *iter, int *totalIter,
+                                                                float *__restrict__ alpha_host,
+                                                                float *__restrict__ beta_host,
+                                                                float *__restrict__ lanczosVecs_dev,
+                                                                float *__restrict__ work_dev,
+                                                                float *__restrict__ eigVals_dev,
+                                                                float *__restrict__ eigVecs_dev);
+  template NVGRAPH_ERROR computeLargestEigenvectors<int, double>(const Matrix<int, double> *A,
+                                                                 int nEigVecs, int maxIter, int restartIter, double tol,
+                                                                 bool reorthogonalize,
+                                                                 int *iter, int *totalIter,
+                                                                 double *__restrict__ alpha_host,
+                                                                 double *__restrict__ beta_host,
+                                                                 double *__restrict__ lanczosVecs_dev,
+                                                                 double *__restrict__ work_dev,
+                                                                 double *__restrict__ eigVals_dev,
+                                                                 double *__restrict__ eigVecs_dev);
+  template NVGRAPH_ERROR computeLargestEigenvectors<int, float>(const Matrix<int, float> &A,
+                                                                int nEigVecs,
+                                                                int maxIter,
+                                                                int restartIter,
+                                                                float tol,
+                                                                bool reorthogonalize,
+                                                                int &iter,
+                                                                float *__restrict__ eigVals_dev,
+                                                                float *__restrict__ eigVecs_dev);
+  template NVGRAPH_ERROR computeLargestEigenvectors<int, double>(const Matrix<int, double> &A,
+                                                                 int nEigVecs,
+                                                                 int maxIter,
+                                                                 int restartIter,
+                                                                 double tol,
+                                                                 bool reorthogonalize,
+                                                                 int &iter,
+                                                                 double *__restrict__ eigVals_dev,
+                                                                 double *__restrict__ eigVecs_dev);
 
 }
-//#endif //NVGRAPH_PARTITION
-
+// #endif //NVGRAPH_PARTITION

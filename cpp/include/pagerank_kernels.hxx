@@ -15,9 +15,8 @@
  */
 #pragma once
 namespace nvgraph
-{	
-	template <typename ValueType_>
-    void update_dangling_nodes(int n, ValueType_* dangling_nodes, ValueType_ damping_factor,  cudaStream_t stream = 0);
+{
+    template <typename ValueType_>
+    void update_dangling_nodes(int n, ValueType_ *dangling_nodes, ValueType_ damping_factor, hipStream_t stream = 0);
 
 } // end namespace nvgraph
-

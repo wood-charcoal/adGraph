@@ -3,14 +3,14 @@
 // It also accepts any other gtest (1.7.0) default parameters.
 // Right now this application contains:
 // 1) Sanity Check tests - tests on simple examples with known answer (or known behaviour)
-// 2) Correctness checks tests - tests on real graph data, uses reference algorithm 
-//    (CPU code for SrSPMV and python scripts for other algorithms, see 
+// 2) Correctness checks tests - tests on real graph data, uses reference algorithm
+//    (CPU code for SrSPMV and python scripts for other algorithms, see
 //    python scripts here: //sw/gpgpu/nvgraph/test/ref/) with reference results, compares those two.
 //    It also measures performance of single algorithm C API call, enf enabled (see below)
-// 3) Corner cases tests - tests with some bad inputs, bad parameters, expects library to handle 
+// 3) Corner cases tests - tests with some bad inputs, bad parameters, expects library to handle
 //    it gracefully
 // 4) Stress tests - makes sure that library result is persistent throughout the library usage
-//    (a lot of C API calls). Also makes some assumptions and checks on memory usage during 
+//    (a lot of C API calls). Also makes some assumptions and checks on memory usage during
 //    this test.
 //
 // We can control what tests to launch by using gtest filters. For example:
@@ -23,7 +23,7 @@
 // Or, combination:
 //    ./nvgraph_capi_tests_traversal --gtest_filter=*Sanity*:*Correctness*
 //
-// Performance reports are provided in the ERIS format and disabled by default. 
+// Performance reports are provided in the ERIS format and disabled by default.
 // Could be enabled by adding '--perf' to the command line. I added this parameter to vlct
 //
 // Parameter '--stress-iters N', which gives multiplier (not an absolute value) for the number of launches for stress tests
@@ -39,7 +39,7 @@
 #include "readMatrix.hxx"
 #include "nvgraphP.h"
 #include "nvgraph.h"
-#include <nvgraph_experimental.h>  // experimental header, contains hidden API entries, can be shared only under special circumstances without reveling internal things
+#include <nvgraph_experimental.h> // experimental header, contains hidden API entries, can be shared only under special circumstances without reveling internal things
 
 #include "stdlib.h"
 #include <algorithm>
@@ -55,15 +55,15 @@ static int PERF = 0;
 #define PERF_ROWS_LIMIT 10000
 
 // number of repeats = multiplier/num_vertices
-#define Traversal_ITER_MULTIPLIER     30000000
+#define Traversal_ITER_MULTIPLIER 30000000
 
-template<typename T>
+template <typename T>
 struct nvgraph_Const;
 
-template<>
+template <>
 struct nvgraph_Const<int>
 {
-	static const cudaDataType_t Type = CUDA_R_32I;
+	static const hipblasDatatype_t Type = HIPBLAS_R_32I;
 	static const int inf;
 };
 const int nvgraph_Const<int>::inf = INT_MAX;
@@ -74,39 +74,41 @@ static std::string graph_data_prefix = "";
 // iterations for stress tests = this multiplier * iterations for perf tests
 static int STRESS_MULTIPLIER = 10;
 
-void offsetsToIndices(std::vector<int>& offsets, std::vector<int>& indices) {
+void offsetsToIndices(std::vector<int> &offsets, std::vector<int> &indices)
+{
 	int nnz = offsets.back();
 	indices.resize(nnz);
 	int n = offsets.size() - 1;
-	for (int row = 0; row < n; row++) {
+	for (int row = 0; row < n; row++)
+	{
 		for (int pos = offsets[row]; pos < offsets[row + 1]; pos++)
 			indices[pos] = row;
 	}
 }
 
 bool enough_device_memory(int n, int nnz, size_t add)
-									{
+{
 	size_t mtotal, mfree;
 	cudaMemGetInfo(&mfree, &mtotal);
-	if (mfree > add + sizeof(int) * (4 * n)) //graph + pred + distances + 2n (working data)
+	if (mfree > add + sizeof(int) * (4 * n)) // graph + pred + distances + 2n (working data)
 		return true;
 	return false;
 }
 
-std::string convert_to_local_path(const std::string& in_file)
-												{
+std::string convert_to_local_path(const std::string &in_file)
+{
 	std::string wstr = in_file;
 	if ((wstr != "dummy") & (wstr != ""))
-			{
+	{
 		std::string prefix;
 		if (graph_data_prefix.length() > 0)
-				{
+		{
 			prefix = graph_data_prefix;
 		}
 		else
 		{
 #ifdef _WIN32
-			//prefix = "C:\\mnt\\eris\\test\\matrices_collection\\";
+			// prefix = "C:\\mnt\\eris\\test\\matrices_collection\\";
 			prefix = "Z:\\matrices_collection\\";
 			std::replace(wstr.begin(), wstr.end(), '/', '\\');
 #else
@@ -119,12 +121,13 @@ std::string convert_to_local_path(const std::string& in_file)
 }
 
 void ref_bfs(int n,
-					int nnz,
-					int *rowPtr,
-					int *colInd,
-					int *mask,
-					int source_vertex,
-					int *distances) {
+			 int nnz,
+			 int *rowPtr,
+			 int *colInd,
+			 int *mask,
+			 int source_vertex,
+			 int *distances)
+{
 	for (int i = 0; i != n; ++i)
 		distances[i] = -1;
 
@@ -132,20 +135,22 @@ void ref_bfs(int n,
 	q.push(source_vertex);
 	distances[source_vertex] = 0;
 
-	while (!q.empty()) {
+	while (!q.empty())
+	{
 		int u = q.front();
 		q.pop();
 
-		for (int iCol = rowPtr[u]; iCol != rowPtr[u + 1]; ++iCol) {
+		for (int iCol = rowPtr[u]; iCol != rowPtr[u + 1]; ++iCol)
+		{
 			if (mask && !mask[iCol])
 				continue;
 			int v = colInd[iCol];
-			if (distances[v] == -1) { //undiscovered
+			if (distances[v] == -1)
+			{ // undiscovered
 				distances[v] = distances[u] + 1;
 				q.push(v);
 			}
 		}
-
 	}
 }
 
@@ -156,14 +161,13 @@ typedef struct Traversal_Usecase_t
 	bool useMask;
 	bool undirected;
 
-	Traversal_Usecase_t(const std::string& a, int b, bool _useMask = false, bool _undirected = false) :
-			source_vert(b), useMask(_useMask), undirected(_undirected) {
+	Traversal_Usecase_t(const std::string &a, int b, bool _useMask = false, bool _undirected = false) : source_vert(b), useMask(_useMask), undirected(_undirected)
+	{
 		graph_file = convert_to_local_path(a);
-	}
-	;
+	};
 
-	Traversal_Usecase_t& operator=(const Traversal_Usecase_t& rhs)
-												{
+	Traversal_Usecase_t &operator=(const Traversal_Usecase_t &rhs)
+	{
 		graph_file = rhs.graph_file;
 		source_vert = rhs.source_vert;
 		useMask = rhs.useMask;
@@ -173,19 +177,24 @@ typedef struct Traversal_Usecase_t
 
 //// Traversal tests
 
-class NVGraphCAPITests_2d_bfs: public ::testing::TestWithParam<Traversal_Usecase> {
+class NVGraphCAPITests_2d_bfs : public ::testing::TestWithParam<Traversal_Usecase>
+{
 public:
-	NVGraphCAPITests_2d_bfs() :
-			handle(NULL) {
+	NVGraphCAPITests_2d_bfs() : handle(NULL)
+	{
 	}
 
-	static void SetupTestCase() {
+	static void SetupTestCase()
+	{
 	}
-	static void TearDownTestCase() {
+	static void TearDownTestCase()
+	{
 	}
-	virtual void SetUp() {
-		if (handle == NULL) {
-			char* nvgraph_gpus = getenv("NVGRAPH_GPUS");
+	virtual void SetUp()
+	{
+		if (handle == NULL)
+		{
+			char *nvgraph_gpus = getenv("NVGRAPH_GPUS");
 			if (nvgraph_gpus)
 				printf("Value of NVGRAPH_GPUS=%s\n", nvgraph_gpus);
 			else
@@ -193,17 +202,18 @@ public:
 			std::vector<int32_t> gpus;
 			int32_t dummy;
 			std::stringstream ss(nvgraph_gpus);
-			while (ss >> dummy) {
+			while (ss >> dummy)
+			{
 				gpus.push_back(dummy);
 				if (ss.peek() == ',')
 					ss.ignore();
 			}
-			printf("There were %d devices found: ", (int) gpus.size());
+			printf("There were %d devices found: ", (int)gpus.size());
 			for (int i = 0; i < gpus.size(); i++)
 				std::cout << gpus[i] << "  ";
 			std::cout << "\n";
 
-			devices = (int32_t*) malloc(sizeof(int32_t) * gpus.size());
+			devices = (int32_t *)malloc(sizeof(int32_t) * gpus.size());
 			for (int i = 0; i < gpus.size(); i++)
 				devices[i] = gpus[i];
 			numDevices = gpus.size();
@@ -212,8 +222,10 @@ public:
 			ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 		}
 	}
-	virtual void TearDown() {
-		if (handle != NULL) {
+	virtual void TearDown()
+	{
+		if (handle != NULL)
+		{
 			status = nvgraphDestroy(handle);
 			ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			handle = NULL;
@@ -226,24 +238,23 @@ public:
 	int32_t *devices;
 	int32_t numDevices;
 
-	template<typename EdgeT>
-	void run_current_test(const Traversal_Usecase& param) {
-		const ::testing::TestInfo* const test_info =
-				::testing::UnitTest::GetInstance()->current_test_info();
+	template <typename EdgeT>
+	void run_current_test(const Traversal_Usecase &param)
+	{
+		const ::testing::TestInfo *const test_info =
+			::testing::UnitTest::GetInstance()->current_test_info();
 		std::stringstream ss;
 		ss << param.source_vert;
-		std::string test_id = std::string(test_info->test_case_name()) + std::string(".")
-				+ std::string(test_info->name()) + std::string("_") + getFileName(param.graph_file)
-				+ std::string("_") + ss.str().c_str();
+		std::string test_id = std::string(test_info->test_case_name()) + std::string(".") + std::string(test_info->name()) + std::string("_") + getFileName(param.graph_file) + std::string("_") + ss.str().c_str();
 
 		nvgraphTopologyType_t topo = NVGRAPH_2D_32I_32I;
 
 		nvgraphStatus_t status;
 
-		FILE* fpin = fopen(param.graph_file.c_str(), "rb");
-		ASSERT_TRUE(fpin != NULL)<< "Cannot read input graph file: " << param.graph_file << std::endl;
+		FILE *fpin = fopen(param.graph_file.c_str(), "rb");
+		ASSERT_TRUE(fpin != NULL) << "Cannot read input graph file: " << param.graph_file << std::endl;
 		int n, nnz;
-		//Read a network in amgx binary format
+		// Read a network in amgx binary format
 		ASSERT_EQ(read_header_amgx_csr_bin(fpin, n, nnz), 0);
 		std::vector<int> read_row_ptr(n + 1), read_col_ind(nnz);
 		std::vector<EdgeT> csr_read_val(nnz);
@@ -255,17 +266,18 @@ public:
 
 		std::vector<int> csr_mask(nnz, 1);
 
-		if (param.useMask) {
-			//Generating a mask
-			//Should be improved
+		if (param.useMask)
+		{
+			// Generating a mask
+			// Should be improved
 			for (int i = 0; i < nnz; i += 2)
 				csr_mask[i] = 0;
 		}
 
 		if (!enough_device_memory(n, nnz, sizeof(int) * (read_row_ptr.size() + read_col_ind.size())))
-													{
+		{
 			std::cout << "[  WAIVED  ] " << test_info->test_case_name() << "." << test_info->name()
-					<< std::endl;
+					  << std::endl;
 			return;
 		}
 
@@ -274,36 +286,37 @@ public:
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
 		// set up graph
-		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, &row_ind[0], &read_col_ind[0], CUDA_R_32I,
-		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
-		status = nvgraphSetGraphStructure(handle, g1, (void*) &topology, topo);
+		int32_t blockN = std::max(2, (int)ceil(sqrt(numDevices)));
+		nvgraph2dCOOTopology32I_st topology = {n, nnz, &row_ind[0], &read_col_ind[0], HIPBLAS_R_32I,
+											   NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT};
+		status = nvgraphSetGraphStructure(handle, g1, (void *)&topology, topo);
 
 		// set up graph data
 		std::vector<int> calculated_distances_res(n);
 		std::vector<int> calculated_predecessors_res(n);
 
-//		if (param.useMask) {
-//			status = nvgraphAllocateEdgeData(handle, g1, numsets_e, type_e);
-//			ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-//		}
+		//		if (param.useMask) {
+		//			status = nvgraphAllocateEdgeData(handle, g1, numsets_e, type_e);
+		//			ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
+		//		}
 
 		int source_vert = param.source_vert;
 
-		if (param.useMask) {
-			//if we need to use a mask
-			//Copying mask into graph
+		if (param.useMask)
+		{
+			// if we need to use a mask
+			// Copying mask into graph
 
-			//status = nvgraphSetEdgeData(handle, g1, &csr_mask[0], 0);
-			//ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
-			//nvgraphTraversalSetEdgeMaskIndex(&traversal_param, 0);
+			// status = nvgraphSetEdgeData(handle, g1, &csr_mask[0], 0);
+			// ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
+			// nvgraphTraversalSetEdgeMaskIndex(&traversal_param, 0);
 		}
 
 		status = nvgraph2dBfs(handle,
-										g1,
-										source_vert,
-										&calculated_distances_res[0],
-										&calculated_predecessors_res[0]);
+							  g1,
+							  source_vert,
+							  &calculated_distances_res[0],
+							  &calculated_predecessors_res[0]);
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 		cudaDeviceSynchronize();
 
@@ -313,19 +326,19 @@ public:
 			start = second();
 			int repeat = 30;
 			for (int i = 0; i < repeat; i++)
-					{
+			{
 				status = nvgraph2dBfs(handle,
-												g1,
-												source_vert,
-												&calculated_distances_res[0],
-												&calculated_predecessors_res[0]);
+									  g1,
+									  source_vert,
+									  &calculated_distances_res[0],
+									  &calculated_predecessors_res[0]);
 				ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			}
 			cudaDeviceSynchronize();
 			stop = second();
 			printf("&&&& PERF Time_%s %10.8f -ms\n",
-						test_id.c_str(),
-						1000.0 * (stop - start) / repeat);
+				   test_id.c_str(),
+				   1000.0 * (stop - start) / repeat);
 		}
 
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -333,33 +346,37 @@ public:
 		// check with reference
 		std::vector<int> expected_distances_res(n);
 		ref_bfs(n,
-					nnz,
-					&read_row_ptr[0],
-					&read_col_ind[0],
-					&csr_mask[0],
-					source_vert,
-					&expected_distances_res[0]);
-		//Checking distances
-//		int wrong = 0;
-//		for (int i = 0; i < n; i++) {
-//			if (expected_distances_res[i] != calculated_distances_res[i]) {
-//				wrong++;
-//				std::cout << "Error at " << i << " expected " << expected_distances_res[i] << " actual "
-//						<< calculated_distances_res[i] << "\n";
-//			}
-//		}
-//		std::cout << wrong << "/" << n << " distances are incorrect.\n";
+				nnz,
+				&read_row_ptr[0],
+				&read_col_ind[0],
+				&csr_mask[0],
+				source_vert,
+				&expected_distances_res[0]);
+		// Checking distances
+		//		int wrong = 0;
+		//		for (int i = 0; i < n; i++) {
+		//			if (expected_distances_res[i] != calculated_distances_res[i]) {
+		//				wrong++;
+		//				std::cout << "Error at " << i << " expected " << expected_distances_res[i] << " actual "
+		//						<< calculated_distances_res[i] << "\n";
+		//			}
+		//		}
+		//		std::cout << wrong << "/" << n << " distances are incorrect.\n";
 		for (int i = 0; i < n; ++i)
-				{
-			ASSERT_EQ(expected_distances_res[i], calculated_distances_res[i])<< "Wrong distance from source in row #" << i << " graph " << param.graph_file << " source_vert=" << source_vert<< "\n";
+		{
+			ASSERT_EQ(expected_distances_res[i], calculated_distances_res[i]) << "Wrong distance from source in row #" << i << " graph " << param.graph_file << " source_vert=" << source_vert << "\n";
 		}
 
-		//Checking predecessors
-		for (int i = 0; i < n; ++i) {
-			if (calculated_predecessors_res[i] != -1) {
-				ASSERT_EQ(expected_distances_res[i], expected_distances_res[calculated_predecessors_res[i]] + 1)<< "Wrong predecessor in row #" << i << " graph " << param.graph_file << " source_vert=" << source_vert<< "\n";
-			} else {
-				ASSERT_TRUE(expected_distances_res[i] == 0 || expected_distances_res[i] == -1) << "Wrong predecessor in row #" << i << " graph " << param.graph_file << " source_vert=" << source_vert<< "\n";
+		// Checking predecessors
+		for (int i = 0; i < n; ++i)
+		{
+			if (calculated_predecessors_res[i] != -1)
+			{
+				ASSERT_EQ(expected_distances_res[i], expected_distances_res[calculated_predecessors_res[i]] + 1) << "Wrong predecessor in row #" << i << " graph " << param.graph_file << " source_vert=" << source_vert << "\n";
+			}
+			else
+			{
+				ASSERT_TRUE(expected_distances_res[i] == 0 || expected_distances_res[i] == -1) << "Wrong predecessor in row #" << i << " graph " << param.graph_file << " source_vert=" << source_vert << "\n";
 			}
 		}
 
@@ -368,11 +385,13 @@ public:
 	}
 };
 
-TEST_P(NVGraphCAPITests_2d_bfs, CheckResult) {
+TEST_P(NVGraphCAPITests_2d_bfs, CheckResult)
+{
 	run_current_test<float>(GetParam());
-}			/// Few sanity checks.
+} /// Few sanity checks.
 
-class NVGraphCAPITests_2d_bfs_Sanity: public ::testing::Test {
+class NVGraphCAPITests_2d_bfs_Sanity : public ::testing::Test
+{
 public:
 	nvgraphStatus_t status;
 	nvgraphHandle_t handle;
@@ -380,22 +399,26 @@ public:
 	int n;
 	int nnz;
 	nvgraphGraphDescr_t g1;
-	int32_t* devices;
+	int32_t *devices;
 	int32_t numDevices;
 
-	NVGraphCAPITests_2d_bfs_Sanity() :
-			handle(NULL) {
+	NVGraphCAPITests_2d_bfs_Sanity() : handle(NULL)
+	{
 	}
 
-	static void SetupTestCase() {
+	static void SetupTestCase()
+	{
 	}
-	static void TearDownTestCase() {
+	static void TearDownTestCase()
+	{
 	}
-	virtual void SetUp() {
+	virtual void SetUp()
+	{
 		topo = NVGRAPH_2D_32I_32I;
 		nvgraphStatus_t status;
-		if (handle == NULL) {
-			char* nvgraph_gpus = getenv("NVGRAPH_GPUS");
+		if (handle == NULL)
+		{
+			char *nvgraph_gpus = getenv("NVGRAPH_GPUS");
 			if (nvgraph_gpus)
 				printf("Value of NVGRAPH_GPUS=%s\n", nvgraph_gpus);
 			else
@@ -403,17 +426,18 @@ public:
 			std::vector<int32_t> gpus;
 			int32_t dummy;
 			std::stringstream ss(nvgraph_gpus);
-			while (ss >> dummy) {
+			while (ss >> dummy)
+			{
 				gpus.push_back(dummy);
 				if (ss.peek() == ',')
 					ss.ignore();
 			}
-			printf("There were %d devices found: ", (int) gpus.size());
+			printf("There were %d devices found: ", (int)gpus.size());
 			for (int i = 0; i < gpus.size(); i++)
 				std::cout << gpus[i] << "  ";
 			std::cout << "\n";
 
-			devices = (int32_t*) malloc(sizeof(int32_t) * gpus.size());
+			devices = (int32_t *)malloc(sizeof(int32_t) * gpus.size());
 			for (int i = 0; i < gpus.size(); i++)
 				devices[i] = gpus[i];
 			numDevices = gpus.size();
@@ -422,17 +446,19 @@ public:
 			ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 		}
 	}
-	virtual void TearDown() {
-		if (handle != NULL) {
+	virtual void TearDown()
+	{
+		if (handle != NULL)
+		{
 			status = nvgraphDestroy(handle);
 			ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 			handle = NULL;
 		}
 	}
 
-	template<typename EdgeT>
-	void prepare_and_run(nvgraph2dCOOTopology32I_st& topo_st, int* expected)
-								{
+	template <typename EdgeT>
+	void prepare_and_run(nvgraph2dCOOTopology32I_st &topo_st, int *expected)
+	{
 		g1 = NULL;
 		status = nvgraphCreateGraphDescr(handle, &g1);
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
@@ -440,7 +466,7 @@ public:
 		// set up graph
 		n = topo_st.nvertices;
 		nnz = topo_st.nedges;
-		status = nvgraphSetGraphStructure(handle, g1, (void*) &topo_st, topo);
+		status = nvgraphSetGraphStructure(handle, g1, (void *)&topo_st, topo);
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 		int source_vert = 0;
 
@@ -451,9 +477,10 @@ public:
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 
 		// Check results against reference implementation
-		for (int row = 0; row < n; row++) {
-			int reference_res = (int) expected[row];
-			int nvgraph_res = (int) calculated_dist[row];
+		for (int row = 0; row < n; row++)
+		{
+			int reference_res = (int)expected[row];
+			int nvgraph_res = (int)calculated_dist[row];
 			ASSERT_EQ(reference_res, nvgraph_res);
 		}
 
@@ -461,82 +488,87 @@ public:
 		ASSERT_EQ(NVGRAPH_STATUS_SUCCESS, status);
 	}
 
-// cycle graph, shortest path = vertex number
-	template<typename EdgeT>
+	// cycle graph, shortest path = vertex number
+	template <typename EdgeT>
 	void run_cycle_test()
 	{
 		n = 1024;
 		nnz = n;
 		std::vector<int> offsets(n + 1), neighborhood(n);
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++)
+		{
 			offsets[i] = i;
 			neighborhood[i] = (i + 1) % n;
 		}
 		offsets[n] = n;
 		std::vector<int> expected_res(n, nvgraph_Const<int>::inf);
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++)
+		{
 			expected_res[i] = i;
 		}
-		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, &offsets[0], &neighborhood[0], CUDA_R_32I,
-		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
+		int32_t blockN = std::max(2, (int)ceil(sqrt(numDevices)));
+		nvgraph2dCOOTopology32I_st topology = {n, nnz, &offsets[0], &neighborhood[0], HIPBLAS_R_32I,
+											   NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT};
 
 		prepare_and_run<EdgeT>(topology, &expected_res[0]);
 		free(devices);
 	}
 
-	template<typename EdgeT>
+	template <typename EdgeT>
 	void run_cycle_test_undirected()
 	{
 		n = 16;
 		nnz = n * 2;
 		std::vector<int> offsets(n + 1), neighborhood(nnz);
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++)
+		{
 			offsets[i] = i * 2;
 			neighborhood[i * 2] = (i - 1 + n) % n;
 			neighborhood[i * 2 + 1] = (i + 1 + n) % n;
 		}
 		offsets[n] = nnz;
 		std::vector<int> expected_res(n, nvgraph_Const<int>::inf);
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++)
+		{
 			expected_res[i] = i;
 		}
-		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, &offsets[0], &neighborhood[0], CUDA_R_32I,
-		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
+		int32_t blockN = std::max(2, (int)ceil(sqrt(numDevices)));
+		nvgraph2dCOOTopology32I_st topology = {n, nnz, &offsets[0], &neighborhood[0], HIPBLAS_R_32I,
+											   NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT};
 
 		prepare_and_run<EdgeT>(topology, &expected_res[0]);
 		free(devices);
 	}
 
-	template<typename EdgeT>
-	void run_block_skip_test() {
+	template <typename EdgeT>
+	void run_block_skip_test()
+	{
 		n = 10;
 		nnz = 4;
-		int rowIndices[4] = { 0, 1, 5, 6 };
-		int columnIndices[4] = { 1, 5, 6, 3 };
-		int expected[10] = { 0, 1, -1, 4, -1, 2, 3, -1, -1, -1 };
-		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, rowIndices, columnIndices, CUDA_R_32I,
-		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
+		int rowIndices[4] = {0, 1, 5, 6};
+		int columnIndices[4] = {1, 5, 6, 3};
+		int expected[10] = {0, 1, -1, 4, -1, 2, 3, -1, -1, -1};
+		int32_t blockN = std::max(2, (int)ceil(sqrt(numDevices)));
+		nvgraph2dCOOTopology32I_st topology = {n, nnz, rowIndices, columnIndices, HIPBLAS_R_32I,
+											   NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT};
 		prepare_and_run<EdgeT>(topology, expected);
 		free(devices);
 	}
 
-	template<typename EdgeT>
-	void run_multi_path_test() {
+	template <typename EdgeT>
+	void run_multi_path_test()
+	{
 		n = 10;
 		nnz = 6;
-		int rowIndices[6] = { 0, 0, 1, 5, 5, 6 };
-		int columnIndices[6] = { 1, 5, 6, 6, 9, 9 };
-		int expected[10] = { 0, 1, -1, -1, -1, 1, 2, -1, -1, 2 };
-		int32_t blockN = std::max(2,(int)ceil(sqrt(numDevices)));
-		nvgraph2dCOOTopology32I_st topology = { n, nnz, rowIndices, columnIndices, CUDA_R_32I,
-		NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT };
+		int rowIndices[6] = {0, 0, 1, 5, 5, 6};
+		int columnIndices[6] = {1, 5, 6, 6, 9, 9};
+		int expected[10] = {0, 1, -1, -1, -1, 1, 2, -1, -1, 2};
+		int32_t blockN = std::max(2, (int)ceil(sqrt(numDevices)));
+		nvgraph2dCOOTopology32I_st topology = {n, nnz, rowIndices, columnIndices, HIPBLAS_R_32I,
+											   NULL, numDevices, devices, blockN, NVGRAPH_DEFAULT};
 		prepare_and_run<EdgeT>(topology, expected);
 		free(devices);
 	}
-
 };
 
 TEST_F(NVGraphCAPITests_2d_bfs_Sanity, SanityCycle)
@@ -544,11 +576,13 @@ TEST_F(NVGraphCAPITests_2d_bfs_Sanity, SanityCycle)
 	run_cycle_test<float>();
 }
 
-TEST_F(NVGraphCAPITests_2d_bfs_Sanity, BlockSkip) {
+TEST_F(NVGraphCAPITests_2d_bfs_Sanity, BlockSkip)
+{
 	run_block_skip_test<float>();
 }
 
-TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath) {
+TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath)
+{
 	run_multi_path_test<float>();
 }
 
@@ -609,7 +643,7 @@ TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath) {
 //			int* devices = (int*)malloc(sizeof(int) * 2);
 //			devices[0] = 0;
 //			devices[1] = 1;
-//			nvgraph2dCOOTopology32I_st topology = {n, nnz, &read_row_ptr[0], &read_col_ind[0], CUDA_R_32I, NULL, 2, devices, 2, NVGRAPH_DEFAULT};
+//			nvgraph2dCOOTopology32I_st topology = {n, nnz, &read_row_ptr[0], &read_col_ind[0], HIPBLAS_R_32I, NULL, 2, devices, 2, NVGRAPH_DEFAULT};
 //			status = nvgraphSetGraphStructure(handle, g1, (void*) &topology, topo);
 //			free(devices);
 //
@@ -692,47 +726,25 @@ TEST_F(NVGraphCAPITests_2d_bfs_Sanity, MultiPath) {
 //		run_current_test<float>(GetParam());
 //	}
 
-// instatiation of the performance/correctness checks 
+// instatiation of the performance/correctness checks
 
 INSTANTIATE_TEST_CASE_P(CorrectnessCheck,
-								NVGraphCAPITests_2d_bfs,
-								//                                  graph FILE                                                  source vert #    file with expected result (in binary?)
-								::testing::Values(
-								Traversal_Usecase("graphs/cage/cage13_T.mtx.bin", 0)
-								, Traversal_Usecase("graphs/cage/cage13_T.mtx.bin", 10)
-								, Traversal_Usecase("graphs/cage/cage14_T.mtx.bin", 0)
-								, Traversal_Usecase("graphs/cage/cage14_T.mtx.bin", 10)
-								, Traversal_Usecase("graphs/small/small.bin", 0)
-								, Traversal_Usecase("graphs/small/small.bin", 0)
-								, Traversal_Usecase("graphs/small/small.bin", 3)
-								, Traversal_Usecase("graphs/dblp/dblp.bin", 0, false, true)
-								, Traversal_Usecase("graphs/dblp/dblp.bin", 100, false, true)
-								, Traversal_Usecase("graphs/dblp/dblp.bin", 1000, false, true)
-								, Traversal_Usecase("graphs/dblp/dblp.bin", 100000, false, true)
-								, Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 0)
-								, Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 100)
-								, Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 10000)
-								, Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 100000)
-								, Traversal_Usecase("graphs/Wikipedia/2011/wiki2011.bin", 1)
-								, Traversal_Usecase("graphs/Wikipedia/2011/wiki2011.bin", 1000)
-								, Traversal_Usecase("dimacs10/road_usa_T.mtx.bin", 100)
-								, Traversal_Usecase("graphs/Twitter/twitter.bin", 0)
-								, Traversal_Usecase("graphs/Twitter/twitter.bin", 100)
-								, Traversal_Usecase("graphs/Twitter/twitter.bin", 10000)
-								, Traversal_Usecase("graphs/Twitter/twitter.bin", 3000000)
-								, Traversal_Usecase("dimacs10/hugebubbles-00020_T.mtx.bin", 100000)
-								//					/// instances using mask
-//					, Traversal_Usecase("graphs/small/small.bin", 0, true)
-//					, Traversal_Usecase("graphs/small/small.bin", 0, true)
-//					, Traversal_Usecase("graphs/small/small.bin", 3, true)
-//					, Traversal_Usecase("graphs/dblp/dblp.bin", 0, true)
-//					, Traversal_Usecase("graphs/dblp/dblp.bin", 100, true)
-//					, Traversal_Usecase("graphs/dblp/dblp.bin", 1000, true)
-//					, Traversal_Usecase("graphs/dblp/dblp.bin", 100000, true)
-//					, Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 0, true)
-								)
+						NVGraphCAPITests_2d_bfs,
+						//                                  graph FILE                                                  source vert #    file with expected result (in binary?)
+						::testing::Values(
+							Traversal_Usecase("graphs/cage/cage13_T.mtx.bin", 0), Traversal_Usecase("graphs/cage/cage13_T.mtx.bin", 10), Traversal_Usecase("graphs/cage/cage14_T.mtx.bin", 0), Traversal_Usecase("graphs/cage/cage14_T.mtx.bin", 10), Traversal_Usecase("graphs/small/small.bin", 0), Traversal_Usecase("graphs/small/small.bin", 0), Traversal_Usecase("graphs/small/small.bin", 3), Traversal_Usecase("graphs/dblp/dblp.bin", 0, false, true), Traversal_Usecase("graphs/dblp/dblp.bin", 100, false, true), Traversal_Usecase("graphs/dblp/dblp.bin", 1000, false, true), Traversal_Usecase("graphs/dblp/dblp.bin", 100000, false, true), Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 0), Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 100), Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 10000), Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 100000), Traversal_Usecase("graphs/Wikipedia/2011/wiki2011.bin", 1), Traversal_Usecase("graphs/Wikipedia/2011/wiki2011.bin", 1000), Traversal_Usecase("dimacs10/road_usa_T.mtx.bin", 100), Traversal_Usecase("graphs/Twitter/twitter.bin", 0), Traversal_Usecase("graphs/Twitter/twitter.bin", 100), Traversal_Usecase("graphs/Twitter/twitter.bin", 10000), Traversal_Usecase("graphs/Twitter/twitter.bin", 3000000), Traversal_Usecase("dimacs10/hugebubbles-00020_T.mtx.bin", 100000)
+							//					/// instances using mask
+							//					, Traversal_Usecase("graphs/small/small.bin", 0, true)
+							//					, Traversal_Usecase("graphs/small/small.bin", 0, true)
+							//					, Traversal_Usecase("graphs/small/small.bin", 3, true)
+							//					, Traversal_Usecase("graphs/dblp/dblp.bin", 0, true)
+							//					, Traversal_Usecase("graphs/dblp/dblp.bin", 100, true)
+							//					, Traversal_Usecase("graphs/dblp/dblp.bin", 1000, true)
+							//					, Traversal_Usecase("graphs/dblp/dblp.bin", 100000, true)
+							//					, Traversal_Usecase("graphs/Wikipedia/2003/wiki2003.bin", 0, true)
+							)
 
-								);
+);
 
 //	INSTANTIATE_TEST_CASE_P(StressTest,
 //			NVGraphCAPITests_Traversal_Stress,
@@ -742,10 +754,10 @@ INSTANTIATE_TEST_CASE_P(CorrectnessCheck,
 //	);
 
 int main(int argc, char **argv)
-			{
+{
 
 	for (int i = 0; i < argc; i++)
-			{
+	{
 		if (strcmp(argv[i], "--perf") == 0)
 			PERF = 1;
 		if (strcmp(argv[i], "--stress-iters") == 0)

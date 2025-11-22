@@ -16,29 +16,32 @@
 
 #pragma once
 
-
 class AsyncEvent
 {
-    public:
-        AsyncEvent() : async_event(NULL) { }
-        AsyncEvent(int size) : async_event(NULL) { cudaEventCreate(&async_event); }
-        ~AsyncEvent() { if (async_event != NULL) cudaEventDestroy(async_event); }
+public:
+    AsyncEvent() : async_event(NULL) {}
+    AsyncEvent(int size) : async_event(NULL) { hipEventCreate(&async_event); }
+    ~AsyncEvent()
+    {
+        if (async_event != NULL)
+            hipEventDestroy(async_event);
+    }
 
-        void create() { cudaEventCreate(&async_event); }
-        void record(cudaStream_t s = 0)
+    void create() { hipEventCreate(&async_event); }
+    void record(hipStream_t s = 0)
+    {
+        if (async_event == NULL)
         {
-            if (async_event == NULL)
-            {
-                cudaEventCreate(&async_event);    // check if we haven't created the event yet
-            }
+            hipEventCreate(&async_event); // check if we haven't created the event yet
+        }
 
-            cudaEventRecord(async_event, s);
-        }
-        void sync()
-        {
-            cudaEventSynchronize(async_event);
-        }
-    private:
-        cudaEvent_t async_event;
+        hipEventRecord(async_event, s);
+    }
+    void sync()
+    {
+        hipEventSynchronize(async_event);
+    }
+
+private:
+    hipEvent_t async_event;
 };
-

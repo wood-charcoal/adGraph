@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #pragma once
 
 #include <csr_graph.hxx>
@@ -28,46 +28,50 @@
 namespace nvgraph
 {
 
-namespace triangles_counting
-{
+    namespace triangles_counting
+    {
 
+        typedef enum
+        {
+            TCOUNT_DEFAULT,
+            TCOUNT_BSH,
+            TCOUNT_B2B,
+            TCOUNT_WRP,
+            TCOUNT_THR
+        } TrianglesCountAlgo;
 
-typedef enum { TCOUNT_DEFAULT, TCOUNT_BSH, TCOUNT_B2B, TCOUNT_WRP, TCOUNT_THR } TrianglesCountAlgo;
+        template <typename IndexType>
+        class TrianglesCount
+        {
+        private:
+            // CsrGraph <IndexType>& m_last_graph ;
+            AsyncEvent m_event;
+            uint64_t m_triangles_number;
+            spmat_t<IndexType> m_mat;
+            int m_dev_id;
+            cudaDeviceProp m_dev_props;
 
+            Vector<IndexType> m_seq;
 
-template <typename IndexType>
-class TrianglesCount 
-{
-private:
-    //CsrGraph <IndexType>& m_last_graph ;
-    AsyncEvent          m_event;
-    uint64_t            m_triangles_number;
-    spmat_t<IndexType>  m_mat;
-    int                 m_dev_id;
-    cudaDeviceProp      m_dev_props;
+            hipStream_t m_stream;
 
-    Vector<IndexType>   m_seq;
+            bool m_done;
 
-    cudaStream_t        m_stream;
+            void tcount_bsh();
+            void tcount_b2b();
+            void tcount_wrp();
+            void tcount_thr();
 
-    bool m_done;
+        public:
+            // Simple constructor
+            TrianglesCount(const CsrGraph<IndexType> &graph, hipStream_t stream = NULL, int device_id = -1);
+            // Simple destructor
+            ~TrianglesCount();
 
-    void tcount_bsh();
-    void tcount_b2b();
-    void tcount_wrp();
-    void tcount_thr();
+            NVGRAPH_ERROR count(TrianglesCountAlgo algo = TCOUNT_DEFAULT);
+            inline uint64_t get_triangles_count() const { return m_triangles_number; }
+        };
 
-public:
-    // Simple constructor 
-    TrianglesCount(const CsrGraph <IndexType>& graph, cudaStream_t stream = NULL, int device_id = -1);
-    // Simple destructor
-    ~TrianglesCount();
-
-    NVGRAPH_ERROR count(TrianglesCountAlgo algo = TCOUNT_DEFAULT );
-    inline uint64_t get_triangles_count() const {return m_triangles_number;}
-};
-
-} // end namespace triangles_counting
+    } // end namespace triangles_counting
 
 } // end namespace nvgraph
-

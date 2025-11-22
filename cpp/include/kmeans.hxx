@@ -17,7 +17,8 @@
 
 #include "nvgraph_error.hxx"
 
-namespace nvgraph {
+namespace nvgraph
+{
 
   /// Find clusters with k-means algorithm
   /** Initial centroids are chosen with k-means++ algorithm. Empty
@@ -26,7 +27,7 @@ namespace nvgraph {
    *
    *  CNMEM must be initialized before calling this function.
    *
-   *  @param cublasHandle_t cuBLAS handle.
+   *  @param hipblasHandle_t cuBLAS handle.
    *  @param n Number of observation vectors.
    *  @param d Dimension of observation vectors.
    *  @param k Number of clusters.
@@ -45,11 +46,11 @@ namespace nvgraph {
    */
   template <typename IndexType_, typename ValueType_>
   NVGRAPH_ERROR kmeans(IndexType_ n, IndexType_ d, IndexType_ k,
-		    ValueType_ tol, IndexType_ maxiter,
-		    const ValueType_ * __restrict__ obs,
-		    IndexType_ * __restrict__ codes,
-		    ValueType_ & residual,
-		    IndexType_ & iters);
+                       ValueType_ tol, IndexType_ maxiter,
+                       const ValueType_ *__restrict__ obs,
+                       IndexType_ *__restrict__ codes,
+                       ValueType_ &residual,
+                       IndexType_ &iters);
 
   /// Find clusters with k-means algorithm
   /** Initial centroids are chosen with k-means++ algorithm. Empty
@@ -85,15 +86,14 @@ namespace nvgraph {
    */
   template <typename IndexType_, typename ValueType_>
   NVGRAPH_ERROR kmeans(IndexType_ n, IndexType_ d, IndexType_ k,
-		    ValueType_ tol, IndexType_ maxiter,
-		    const ValueType_ * __restrict__ obs,
-		    IndexType_ * __restrict__ codes,
-		    IndexType_ * __restrict__ clusterSizes,
-		    ValueType_ * __restrict__ centroids,
-		    ValueType_ * __restrict__ work,
-		    IndexType_ * __restrict__ work_int,
-		    ValueType_ * residual_host,
-		    IndexType_ * iters_host);
+                       ValueType_ tol, IndexType_ maxiter,
+                       const ValueType_ *__restrict__ obs,
+                       IndexType_ *__restrict__ codes,
+                       IndexType_ *__restrict__ clusterSizes,
+                       ValueType_ *__restrict__ centroids,
+                       ValueType_ *__restrict__ work,
+                       IndexType_ *__restrict__ work_int,
+                       ValueType_ *residual_host,
+                       IndexType_ *iters_host);
 
 }
-
