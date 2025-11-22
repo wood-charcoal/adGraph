@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//#define NEW_CSRMV
 
 #include "valued_csr_graph.hxx"
 #include "nvgraph_vector.hxx"
@@ -22,10 +21,6 @@
 #include "nvgraph_error.hxx"
 #include "pagerank.hxx"
 #include "pagerank_kernels.hxx"
-#ifdef NEW_CSRMV
-#include "csrmv_cub.h"
-#include "cub_semiring/cub.cuh"
-#endif
 #include "nvgraph_csrmv.hxx"
 #include <algorithm>
 #include <iomanip>
@@ -102,22 +97,6 @@ bool Pagerank<IndexType_, ValueType_>::solve_it()
         Cublas::scal(n, (ValueType_)1.0/Cublas::nrm2(n, tmp, inc) , tmp, inc);
     
     //spmv : pr = network * tmp
-#ifdef NEW_CSRMV
-    ValueType_ alpha = cub_semiring::cub::PlusTimesSemiring<ValueType_>::times_ident(); // 1.
-    ValueType_ beta = cub_semiring::cub::PlusTimesSemiring<ValueType_>::times_null(); // 0.
-    SemiringDispatch<IndexType_, ValueType_>::template Dispatch< cub_semiring::cub::PlusTimesSemiring<ValueType_> >(
-        m_network.get_raw_values(),
-        m_network.get_raw_row_offsets(),
-        m_network.get_raw_column_indices(),
-        tmp,
-        pr,
-        alpha,
-        beta, 
-        n,
-        n,
-        nnz,
-        m_stream);
-#else
     ValueType_  alpha = 1.0, beta =0.0;
 #if __cplusplus > 199711L
     Semiring SR = Semiring::PlusTimes;
