@@ -18,6 +18,7 @@
 .apdisk
 .Icon?
 
+# Log files
 *.log
-
 *.out
+!test/*/*.log
