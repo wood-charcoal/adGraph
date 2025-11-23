@@ -18,7 +18,7 @@
 #include <hip/hip_runtime.h>
 #include <hipblas.h>
 #include <hiprand.h>
-#include <cusolverDn.h>
+#include <hipsolver.h>
 #include <hipsparse.h>
 
 #include "nvgraph_vector.hxx"
