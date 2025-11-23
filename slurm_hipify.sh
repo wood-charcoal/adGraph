@@ -1,9 +1,33 @@
 #!/bin/bash
+#SBATCH -J hipify
+#SBATCH -p kshdexcluxd
+#SBATCH -N 1
+#SBATCH -n 32
+#SBATCH -o %j-%x.log
+#SBATCH -e %j-%x.log
 
-SOURCE_DIR="adGraph"
-TARGET_ROOT="adGraph_hip"
-# 设置最大并发进程数 (推荐 CPU 核心数的 1~2 倍)
-MAX_THREADS=32
+echo "SLURM_JOB_NODELIST=${SLURM_JOB_NODELIST}"
+echo "SLURM_NODELIST=${SLURM_NODELIST}"
+
+cd ${SLURM_SUBMIT_DIR}
+
+module purge
+module load compiler/gcc/8.2.0
+module load compiler/dtk/24.04
+module load nvidia/cuda/11.3            # must load CUDA module
+module load compiler/cmake/3.23.3
+module list
+
+export DTK_ROOT=/public/software/compiler/rocm/dtk-24.04
+export CXX=/public/software/compiler/gcc-8.2.0/bin/g++
+export CUDA_TOOLKIT_ROOT_DIR=/public/software/compiler/nvidia/cuda/11.3.0
+export CMAKE_CUDA_COMPILER=/public/software/compiler/nvidia/cuda/11.3.0/bin/nvcc
+export PATH=$DTK_ROOT/hip/bin/hipify:/public/software/compiler/gcc-8.2.0/bin:$PATH  # ensure hipify-perl is in PATH
+export LD_LIBRARY_PATH=/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
+
+SOURCE_DIR=${1:-"./cpp/thirdparty/cnmem"}
+TARGET_ROOT=${2:-"./cpp/thirdparty/cnmem_hipify"}
+MAX_THREADS=8 
 
 # -------------------------- 函数定义 --------------------------
 
@@ -18,47 +42,32 @@ process_file() {
 
     # 1. 获取文件的原始相对路径
     relative_path="${source_file_path#$SOURCE_DIR/}"
+    target_file_path="$TARGET_ROOT/$relative_path"
     
-    # 2. 确定目标文件的新后缀名和操作类型 (转换或复制)
+    # 2. 检查后缀名，确定操作类型
     extension="${source_file_path##*.}"
-    target_ext=""
-    operation="COPY"
+    # 将后缀转换为小写进行匹配
+    ext_lower=$(echo "$extension" | tr '[:upper:]' '[:lower:]')
     
-    case "$extension" in
-        # 需要 Hipify 转换的文件
-        cpp|cu)
-            target_ext="cpp"
+    # 需要转换的文件类型列表
+    case "$ext_lower" in
+        cu|cpp|c|cuh|h|hxx|hpp)
             operation="HIP"
             ;;
-        h|hxx|cuh)
-            target_ext="h" # 头文件统一转为 .h
-            operation="HIP"
-            ;;
-        # 其他文件（包括 Makefile, txt, log 等）直接复制，保留原始后缀
         *)
-            target_ext="$extension"
             operation="COPY"
             ;;
     esac
     
-    # 3. 确定目标文件路径
-    if [ "$operation" == "HIP" ]; then
-        # 移除原始后缀并添加新的目标后缀（用于转换）
-        base_path_no_ext="${relative_path%.*}"
-        target_relative_path="$base_path_no_ext.$target_ext"
-    else
-        # 保持原始相对路径（用于复制）
-        target_relative_path="$relative_path"
-    fi
-    target_file_path="$TARGET_ROOT/$target_relative_path"
-    
-    # 4. 确保目标子目录存在
+    # 3. 确保目标子目录存在 (在并行环境中是安全的)
     target_dir=$(dirname "$target_file_path")
     mkdir -p "$target_dir"
     
-    # 5. 执行操作
+    # 4. 执行操作
     if [ "$operation" == "HIP" ]; then
-        echo "HIPIFY: $relative_path -> $target_relative_path (PID: $$)"
+        echo "HIPIFY: $relative_path (as .$extension file) (PID: $$)"
+        
+        # 执行 hipify-perl 命令，输出到目标文件，保持原始文件名
         hipify-perl "$source_file_path" > "$target_file_path"
         
         if [ $? -ne 0 ]; then
@@ -83,7 +92,7 @@ process_file() {
     return 0
 }
 
-# 导出函数和变量，以便 xargs 调用的子 shell 可以访问
+# 导出函数和变量
 export -f process_file
 export SOURCE_DIR TARGET_ROOT 
 
@@ -95,13 +104,14 @@ if [ ! -d "$SOURCE_DIR" ]; then
     exit 1
 fi
 
-echo "Starting HIPIFY/COPY process (Max Threads: $MAX_THREADS)..."
+echo "Starting HIPIFY/COPY process (Max Threads: $MAX_THREADS, Keeping all original extensions)..."
 echo "--------------------------------------------------------"
 
-# 查找 src_bak 中的所有文件 (-type f) 和目录 (-type d)
-# find "$SOURCE_DIR" -print0 查找所有文件和目录
+# 查找 src_bak 中的所有文件和目录
 find "$SOURCE_DIR" -print0 | 
 xargs -0 -P "$MAX_THREADS" -I {} bash -c 'process_file "$1"' _ {}
 
 echo "--------------------------------------------------------"
 echo "Conversion and Copy process finished."
+
+date
