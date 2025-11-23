@@ -16,8 +16,8 @@
 
 #include "valued_csr_graph.hxx"
 #include "nvgraph_vector.hxx"
-#include "nvgraph_cusparse.hxx"
-#include "nvgraph_cublas.hxx"
+#include "nvgraph_hipsparse.hxx"
+#include "nvgraph_hipblas.hxx"
 #include "nvgraph_error.hxx"
 #include "pagerank.hxx"
 #include "pagerank_kernels.hxx"
