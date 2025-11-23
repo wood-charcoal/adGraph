@@ -13,7 +13,7 @@ cd ${SLURM_SUBMIT_DIR}
 
 module purge
 module load compiler/gcc/8.2.0
-module load compiler/rocm/dtk/24.04
+module load compiler/dtk/24.04
 module load nvidia/cuda/11.3            # must load CUDA module
 module load compiler/cmake/3.23.3
 module list
@@ -22,14 +22,12 @@ export DTK_ROOT=/public/software/compiler/rocm/dtk-24.04
 export CXX=/public/software/compiler/gcc-8.2.0/bin/g++
 export CUDA_TOOLKIT_ROOT_DIR=/public/software/compiler/nvidia/cuda/11.3.0
 export CMAKE_CUDA_COMPILER=/public/software/compiler/nvidia/cuda/11.3.0/bin/nvcc
-export PATH=/public/software/compiler/gcc-8.2.0/bin:$PATH
+export PATH=$DTK_ROOT/hip/bin/hipify:/public/software/compiler/gcc-8.2.0/bin:$PATH  # ensure hipify-perl is in PATH
 export LD_LIBRARY_PATH=/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
 
-SOURCE_DIR="."
-TARGET_ROOT="../adGraph_hipify"
+SOURCE_DIR=${1:-"./cpp/thirdparty/cnmem"}
+TARGET_ROOT=${2:-"./cpp/thirdparty/cnmem_hipify"}
 MAX_THREADS=8 
-
-HIPIFY_TOOL=$DTK_ROOT/hip/bin/hipify/hipify-perl
 
 # -------------------------- 函数定义 --------------------------
 
@@ -70,7 +68,7 @@ process_file() {
         echo "HIPIFY: $relative_path (as .$extension file) (PID: $$)"
         
         # 执行 hipify-perl 命令，输出到目标文件，保持原始文件名
-        $HIPIFY_TOOL "$source_file_path" > "$target_file_path"
+        hipify-perl "$source_file_path" > "$target_file_path"
         
         if [ $? -ne 0 ]; then
             echo "ERROR: hipify-perl failed for $relative_path"
