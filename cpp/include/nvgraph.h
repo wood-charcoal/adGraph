@@ -22,7 +22,7 @@
 
 #include "library_types.h"
 
-#define NVG_CUDA_TRY(T)                         \
+#define NVG_HIP_TRY(T)                          \
 	{                                           \
 		if (T != hipSuccess)                    \
 			return NVGRAPH_STATUS_ALLOC_FAILED; \

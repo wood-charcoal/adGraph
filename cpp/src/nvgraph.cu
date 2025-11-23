@@ -19,30 +19,27 @@
 #include <climits>
 #include <cfloat>
 #include <vector>
-#include <cusolverDn.h>
-
+#include <hipsolver.h>
 #include <nvgraph_error.hxx>
 #include <cnmem_shared_ptr.hxx>
 #include <valued_csr_graph.hxx>
 #include <multi_valued_csr_graph.hxx>
 #include <nvgraph_vector.hxx>
-#include <nvgraph_cusparse.hxx>
-#include <nvgraph_cublas.hxx>
-#include <nvgraph_csrmv.hxx>
+#include <nvgraph_hipsparse.hxx>
+#include <nvgraph_hipblas.hxx>
+// #include <nvgraph_csrmv.hxx>
 #include <pagerank.hxx>
-#include <arnoldi.hxx>
-#include <nvgraph_convert.hxx>
-#include <size2_selector.hxx>
+// #include <arnoldi.hxx>
+// #include <nvgraph_convert.hxx>
+// #include <size2_selector.hxx>
 #include <triangles_counting.hxx>
 
-#include <csrmv_cub.h>
+// #include <csrmv_cub.h>
 
 #include <nvgraph.h>			  // public header **This is NVGRAPH C API**
 #include <nvgraphP.h>			  // private header, contains structures, and potentially other things, used in the public C API that should never be exposed.
 #include <nvgraph_experimental.h> // experimental header, contains hidden API entries, can be shared only under special circumstances without reveling internal things
 #include "debug_macros.h"
-
-#include "2d_partitioning.h"
 
 static inline int check_context(const nvgraphHandle_t h)
 {
@@ -334,63 +331,45 @@ namespace nvgraph
 
 			if (descrG)
 			{
-				if (descrG->TT == NVGRAPH_2D_32I_32I)
+				switch (descrG->graphStatus)
 				{
-					switch (descrG->T)
-					{
-					case HIPBLAS_R_32I:
-					{
-						nvgraph::Matrix2d<int32_t, int32_t, int32_t> *m =
-							static_cast<nvgraph::Matrix2d<int32_t, int32_t, int32_t> *>(descrG->graph_handle);
-						delete m;
-						break;
-					}
-					default:
-						return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
-					}
+				case IS_EMPTY:
+				{
+					break;
 				}
-				else
+				case HAS_TOPOLOGY:
 				{
-					switch (descrG->graphStatus)
+					nvgraph::CsrGraph<int> *CSRG =
+						static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
+					delete CSRG;
+					break;
+				}
+				case HAS_VALUES:
+				{
+					if (descrG->T == HIPBLAS_R_32F)
 					{
-					case IS_EMPTY:
+						nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
+							static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
+						delete MCSRG;
+					}
+					else if (descrG->T == HIPBLAS_R_64F)
 					{
-						break;
+						nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
+							static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
+						delete MCSRG;
 					}
-					case HAS_TOPOLOGY:
+					else if (descrG->T == HIPBLAS_R_32I)
 					{
-						nvgraph::CsrGraph<int> *CSRG =
-							static_cast<nvgraph::CsrGraph<int> *>(descrG->graph_handle);
-						delete CSRG;
-						break;
+						nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
+							static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
+						delete MCSRG;
 					}
-					case HAS_VALUES:
-					{
-						if (descrG->T == HIPBLAS_R_32F)
-						{
-							nvgraph::MultiValuedCsrGraph<int, float> *MCSRG =
-								static_cast<nvgraph::MultiValuedCsrGraph<int, float> *>(descrG->graph_handle);
-							delete MCSRG;
-						}
-						else if (descrG->T == HIPBLAS_R_64F)
-						{
-							nvgraph::MultiValuedCsrGraph<int, double> *MCSRG =
-								static_cast<nvgraph::MultiValuedCsrGraph<int, double> *>(descrG->graph_handle);
-							delete MCSRG;
-						}
-						else if (descrG->T == HIPBLAS_R_32I)
-						{
-							nvgraph::MultiValuedCsrGraph<int, int> *MCSRG =
-								static_cast<nvgraph::MultiValuedCsrGraph<int, int> *>(descrG->graph_handle);
-							delete MCSRG;
-						}
-						else
-							return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
-						break;
-					}
-					default:
-						return NVGRAPH_STATUS_INVALID_VALUE;
-					}
+					else
+						return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
+					break;
+				}
+				default:
+					return NVGRAPH_STATUS_INVALID_VALUE;
 				}
 				free(descrG);
 			}
@@ -466,43 +445,7 @@ namespace nvgraph
 				// Set the graph handle
 				descrG->graph_handle = CSRG;
 				descrG->graphStatus = HAS_TOPOLOGY;
-			}
-			else if (TT == NVGRAPH_2D_32I_32I)
-			{
-				nvgraph2dCOOTopology32I_t td = static_cast<nvgraph2dCOOTopology32I_t>(topologyData);
-				switch (td->valueType)
-				{
-				case HIPBLAS_R_32I:
-				{
-					if (!td->nvertices || !td->nedges || !td->source_indices || !td->destination_indices || !td->numDevices || !td->devices || !td->blockN)
-						return NVGRAPH_STATUS_INVALID_VALUE;
-					descrG->TT = TT;
-					descrG->graphStatus = HAS_TOPOLOGY;
-					if (td->values)
-						descrG->graphStatus = HAS_VALUES;
-					descrG->T = td->valueType;
-					std::vector<int32_t> devices;
-					for (int32_t i = 0; i < td->numDevices; i++)
-						devices.push_back(td->devices[i]);
-					nvgraph::MatrixDecompositionDescription<int32_t, int32_t> description(td->nvertices,
-																						  td->blockN,
-																						  td->nedges,
-																						  devices);
-					nvgraph::Matrix2d<int32_t, int32_t, int32_t> *m = new nvgraph::Matrix2d<int32_t,
-																							int32_t, int32_t>();
-					*m = nvgraph::COOto2d(description,
-										  td->source_indices,
-										  td->destination_indices,
-										  (int32_t *)td->values);
-					descrG->graph_handle = m;
-					break;
-				}
-				default:
-				{
-					return NVGRAPH_STATUS_INVALID_VALUE;
-				}
-				}
-			}
+			}       
 			else
 			{
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
