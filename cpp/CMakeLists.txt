@@ -148,7 +148,7 @@ add_library(nvgraph SHARED
             # src/kmeans.cu
             # src/lanczos.cu
             # src/lobpcg.cu
-            # src/matrix.cpp
+            src/matrix.cpp
             # src/modularity_maximization.cu
             src/nvgraph.cpp
             src/nvgraph_hipblas.cpp
