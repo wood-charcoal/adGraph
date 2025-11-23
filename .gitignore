@@ -1,0 +1,24 @@
+.vscode/
+
+# Ignore Mac system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the Finder
+.DocumentRevisions-V100
+.fseventsd
+.vol
+.Trashes
+.Spotlight-V100
+.TemporaryItems
+.apdisk
+.Icon?
+
+# Log files
+*.log
+*.out
+!test/*/*.log
