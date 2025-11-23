@@ -24,8 +24,8 @@
 
 #include "nvgraph_error.hxx"
 #include "nvgraph_vector.hxx"
-#include "nvgraph_cublas.hxx"
-#include "nvgraph_cusparse.hxx"
+#include "nvgraph_hipblas.hxx"
+#include "nvgraph_hipsparse.hxx"
 #include "debug_macros.h"
 
 // =========================================================
@@ -118,14 +118,14 @@ namespace nvgraph
 
   /// Get and Set CUDA stream
   template <typename IndexType_, typename ValueType_>
-  void DenseMatrix<IndexType_, ValueType_>::setCUDAStream(hipStream_t _s)
+  void DenseMatrix<IndexType_, ValueType_>::setHIPStream(hipStream_t _s)
   {
     this->s = _s;
-    // printf("DenseMatrix setCUDAStream stream=%p\n",this->s);
+    // printf("DenseMatrix setHIPStream stream=%p\n",this->s);
     Hipblas::setStream(_s);
   }
   template <typename IndexType_, typename ValueType_>
-  void DenseMatrix<IndexType_, ValueType_>::getCUDAStream(hipStream_t *_s)
+  void DenseMatrix<IndexType_, ValueType_>::getHIPStream(hipStream_t *_s)
   {
     *_s = this->s;
     // CHECK_HIPBLAS(hipblasGetStream(cublasHandle, _s));
@@ -245,14 +245,14 @@ namespace nvgraph
 
   /// Get and Set CUDA stream
   template <typename IndexType_, typename ValueType_>
-  void CsrMatrix<IndexType_, ValueType_>::setCUDAStream(hipStream_t _s)
+  void CsrMatrix<IndexType_, ValueType_>::setHIPStream(hipStream_t _s)
   {
     this->s = _s;
-    // printf("CsrMatrix setCUDAStream stream=%p\n",this->s);
+    // printf("CsrMatrix setHIPStream stream=%p\n",this->s);
     Cusparse::setStream(_s);
   }
   template <typename IndexType_, typename ValueType_>
-  void CsrMatrix<IndexType_, ValueType_>::getCUDAStream(hipStream_t *_s)
+  void CsrMatrix<IndexType_, ValueType_>::getHIPStream(hipStream_t *_s)
   {
     *_s = this->s;
     // CHECK_HIPSPARSE(hipsparseGetStream(Cusparse::get_handle(), _s));
@@ -374,21 +374,21 @@ namespace nvgraph
 
   /// Get and Set CUDA stream
   template <typename IndexType_, typename ValueType_>
-  void LaplacianMatrix<IndexType_, ValueType_>::setCUDAStream(hipStream_t _s)
+  void LaplacianMatrix<IndexType_, ValueType_>::setHIPStream(hipStream_t _s)
   {
     this->s = _s;
-    // printf("LaplacianMatrix setCUDAStream stream=%p\n",this->s);
-    A->setCUDAStream(_s);
+    // printf("LaplacianMatrix setHIPStream stream=%p\n",this->s);
+    A->setHIPStream(_s);
     if (M != NULL)
     {
-      M->setCUDAStream(_s);
+      M->setHIPStream(_s);
     }
   }
   template <typename IndexType_, typename ValueType_>
-  void LaplacianMatrix<IndexType_, ValueType_>::getCUDAStream(hipStream_t *_s)
+  void LaplacianMatrix<IndexType_, ValueType_>::getHIPStream(hipStream_t *_s)
   {
     *_s = this->s;
-    // A->getCUDAStream(_s);
+    // A->getHIPStream(_s);
   }
 
   /// Matrix-vector product for Laplacian matrix class
@@ -552,22 +552,22 @@ namespace nvgraph
 
   /// Get and Set CUDA stream
   template <typename IndexType_, typename ValueType_>
-  void ModularityMatrix<IndexType_, ValueType_>::setCUDAStream(hipStream_t _s)
+  void ModularityMatrix<IndexType_, ValueType_>::setHIPStream(hipStream_t _s)
   {
     this->s = _s;
-    // printf("ModularityMatrix setCUDAStream stream=%p\n",this->s);
-    A->setCUDAStream(_s);
+    // printf("ModularityMatrix setHIPStream stream=%p\n",this->s);
+    A->setHIPStream(_s);
     if (M != NULL)
     {
-      M->setCUDAStream(_s);
+      M->setHIPStream(_s);
     }
   }
 
   template <typename IndexType_, typename ValueType_>
-  void ModularityMatrix<IndexType_, ValueType_>::getCUDAStream(hipStream_t *_s)
+  void ModularityMatrix<IndexType_, ValueType_>::getHIPStream(hipStream_t *_s)
   {
     *_s = this->s;
-    // A->getCUDAStream(_s);
+    // A->getHIPStream(_s);
   }
 
   /// Matrix-vector product for Modularity matrix class
