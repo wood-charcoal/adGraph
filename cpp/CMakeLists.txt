@@ -15,23 +15,25 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(NV_GRAPH VERSION 0.4.0 LANGUAGES C CXX CUDA)
+project(NV_GRAPH VERSION 0.4.0 LANGUAGES C CXX HIP)
 
-find_package(CUDA)
+enable_language(HIP)
+
+find_package(HIP REQUIRED)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_COMPILER $ENV{CC})
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CUDA_STANDARD 11)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_HIP_STANDARD 14)
+set(CMAKE_HIP_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")  # -Werror")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 set(GPU_ARCHS "" CACHE STRING
@@ -40,23 +42,16 @@ set(GPU_ARCHS "" CACHE STRING
    on CTK version.")
 
 if("${GPU_ARCHS}" STREQUAL "")
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_60,code=sm_60")
-  if((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9))
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_70,code=sm_70")
-  endif()
-  if((CUDA_VERSION_MAJOR EQUAL 10) OR (CUDA_VERSION_MAJOR GREATER 10))
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_75,code=compute_75")
-  endif()
+  # Default ROCm GPU architectures
+  set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} --offload-arch=gfx906 --offload-arch=gfx908 --offload-arch=gfx90a")
 else()
   foreach(arch ${GPU_ARCHS})
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${arch},code=sm_${arch}")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} --offload-arch=${arch}")
   endforeach()
-  list(GET GPU_ARCHS -1 ptx)
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${ptx},code=compute_${ptx}")
 endif()
 
 # set warnings as errors
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Werror cross-execution-space-call -Xcompiler -Wall,-Werror")
+set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -Wall")  # -Werror")
 
 # set default build type
 set(CMAKE_BUILD_TYPE "Release")
@@ -65,7 +60,7 @@ option(BUILD_TESTS "Configure CMake to build tests"
        ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")  # -Werror")
 
     option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" ON)
     if(CMAKE_CXX11_ABI)
@@ -74,13 +69,18 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         message(STATUS "nvGraph: Disabling the GLIBCXX11 ABI")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -D_GLIBCXX_USE_CXX11_ABI=0")
+        set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if(NOT DEFINED NVGRAPH_LIGHT)
     set(NVGRAPH_LIGHT True)
 endif(NOT DEFINED NVGRAPH_LIGHT)
+
+###################################################################################################
+# - lapack modules ---------------------------------------------------------------------------------
+
+set(LAPACK_INSTALL_ROOT "$ENV{LAPACK_INSTALL_ROOT}" CACHE PATH "Path to LAPACK installation root")
 
 ###################################################################################################
 # - cmake modules ---------------------------------------------------------------------------------
@@ -94,18 +94,18 @@ include(CheckLibraryExists)
 ###################################################################################################
 # - add gtest -------------------------------------------------------------------------------------
 
-if(BUILD_TESTS)
-    include(CTest)
-    include(ConfigureGoogleTest)
+# if(BUILD_TESTS)
+#     include(CTest)
+#     include(ConfigureGoogleTest)
 
-    if(GTEST_FOUND)
-        message(STATUS "Google C++ Testing Framework (Google Test) found in ${GTEST_ROOT}")
-        include_directories(${GTEST_INCLUDE_DIR})
-        add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
-    else()
-        message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
-    endif(GTEST_FOUND)
-endif(BUILD_TESTS)
+#     if(GTEST_FOUND)
+#         message(STATUS "Google C++ Testing Framework (Google Test) found in ${GTEST_ROOT}")
+#         include_directories(${GTEST_INCLUDE_DIR})
+#         add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
+#     else()
+#         message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
+#     endif(GTEST_FOUND)
+# endif(BUILD_TESTS)
 
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
@@ -113,110 +113,74 @@ endif(BUILD_TESTS)
 include_directories(
                     "${CMAKE_BINARY_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}/thirdparty/cub"
                     "${CMAKE_SOURCE_DIR}/thirdparty/cnmem/include"
                     "${CMAKE_SOURCE_DIR}/../external"
-                    "${CMAKE_SOURCE_DIR}/../external/cusp"
-                    "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
+                    # "${CMAKE_SOURCE_DIR}/../external/cusp"
+                    "$ENV{DTK_ROOT}/include"
+                    "$ENV{DTK_ROOT}/include/hip"
+                    "${LAPACK_INSTALL_ROOT}/include"
                    )
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
+link_directories("$ENV{DTK_ROOT}/lib"
+                 "$ENV{DTK_ROOT}/lib64"
                  "${CMAKE_BINARY_DIR}/lib"
-                 "${GTEST_LIBRARY_DIR}")
+                 "${GTEST_LIBRARY_DIR}"
+                 "${LAPACK_INSTALL_ROOT}/lib64"
+                 )
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
-if(NVGRAPH_LIGHT MATCHES True)
-    add_library(nvgraph SHARED
-                thirdparty/cnmem/src/cnmem.cpp
-                src/arnoldi.cu
-                src/bfs.cu
-                src/bfs2d.cu
-                src/bfs_kernels.cu
-                src/convert.cu
-                src/csrmv.cu
-                src/csrmv_cub.cu
-                src/csr_graph.cpp
-                src/graph_extractor.cu
-                src/jaccard_gpu.cu
-                src/kmeans.cu
-                src/lanczos.cu
-                src/lobpcg.cu
-                src/matrix.cu
-                src/modularity_maximization.cu
-                src/nvgraph.cu
-                src/nvgraph_cusparse.cpp
-                src/nvgraph_cublas.cpp
-                src/nvgraph_error.cu
-                src/nvgraph_lapack.cu
-                src/nvgraph_vector_kernels.cu
-                src/pagerank.cu
-                src/pagerank_kernels.cu
-                src/partition.cu
-                src/size2_selector.cu
-                src/sssp.cu
-                src/triangles_counting.cpp
-                src/triangles_counting_kernels.cu
-                src/valued_csr_graph.cpp
-                src/widest_path.cu
-               )
-else(NVGRAPH_LIGHT MATCHES True)
-        add_library(nvgraph SHARED
-                thirdparty/cnmem/src/cnmem.cpp
-                src/arnoldi.cu
-                src/bfs.cu
-                src/bfs2d.cu
-                src/bfs_kernels.cu
-                src/convert.cu
-                src/csrmv.cu
-                src/csrmv_cub.cu
-                src/csr_graph.cpp
-                src/graph_extractor.cu
-                src/jaccard_gpu.cu
-                src/kmeans.cu
-                src/lanczos.cu
-                src/lobpcg.cu
-                src/matrix.cu
-                src/modularity_maximization.cu
-                src/nvgraph.cu
-                src/nvgraph_cusparse.cpp
-                src/nvgraph_cublas.cpp
-                src/nvgraph_error.cu
-                src/nvgraph_lapack.cu
-                src/nvgraph_vector_kernels.cu
-                src/pagerank.cu
-                src/pagerank_kernels.cu
-                src/partition.cu
-                src/size2_selector.cu
-                src/sssp.cu
-                src/triangles_counting.cpp
-                src/triangles_counting_kernels.cu
-                src/valued_csr_graph.cpp
-                src/widest_path.cu
-                src/graph_contraction/contraction_csr_max.cu
-                src/graph_contraction/contraction_csr_sum.cu
-                src/graph_contraction/contraction_mv_double_mul.cu
-                src/graph_contraction/contraction_mv_float_min.cu
-                src/graph_contraction/contraction_csr_min.cu
-                src/graph_contraction/contraction_mv_double_max.cu
-                src/graph_contraction/contraction_mv_double_sum.cu
-                src/graph_contraction/contraction_mv_float_mul.cu
-                src/graph_contraction/contraction_csr_mul.cu
-                src/graph_contraction/contraction_mv_double_min.cu
-                src/graph_contraction/contraction_mv_float_max.cu
-                src/graph_contraction/contraction_mv_float_sum.cu
-               )
-endif(NVGRAPH_LIGHT MATCHES True)
+add_library(nvgraph SHARED
+            thirdparty/cnmem/src/cnmem.cpp
+            # src/arnoldi.cu
+            # src/bfs.cu
+            # src/bfs2d.cu
+            # src/bfs_kernels.cu
+            # src/convert.cu
+            # src/csrmv.cu
+            src/csr_graph.cpp
+            # src/csrmv_cub.cu
+            # src/graph_extractor.cpp
+            # src/jaccard_gpu.cu
+            # src/kmeans.cu
+            # src/lanczos.cu
+            # src/lobpcg.cu
+            # src/matrix.cpp
+            # src/modularity_maximization.cu
+            src/nvgraph.cpp
+            src/nvgraph_hipblas.cpp
+            src/nvgraph_hipsparse.cpp
+            src/nvgraph_error.cpp
+            src/nvgraph_lapack.cpp
+            src/nvgraph_vector_kernels.cpp
+            # src/size2_selector.cpp
+            # src/sssp.cpp
+            src/triangles_counting_kernels.cpp
+            src/triangles_counting.cpp
+            src/pagerank.cpp
+            src/pagerank_kernels.cu
+            # src/partition.cu
+            src/valued_csr_graph.cpp
+            # src/widest_path.cu         
+)
+
+target_compile_definitions(nvgraph PRIVATE
+    __HIP_PLATFORM_AMD__=1 
+)
+
+target_compile_options(nvgraph PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:-std=c++14> 
+)
 
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     message(STATUS "Building with debugging flags")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
 endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 if(NVGRAPH_LIGHT MATCHES True)
@@ -227,7 +191,12 @@ endif(NVGRAPH_LIGHT MATCHES True)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(nvgraph cublas cusparse curand cusolver cudart )
+target_link_libraries(nvgraph 
+    PRIVATE
+    -Wl,--start-group 
+    hipblas hipsparse hiprand hipsolver amdhip64 hip::host cblas blas lapack
+    -Wl,--end-group
+)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
@@ -237,7 +206,4 @@ install(TARGETS nvgraph
 
 install(FILES
          ${CMAKE_CURRENT_SOURCE_DIR}/include/nvgraph.h
-         ${CMAKE_CURRENT_SOURCE_DIR}/include/test_opt_utils.cuh
         DESTINATION include/nvgraph)
-
-

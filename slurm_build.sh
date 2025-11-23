@@ -48,6 +48,7 @@ fi
 export PATH=$DTK_ROOT/hip/bin/hipify:/public/software/compiler/gcc-8.2.0/bin:$DTK_ROOT/bin:$PATH
 export LD_LIBRARY_PATH=$DTK_ROOT/lib:/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
 export HIP_PATH=$DTK_ROOT
+export LAPACK_INSTALL_ROOT=$HOME/projects/lapack-3.12.0/install
 
 # Set compiler paths
 export CC="$DTK_ROOT/llvm/bin/clang"

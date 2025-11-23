@@ -1,5 +1,6 @@
 # Files to Keep
 
+## Used Functions
 
 nvgraphCreate.
 nvgraphDestroy.
@@ -13,7 +14,4 @@ nvgraphGetVertexData.
 nvgraphSetEdgeData.
 
 nvgraphPagerank.
-
-
-
 nvgraphTriangleCount.
