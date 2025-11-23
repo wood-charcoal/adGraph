@@ -21,6 +21,8 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
+#include <thrust/iterator/counting_iterator.h>
+
 
 #include "nvgraph_error.hxx"
 #include "nvgraph_vector.hxx"
