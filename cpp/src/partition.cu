@@ -79,7 +79,7 @@ namespace nvgraph
   //  case NVGRAPH_OK:                  return "NVGRAPH_OK";
   //  case NVGRAPH_ERR_BAD_PARAMETERS:  return "NVGRAPH_ERR_BAD_PARAMETERS";
   //  case NVGRAPH_ERR_UNKNOWN:         return "NVGRAPH_ERR_UNKNOWN";
-  //  case NVGRAPH_ERR_CUDA_FAILURE:    return "NVGRAPH_ERR_CUDA_FAILURE";
+  //  case NVGRAPH_ERR_HIP_FAILURE:    return "NVGRAPH_ERR_HIP_FAILURE";
   //  case NVGRAPH_ERR_THRUST_FAILURE:  return "NVGRAPH_ERR_THRUST_FAILURE";
   //  case NVGRAPH_ERR_IO:              return "NVGRAPH_ERR_IO";
   //  case NVGRAPH_ERR_NOT_IMPLEMENTED: return "NVGRAPH_ERR_NOT_IMPLEMENTED";
@@ -109,7 +109,7 @@ namespace nvgraph
         return -1;
       }
       hipMemcpy(h_A, A, lda * n * sizeof(ValueType_), hipMemcpyDeviceToHost);
-      cudaCheckError()
+      hipCheckError()
     }
     else
     {
@@ -233,7 +233,7 @@ namespace nvgraph
 
     // launch scaling kernel (scale each column of obs by its norm)
     scale_obs_kernel<IndexType_, ValueType_><<<nblocks, nthreads>>>(m, n, obs);
-    cudaCheckError();
+    hipCheckError();
 
     return hipSuccess;
   }
@@ -377,21 +377,21 @@ namespace nvgraph
       ValueType_ mean, std;
       mean = thrust::reduce(thrust::device_pointer_cast(eigVecs.raw() + IDX(0, i, n)),
                             thrust::device_pointer_cast(eigVecs.raw() + IDX(0, i + 1, n)));
-      cudaCheckError();
+      hipCheckError();
       mean /= n;
       thrust::transform(thrust::device_pointer_cast(eigVecs.raw() + IDX(0, i, n)),
                         thrust::device_pointer_cast(eigVecs.raw() + IDX(0, i + 1, n)),
                         thrust::make_constant_iterator(mean),
                         thrust::device_pointer_cast(eigVecs.raw() + IDX(0, i, n)),
                         thrust::minus<ValueType_>());
-      cudaCheckError();
-      std = Cublas::nrm2(n, eigVecs.raw() + IDX(0, i, n), 1) / std::sqrt(static_cast<ValueType_>(n));
+      hipCheckError();
+      std = Hipblas::nrm2(n, eigVecs.raw() + IDX(0, i, n), 1) / std::sqrt(static_cast<ValueType_>(n));
       thrust::transform(thrust::device_pointer_cast(eigVecs.raw() + IDX(0, i, n)),
                         thrust::device_pointer_cast(eigVecs.raw() + IDX(0, i + 1, n)),
                         thrust::make_constant_iterator(std),
                         thrust::device_pointer_cast(eigVecs.raw() + IDX(0, i, n)),
                         thrust::divides<ValueType_>());
-      cudaCheckError();
+      hipCheckError();
     }
 
     delete L;
@@ -401,14 +401,14 @@ namespace nvgraph
     //   TODO: in-place transpose
     {
       Vector<ValueType_> work(nEigVecs * n, stream);
-      Cublas::set_pointer_mode_host();
-      Cublas::geam(true, false, nEigVecs, n,
-                   &one, eigVecs.raw(), n,
-                   &zero, (ValueType_ *)NULL, nEigVecs,
-                   work.raw(), nEigVecs);
-      CHECK_CUDA(hipMemcpyAsync(eigVecs.raw(), work.raw(),
-                                nEigVecs * n * sizeof(ValueType_),
-                                hipMemcpyDeviceToDevice));
+      Hipblas::set_pointer_mode_host();
+      Hipblas::geam(true, false, nEigVecs, n,
+                    &one, eigVecs.raw(), n,
+                    &zero, (ValueType_ *)NULL, nEigVecs,
+                    work.raw(), nEigVecs);
+      CHECK_HIP(hipMemcpyAsync(eigVecs.raw(), work.raw(),
+                               nEigVecs * n * sizeof(ValueType_),
+                               hipMemcpyDeviceToDevice));
     }
 
     // Clean up
@@ -417,7 +417,7 @@ namespace nvgraph
     {
       // WARNING: notice that at this point the matrix has already been transposed, so we are scaling columns
       scale_obs(nEigVecs, n, eigVecs.raw());
-      cudaCheckError()
+      hipCheckError()
       // print_matrix<IndexType_,ValueType_,true,false>(nEigVecs-ifirst,n,obs,nEigVecs-ifirst,"Scaled obs");
       // print_matrix<IndexType_,ValueType_,true,true>(nEigVecs-ifirst,n,obs,nEigVecs-ifirst,"Scaled obs");
     }
@@ -561,13 +561,13 @@ namespace nvgraph
     // ValueType_ * obs;
 
     // lanczosVecs are not allocated yet, but should not be touched in *_bufferSize routine
-    CHECK_CUSOLVER(cusolverXpotrf_bufferSize(cusolverHandle, nEigVecs, lanczosVecs, nEigVecs, &lwork1));
-    CHECK_CUSOLVER(cusolverXpotrf_bufferSize(cusolverHandle, 2 * nEigVecs, lanczosVecs, 2 * nEigVecs, &lwork2));
-    CHECK_CUSOLVER(cusolverXpotrf_bufferSize(cusolverHandle, 3 * nEigVecs, lanczosVecs, 3 * nEigVecs, &lwork3));
+    CHECK_HIPSOLVER(cusolverXpotrf_bufferSize(cusolverHandle, nEigVecs, lanczosVecs, nEigVecs, &lwork1));
+    CHECK_HIPSOLVER(cusolverXpotrf_bufferSize(cusolverHandle, 2 * nEigVecs, lanczosVecs, 2 * nEigVecs, &lwork2));
+    CHECK_HIPSOLVER(cusolverXpotrf_bufferSize(cusolverHandle, 3 * nEigVecs, lanczosVecs, 3 * nEigVecs, &lwork3));
     lwork_potrf = max(lwork1, max(lwork2, lwork3));
-    CHECK_CUSOLVER(cusolverXgesvd_bufferSize(cusolverHandle, nEigVecs, nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, &lwork1));
-    CHECK_CUSOLVER(cusolverXgesvd_bufferSize(cusolverHandle, 2 * nEigVecs, 2 * nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, &lwork2));
-    CHECK_CUSOLVER(cusolverXgesvd_bufferSize(cusolverHandle, 3 * nEigVecs, 3 * nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, &lwork3));
+    CHECK_HIPSOLVER(cusolverXgesvd_bufferSize(cusolverHandle, nEigVecs, nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, &lwork1));
+    CHECK_HIPSOLVER(cusolverXgesvd_bufferSize(cusolverHandle, 2 * nEigVecs, 2 * nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, &lwork2));
+    CHECK_HIPSOLVER(cusolverXgesvd_bufferSize(cusolverHandle, 3 * nEigVecs, 3 * nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, lanczosVecs, nEigVecs, &lwork3));
     lwork_gesvd = max(lwork1, max(lwork2, lwork3));
     lwork = max(lwork_potrf, lwork_gesvd);
     // allocating +2 to hold devInfo for cuSolver, which is of type int, using 2 rather than 1 just in case
@@ -578,7 +578,7 @@ namespace nvgraph
     // lwork - Workspace max Lwork value (for either potrf or gesvd)
     // 2 - devInfo
     hipMalloc(&lanczosVecs, (9 * nEigVecs * n + 36 * nEigVecs * nEigVecs + nEigVecs + lwork + 2) * sizeof(ValueType_));
-    cudaCheckError();
+    hipCheckError();
 
     // Setup preconditioner M for Laplacian L
     t1 = timer();
@@ -591,7 +591,7 @@ namespace nvgraph
 
     // Run the eigensolver (with preconditioning)
     t1 = timer();
-    if (lobpcg_simplified(Cublas::get_handle(), cusolverHandle,
+    if (lobpcg_simplified(Hipblas::get_handle(), cusolverHandle,
                           n, nEigVecs, L,
                           eigVecs.raw(), eigVals.raw(),
                           maxIter_lanczos, tol_lanczos,
@@ -615,21 +615,21 @@ namespace nvgraph
     //   TODO: in-place transpose
     {
       Vector<ValueType_> work(nEigVecs * n, stream);
-      Cublas::set_pointer_mode_host();
-      Cublas::geam(true, false, nEigVecs, n,
-                   &one, eigVecs.raw(), n,
-                   &zero, (ValueType_ *)NULL, nEigVecs,
-                   work.raw(), nEigVecs);
-      CHECK_CUDA(hipMemcpyAsync(eigVecs.raw(), work.raw(),
-                                nEigVecs * n * sizeof(ValueType_),
-                                hipMemcpyDeviceToDevice));
+      Hipblas::set_pointer_mode_host();
+      Hipblas::geam(true, false, nEigVecs, n,
+                    &one, eigVecs.raw(), n,
+                    &zero, (ValueType_ *)NULL, nEigVecs,
+                    work.raw(), nEigVecs);
+      CHECK_HIP(hipMemcpyAsync(eigVecs.raw(), work.raw(),
+                               nEigVecs * n * sizeof(ValueType_),
+                               hipMemcpyDeviceToDevice));
     }
 
     if (scale_eigevec_rows)
     {
       // WARNING: notice that at this point the matrix has already been transposed, so we are scaling columns
       scale_obs(nEigVecs, n, eigVecs.raw());
-      cudaCheckError();
+      hipCheckError();
       // print_matrix<IndexType_,ValueType_,true,false>(nEigVecs-ifirst,n,obs,nEigVecs-ifirst,"Scaled obs");
       // print_matrix<IndexType_,ValueType_,true,true>(nEigVecs-ifirst,n,obs,nEigVecs-ifirst,"Scaled obs");
     }
@@ -735,7 +735,7 @@ namespace nvgraph
     }
 
     // Initialize cuBLAS
-    Cublas::set_pointer_mode_host();
+    Hipblas::set_pointer_mode_host();
 
     // Initialize Laplacian
     A = new CsrMatrix<IndexType_, ValueType_>(G);
@@ -755,10 +755,10 @@ namespace nvgraph
                        thrust::make_zip_iterator(thrust::make_tuple(thrust::device_pointer_cast(parts + n),
                                                                     thrust::device_pointer_cast(part_i.raw() + n))),
                        equal_to_i_op<IndexType_, ValueType_>(i));
-      cudaCheckError();
+      hipCheckError();
 
       // Compute size of ith partition
-      Cublas::dot(n, part_i.raw(), 1, part_i.raw(), 1, &partSize);
+      Hipblas::dot(n, part_i.raw(), 1, part_i.raw(), 1, &partSize);
       partSize = round(partSize);
       if (partSize < 0.5)
       {
@@ -768,7 +768,7 @@ namespace nvgraph
 
       // Compute number of edges cut by ith partition
       L->mv(1, part_i.raw(), 0, Lx.raw());
-      Cublas::dot(n, Lx.raw(), 1, part_i.raw(), 1, &partEdgesCut);
+      Hipblas::dot(n, Lx.raw(), 1, part_i.raw(), 1, &partEdgesCut);
 
       // Record results
       cost += partEdgesCut / partSize;

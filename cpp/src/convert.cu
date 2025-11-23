@@ -23,14 +23,14 @@ namespace nvgraph
   void csr2coo(const int *csrSortedRowPtr,
                int nnz, int m, int *cooRowInd, hipsparseIndexBase_t idxBase)
   {
-    CHECK_CUSPARSE(hipsparseXcsr2coo(Cusparse::get_handle(),
-                                     csrSortedRowPtr, nnz, m, cooRowInd, idxBase));
+    CHECK_HIPSPARSE(hipsparseXcsr2coo(Hipsparse::get_handle(),
+                                      csrSortedRowPtr, nnz, m, cooRowInd, idxBase));
   }
   void coo2csr(const int *cooRowInd,
                int nnz, int m, int *csrSortedRowPtr, hipsparseIndexBase_t idxBase)
   {
-    CHECK_CUSPARSE(hipsparseXcoo2csr(Cusparse::get_handle(),
-                                     cooRowInd, nnz, m, csrSortedRowPtr, idxBase));
+    CHECK_HIPSPARSE(hipsparseXcoo2csr(Hipsparse::get_handle(),
+                                      cooRowInd, nnz, m, csrSortedRowPtr, idxBase));
   }
 
   void csr2csc(int m, int n, int nnz,
@@ -39,19 +39,19 @@ namespace nvgraph
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipblasDatatype_t *dataType)
   {
-    // CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
+    // CHECK_HIPSPARSE(cusparseCsr2cscEx(Hipsparse::get_handle(),
     //                                    m, n, nnz,
     //                                    csrVal, *dataType, csrRowPtr, csrColInd,
     //                                    cscVal, *dataType, cscRowInd, cscColPtr,
     //                                    copyValues, idxBase, *dataType));
 
-    hipsparseHandle_t handle = Cusparse::get_handle();
+    hipsparseHandle_t handle = Hipsparse::get_handle();
     hipDataType valType = static_cast<hipDataType>(*dataType);
 
     size_t buffer_size = 0;
     hipsparseCsr2CscAlg_t alg = HIPSPARSE_CSR2CSC_ALG1;
 
-    CHECK_CUSPARSE(hipsparseCsr2cscEx2_bufferSize(
+    CHECK_HIPSPARSE(hipsparseCsr2cscEx2_bufferSize(
         handle,
         m, n, nnz,
         csrVal, csrRowPtr, csrColInd,
@@ -66,11 +66,11 @@ namespace nvgraph
       hipError_t hip_status = hipMalloc(&buffer, buffer_size);
       if (hip_status != hipSuccess)
       {
-        CHECK_CUDA(hip_status);
+        CHECK_HIP(hip_status);
       }
     }
 
-    CHECK_CUSPARSE(hipsparseCsr2cscEx2(
+    CHECK_HIPSPARSE(hipsparseCsr2cscEx2(
         handle,
         m, n, nnz,
         csrVal, csrRowPtr, csrColInd,
@@ -82,7 +82,7 @@ namespace nvgraph
 
     if (buffer)
     {
-      CHECK_CUDA(hipFree(buffer));
+      CHECK_HIP(hipFree(buffer));
     }
   }
 
@@ -92,13 +92,13 @@ namespace nvgraph
                hipsparseAction_t copyValues, hipsparseIndexBase_t idxBase,
                hipblasDatatype_t *dataType)
   {
-    // CHECK_CUSPARSE(cusparseCsr2cscEx(Cusparse::get_handle(),
+    // CHECK_HIPSPARSE(cusparseCsr2cscEx(Hipsparse::get_handle(),
     //                                    m, n, nnz,
     //                                    cscVal, *dataType, cscColPtr, cscRowInd,
     //                                    csrVal, *dataType, csrColInd, csrRowPtr,
     //                                    copyValues, idxBase, *dataType));
 
-    hipsparseHandle_t handle = Cusparse::get_handle();
+    hipsparseHandle_t handle = Hipsparse::get_handle();
     hipDataType valType = static_cast<hipDataType>(*dataType);
 
     int m_csc = n;
@@ -107,7 +107,7 @@ namespace nvgraph
     size_t buffer_size = 0;
     hipsparseCsr2CscAlg_t alg = HIPSPARSE_CSR2CSC_ALG1;
 
-    CHECK_CUSPARSE(hipsparseCsr2cscEx2_bufferSize(
+    CHECK_HIPSPARSE(hipsparseCsr2cscEx2_bufferSize(
         handle,
         m_csc, n_csc, nnz,
         cscVal, cscColPtr, cscRowInd,
@@ -120,10 +120,10 @@ namespace nvgraph
     if (buffer_size > 0)
     {
       hipError_t hip_status = hipMalloc(&buffer, buffer_size);
-      CHECK_CUDA(hip_status);
+      CHECK_HIP(hip_status);
     }
 
-    CHECK_CUSPARSE(hipsparseCsr2cscEx2(
+    CHECK_HIPSPARSE(hipsparseCsr2cscEx2(
         handle,
         m_csc, n_csc, nnz,
         cscVal, cscColPtr, cscRowInd,
@@ -135,7 +135,7 @@ namespace nvgraph
 
     if (buffer)
     {
-      CHECK_CUDA(hipFree(buffer));
+      CHECK_HIP(hipFree(buffer));
     }
   }
 
@@ -150,9 +150,9 @@ namespace nvgraph
 
     // step 0: copy src to dst
     if (dstRowInd != srcRowInd)
-      CHECK_CUDA(hipMemcpy(dstRowInd, srcRowInd, nnz * sizeof(int), hipMemcpyDefault));
+      CHECK_HIP(hipMemcpy(dstRowInd, srcRowInd, nnz * sizeof(int), hipMemcpyDefault));
     if (dstColInd != srcColInd)
-      CHECK_CUDA(hipMemcpy(dstColInd, srcColInd, nnz * sizeof(int), hipMemcpyDefault));
+      CHECK_HIP(hipMemcpy(dstColInd, srcColInd, nnz * sizeof(int), hipMemcpyDefault));
     // step 1: allocate buffer (needed for cooSortByRow)
     cooSortBufferSize(m, n, nnz, dstRowInd, dstColInd, &pBufferSizeInBytes);
     pBuffer = allocateDevice<char>(pBufferSizeInBytes, NULL);
@@ -174,8 +174,8 @@ namespace nvgraph
     SHARED_PREFIX::shared_ptr<int> P; // permutation array
 
     // step 0: copy src to dst
-    CHECK_CUDA(hipMemcpy(dstRowInd, srcRowInd, nnz * sizeof(int), hipMemcpyDefault));
-    CHECK_CUDA(hipMemcpy(dstColInd, srcColInd, nnz * sizeof(int), hipMemcpyDefault));
+    CHECK_HIP(hipMemcpy(dstRowInd, srcRowInd, nnz * sizeof(int), hipMemcpyDefault));
+    CHECK_HIP(hipMemcpy(dstColInd, srcColInd, nnz * sizeof(int), hipMemcpyDefault));
     // step 1: allocate buffer (needed for cooSortByRow)
     cooSortBufferSize(m, n, nnz, dstRowInd, dstColInd, &pBufferSizeInBytes);
     pBuffer = allocateDevice<char>(pBufferSizeInBytes, NULL);
@@ -232,7 +232,7 @@ namespace nvgraph
   ////////////////////////// Utility functions //////////////////////////
   void createIdentityPermutation(int n, int *p)
   {
-    CHECK_CUSPARSE(hipsparseCreateIdentityPermutation(Cusparse::get_handle(), n, p));
+    CHECK_HIPSPARSE(hipsparseCreateIdentityPermutation(Hipsparse::get_handle(), n, p));
   }
 
   void gthrX(int nnz, const void *y, void *xVal, const int *xInd,
@@ -240,30 +240,30 @@ namespace nvgraph
   {
     if (*dataType == HIPBLAS_R_32F)
     {
-      CHECK_CUSPARSE(hipsparseSgthr(Cusparse::get_handle(), nnz, (float *)y, (float *)xVal, xInd, idxBase));
+      CHECK_HIPSPARSE(hipsparseSgthr(Hipsparse::get_handle(), nnz, (float *)y, (float *)xVal, xInd, idxBase));
     }
     else if (*dataType == HIPBLAS_R_64F)
     {
-      CHECK_CUSPARSE(hipsparseDgthr(Cusparse::get_handle(), nnz, (double *)y, (double *)xVal, xInd, idxBase));
+      CHECK_HIPSPARSE(hipsparseDgthr(Hipsparse::get_handle(), nnz, (double *)y, (double *)xVal, xInd, idxBase));
     }
   }
 
   void cooSortBufferSize(int m, int n, int nnz, const int *cooRows, const int *cooCols, size_t *pBufferSizeInBytes)
   {
-    CHECK_CUSPARSE(hipsparseXcoosort_bufferSizeExt(Cusparse::get_handle(),
-                                                   m, n, nnz,
-                                                   cooRows, cooCols, pBufferSizeInBytes));
+    CHECK_HIPSPARSE(hipsparseXcoosort_bufferSizeExt(Hipsparse::get_handle(),
+                                                    m, n, nnz,
+                                                    cooRows, cooCols, pBufferSizeInBytes));
   }
   void cooGetSourcePermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer)
   {
-    CHECK_CUSPARSE(hipsparseXcoosortByRow(Cusparse::get_handle(),
-                                          m, n, nnz,
-                                          cooRows, cooCols, p, pBuffer));
+    CHECK_HIPSPARSE(hipsparseXcoosortByRow(Hipsparse::get_handle(),
+                                           m, n, nnz,
+                                           cooRows, cooCols, p, pBuffer));
   }
   void cooGetDestinationPermutation(int m, int n, int nnz, int *cooRows, int *cooCols, int *p, void *pBuffer)
   {
-    CHECK_CUSPARSE(hipsparseXcoosortByColumn(Cusparse::get_handle(),
-                                             m, n, nnz,
-                                             cooRows, cooCols, p, pBuffer));
+    CHECK_HIPSPARSE(hipsparseXcoosortByColumn(Hipsparse::get_handle(),
+                                              m, n, nnz,
+                                              cooRows, cooCols, p, pBuffer));
   }
 } // end namespace nvgraph

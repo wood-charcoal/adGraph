@@ -330,7 +330,7 @@ namespace nvgraph
 		case NVGRAPH_ERR_UNKNOWN:
 			ret = NVGRAPH_STATUS_INTERNAL_ERROR;
 			break;
-		case NVGRAPH_ERR_CUDA_FAILURE:
+		case NVGRAPH_ERR_HIP_FAILURE:
 			ret = NVGRAPH_STATUS_EXECUTION_FAILED;
 			break;
 		case NVGRAPH_ERR_THRUST_FAILURE:
@@ -363,8 +363,8 @@ namespace nvgraph
 		{
 			int device;
 
-			CHECK_CUDA(hipFree((void *)0));
-			CHECK_CUDA(hipGetDevice(&device));
+			CHECK_HIP(hipFree((void *)0));
+			CHECK_HIP(hipGetDevice(&device));
 			struct nvgraphContext *ctx = NULL;
 			ctx = (struct nvgraphContext *)malloc(sizeof(*ctx));
 			if (!ctx)
@@ -397,9 +397,9 @@ namespace nvgraph
 			if (cm_status != CNMEM_STATUS_SUCCESS)
 				FatalError("Cannot initialize memory manager.", NVGRAPH_ERR_UNKNOWN);
 
-			// Cublas and Cusparse
-			Cusparse::get_handle();
-			Cublas::get_handle();
+			// Hipblas and Hipsparse
+			Hipsparse::get_handle();
+			Hipblas::get_handle();
 
 			// others
 			ctx->stream = 0;
@@ -422,8 +422,8 @@ namespace nvgraph
 		{
 			int device;
 
-			CHECK_CUDA(hipFree((void *)0));
-			CHECK_CUDA(hipGetDevice(&device));
+			CHECK_HIP(hipFree((void *)0));
+			CHECK_HIP(hipGetDevice(&device));
 			struct nvgraphContext *ctx = NULL;
 			ctx = (struct nvgraphContext *)malloc(sizeof(*ctx));
 			if (!ctx)
@@ -449,9 +449,9 @@ namespace nvgraph
 			if (cm_status != CNMEM_STATUS_SUCCESS)
 				FatalError("Cannot initialize memory manager.", NVGRAPH_ERR_UNKNOWN);
 
-			// Cublas and Cusparse
-			Cusparse::get_handle();
-			Cublas::get_handle();
+			// Hipblas and Hipsparse
+			Hipsparse::get_handle();
+			Hipblas::get_handle();
 
 			// others
 			ctx->stream = 0;
@@ -475,9 +475,9 @@ namespace nvgraph
 			if (check_context(handle))
 				FatalError("Cannot initialize memory manager.", NVGRAPH_ERR_NO_MEMORY);
 
-			// Cublas and Cusparse
-			Cusparse::destroy_handle();
-			Cublas::destroy_handle();
+			// Hipblas and Hipsparse
+			Hipsparse::destroy_handle();
+			Hipblas::destroy_handle();
 			// cnmem
 
 //     compiler is complaining, cm_status is not used in release build
@@ -616,9 +616,9 @@ namespace nvgraph
 				return NVGRAPH_STATUS_INTERNAL_ERROR;
 			// nvgraph handle
 			handle->stream = stream;
-			// Cublas and Cusparse
-			Cublas::setStream(stream);
-			Cusparse::setStream(stream);
+			// Hipblas and Hipsparse
+			Hipblas::setStream(stream);
+			Hipsparse::setStream(stream);
 		}
 		NVGRAPH_CATCHES(rc)
 
@@ -676,15 +676,15 @@ namespace nvgraph
 				// Create the internal CSR representation
 				CsrGraph<int> *CSRG = new CsrGraph<int>(v, e, handle->stream);
 
-				CHECK_CUDA(hipMemcpy(CSRG->get_raw_row_offsets(),
-									 neighborhood,
-									 (size_t)((CSRG->get_num_vertices() + 1) * sizeof(int)),
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(CSRG->get_raw_row_offsets(),
+									neighborhood,
+									(size_t)((CSRG->get_num_vertices() + 1) * sizeof(int)),
+									hipMemcpyDefault));
 
-				CHECK_CUDA(hipMemcpy(CSRG->get_raw_column_indices(),
-									 edgedest,
-									 (size_t)((CSRG->get_num_edges()) * sizeof(int)),
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(CSRG->get_raw_column_indices(),
+									edgedest,
+									(size_t)((CSRG->get_num_edges()) * sizeof(int)),
+									hipMemcpyDefault));
 
 				// Set the graph handle
 				descrG->graph_handle = CSRG;
@@ -890,18 +890,18 @@ namespace nvgraph
 
 				if (neighborhood != NULL)
 				{
-					CHECK_CUDA(hipMemcpy(neighborhood,
-										 CSRG->get_raw_row_offsets(),
-										 (size_t)((v + 1) * sizeof(int)),
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(neighborhood,
+										CSRG->get_raw_row_offsets(),
+										(size_t)((v + 1) * sizeof(int)),
+										hipMemcpyDefault));
 				}
 
 				if (edgedest != NULL)
 				{
-					CHECK_CUDA(hipMemcpy(edgedest,
-										 CSRG->get_raw_column_indices(),
-										 (size_t)((e) * sizeof(int)),
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(edgedest,
+										CSRG->get_raw_column_indices(),
+										(size_t)((e) * sizeof(int)),
+										hipMemcpyDefault));
 				}
 			}
 		}
@@ -1272,7 +1272,7 @@ namespace nvgraph
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
 
-			cudaCheckError();
+			hipCheckError();
 		}
 		NVGRAPH_CATCHES(rc)
 
@@ -1329,7 +1329,7 @@ namespace nvgraph
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
 
-			cudaCheckError();
+			hipCheckError();
 		}
 		NVGRAPH_CATCHES(rc)
 
@@ -1367,18 +1367,18 @@ namespace nvgraph
 				nvgraphCSRTopology32I_t dstT = static_cast<nvgraphCSRTopology32I_t>(dstTopology);
 				dstT->nvertices = srcT->nvertices;
 				dstT->nedges = srcT->nedges;
-				CHECK_CUDA(hipMemcpy(dstT->source_offsets,
-									 srcT->source_offsets,
-									 (srcT->nvertices + 1) * sizeof(int),
-									 hipMemcpyDefault));
-				CHECK_CUDA(hipMemcpy(dstT->destination_indices,
-									 srcT->destination_indices,
-									 srcT->nedges * sizeof(int),
-									 hipMemcpyDefault));
-				CHECK_CUDA(hipMemcpy(dstEdgeData,
-									 srcEdgeData,
-									 srcT->nedges * sizeT,
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(dstT->source_offsets,
+									srcT->source_offsets,
+									(srcT->nvertices + 1) * sizeof(int),
+									hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(dstT->destination_indices,
+									srcT->destination_indices,
+									srcT->nedges * sizeof(int),
+									hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(dstEdgeData,
+									srcEdgeData,
+									srcT->nedges * sizeT,
+									hipMemcpyDefault));
 			}
 			else if (srcTType == NVGRAPH_CSR_32 && dstTType == NVGRAPH_CSC_32)
 			{ // CSR2CSC
@@ -1407,14 +1407,14 @@ namespace nvgraph
 							srcT->nvertices,
 							dstT->source_indices,
 							HIPSPARSE_INDEX_BASE_ZERO);
-					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
-										 srcT->destination_indices,
-										 srcT->nedges * sizeof(int),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy(dstEdgeData,
-										 srcEdgeData,
-										 srcT->nedges * sizeT,
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstT->destination_indices,
+										srcT->destination_indices,
+										srcT->nedges * sizeof(int),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstEdgeData,
+										srcEdgeData,
+										srcT->nedges * sizeT,
+										hipMemcpyDefault));
 				}
 				else if (dstT->tag == NVGRAPH_SORTED_BY_DESTINATION)
 				{
@@ -1459,18 +1459,18 @@ namespace nvgraph
 				nvgraphCSCTopology32I_t dstT = static_cast<nvgraphCSCTopology32I_t>(dstTopology);
 				dstT->nvertices = srcT->nvertices;
 				dstT->nedges = srcT->nedges;
-				CHECK_CUDA(hipMemcpy(dstT->destination_offsets,
-									 srcT->destination_offsets,
-									 (srcT->nvertices + 1) * sizeof(int),
-									 hipMemcpyDefault));
-				CHECK_CUDA(hipMemcpy(dstT->source_indices,
-									 srcT->source_indices,
-									 srcT->nedges * sizeof(int),
-									 hipMemcpyDefault));
-				CHECK_CUDA(hipMemcpy(dstEdgeData,
-									 srcEdgeData,
-									 srcT->nedges * sizeT,
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(dstT->destination_offsets,
+									srcT->destination_offsets,
+									(srcT->nvertices + 1) * sizeof(int),
+									hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(dstT->source_indices,
+									srcT->source_indices,
+									srcT->nedges * sizeof(int),
+									hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(dstEdgeData,
+									srcEdgeData,
+									srcT->nedges * sizeT,
+									hipMemcpyDefault));
 			}
 			else if (srcTType == NVGRAPH_CSC_32 && dstTType == NVGRAPH_COO_32)
 			{ // CSC2COO
@@ -1502,14 +1502,14 @@ namespace nvgraph
 							srcT->nvertices,
 							dstT->destination_indices,
 							HIPSPARSE_INDEX_BASE_ZERO);
-					CHECK_CUDA(hipMemcpy(dstT->source_indices,
-										 srcT->source_indices,
-										 srcT->nedges * sizeof(int),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy(dstEdgeData,
-										 srcEdgeData,
-										 srcT->nedges * sizeT,
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstT->source_indices,
+										srcT->source_indices,
+										srcT->nedges * sizeof(int),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstEdgeData,
+										srcEdgeData,
+										srcT->nedges * sizeT,
+										hipMemcpyDefault));
 				}
 				else
 				{
@@ -1530,14 +1530,14 @@ namespace nvgraph
 							srcT->nvertices,
 							dstT->source_offsets,
 							HIPSPARSE_INDEX_BASE_ZERO);
-					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
-										 srcT->destination_indices,
-										 srcT->nedges * sizeof(int),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy(dstEdgeData,
-										 srcEdgeData,
-										 srcT->nedges * sizeT,
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstT->destination_indices,
+										srcT->destination_indices,
+										srcT->nedges * sizeof(int),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstEdgeData,
+										srcEdgeData,
+										srcT->nedges * sizeT,
+										hipMemcpyDefault));
 				}
 				else if (srcT->tag == NVGRAPH_SORTED_BY_DESTINATION)
 				{
@@ -1587,14 +1587,14 @@ namespace nvgraph
 							srcT->nvertices,
 							dstT->destination_offsets,
 							HIPSPARSE_INDEX_BASE_ZERO);
-					CHECK_CUDA(hipMemcpy(dstT->source_indices,
-										 srcT->source_indices,
-										 srcT->nedges * sizeof(int),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy(dstEdgeData,
-										 srcEdgeData,
-										 srcT->nedges * sizeT,
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstT->source_indices,
+										srcT->source_indices,
+										srcT->nedges * sizeof(int),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstEdgeData,
+										srcEdgeData,
+										srcT->nedges * sizeT,
+										hipMemcpyDefault));
 				}
 				else if (srcT->tag == NVGRAPH_DEFAULT || srcT->tag == NVGRAPH_UNSORTED)
 				{
@@ -1619,18 +1619,18 @@ namespace nvgraph
 				dstT->nedges = srcT->nedges;
 				if (srcT->tag == dstT->tag || dstT->tag == NVGRAPH_DEFAULT || dstT->tag == NVGRAPH_UNSORTED)
 				{
-					CHECK_CUDA(hipMemcpy(dstT->source_indices,
-										 srcT->source_indices,
-										 srcT->nedges * sizeof(int),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy(dstT->destination_indices,
-										 srcT->destination_indices,
-										 srcT->nedges * sizeof(int),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy(dstEdgeData,
-										 srcEdgeData,
-										 srcT->nedges * sizeT,
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstT->source_indices,
+										srcT->source_indices,
+										srcT->nedges * sizeof(int),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstT->destination_indices,
+										srcT->destination_indices,
+										srcT->nedges * sizeof(int),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy(dstEdgeData,
+										srcEdgeData,
+										srcT->nedges * sizeT,
+										hipMemcpyDefault));
 				}
 				else if (dstT->tag == NVGRAPH_SORTED_BY_SOURCE)
 				{
@@ -1718,7 +1718,7 @@ namespace nvgraph
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
 
-			cudaCheckError();
+			hipCheckError();
 		}
 		NVGRAPH_CATCHES(rc)
 
@@ -1764,7 +1764,7 @@ namespace nvgraph
 			else
 				return NVGRAPH_STATUS_TYPE_NOT_SUPPORTED;
 
-			cudaCheckError();
+			hipCheckError();
 		}
 		NVGRAPH_CATCHES(rc)
 
@@ -2538,18 +2538,18 @@ namespace nvgraph
 				// give a copy of results to the user
 				if (rc == NVGRAPH_OK)
 				{
-					CHECK_CUDA(hipMemcpy((int *)clustering,
-										 clust.raw(),
-										 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy((float *)eig_vals,
-										 eigVals.raw(),
-										 (size_t)(n_eig_vects * sizeof(float)),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy((float *)eig_vects,
-										 eigVecs.raw(),
-										 (size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(float)),
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((int *)clustering,
+										clust.raw(),
+										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((float *)eig_vals,
+										eigVals.raw(),
+										(size_t)(n_eig_vects * sizeof(float)),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((float *)eig_vects,
+										eigVecs.raw(),
+										(size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(float)),
+										hipMemcpyDefault));
 				}
 
 				break;
@@ -2604,18 +2604,18 @@ namespace nvgraph
 				// give a copy of results to the user
 				if (rc == NVGRAPH_OK)
 				{
-					CHECK_CUDA(hipMemcpy((int *)clustering,
-										 clust.raw(),
-										 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy((double *)eig_vals,
-										 eigVals.raw(),
-										 (size_t)(n_eig_vects * sizeof(double)),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy((double *)eig_vects,
-										 eigVecs.raw(),
-										 (size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(double)),
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((int *)clustering,
+										clust.raw(),
+										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((double *)eig_vals,
+										eigVals.raw(),
+										(size_t)(n_eig_vects * sizeof(double)),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((double *)eig_vects,
+										eigVecs.raw(),
+										(size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(double)),
+										hipMemcpyDefault));
 				}
 				break;
 			}
@@ -2665,10 +2665,10 @@ namespace nvgraph
 				ValuedCsrGraph<int, float> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
-				CHECK_CUDA(hipMemcpy(clust.raw(),
-									 (int *)clustering,
-									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(clust.raw(),
+									(int *)clustering,
+									(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									hipMemcpyDefault));
 				rc = analyzePartition<int, float>(network,
 												  n_clusters,
 												  clust.raw(),
@@ -2688,10 +2688,10 @@ namespace nvgraph
 				ValuedCsrGraph<int, double> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
-				CHECK_CUDA(hipMemcpy(clust.raw(),
-									 (int *)clustering,
-									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(clust.raw(),
+									(int *)clustering,
+									(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									hipMemcpyDefault));
 				rc = analyzePartition<int, double>(network,
 												   n_clusters,
 												   clust.raw(),
@@ -2768,10 +2768,10 @@ namespace nvgraph
 				Size2Selector<int, float> one_phase_hand_checking(sim_metric);
 				rc = one_phase_hand_checking.setAggregates(network, agg, num_agg);
 				*num_aggregates = static_cast<size_t>(num_agg);
-				CHECK_CUDA(hipMemcpy((int *)aggregates,
-									 agg.raw(),
-									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy((int *)aggregates,
+									agg.raw(),
+									(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									hipMemcpyDefault));
 				break;
 			}
 			case HIPBLAS_R_64F:
@@ -2788,10 +2788,10 @@ namespace nvgraph
 				Size2Selector<int, double> one_phase_hand_checking(sim_metric);
 				rc = one_phase_hand_checking.setAggregates(network, agg, num_agg);
 				*num_aggregates = static_cast<size_t>(num_agg);
-				CHECK_CUDA(hipMemcpy((int *)aggregates,
-									 agg.raw(),
-									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy((int *)aggregates,
+									agg.raw(),
+									(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									hipMemcpyDefault));
 				break;
 			}
 			default:
@@ -2895,18 +2895,18 @@ namespace nvgraph
 				// give a copy of results to the user
 				if (rc == NVGRAPH_OK)
 				{
-					CHECK_CUDA(hipMemcpy((int *)clustering,
-										 clust.raw(),
-										 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy((float *)eig_vals,
-										 eigVals.raw(),
-										 (size_t)(n_eig_vects * sizeof(float)),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy((float *)eig_vects,
-										 eigVecs.raw(),
-										 (size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(float)),
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((int *)clustering,
+										clust.raw(),
+										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((float *)eig_vals,
+										eigVals.raw(),
+										(size_t)(n_eig_vects * sizeof(float)),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((float *)eig_vects,
+										eigVecs.raw(),
+										(size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(float)),
+										hipMemcpyDefault));
 				}
 
 				break;
@@ -2939,18 +2939,18 @@ namespace nvgraph
 				// give a copy of results to the user
 				if (rc == NVGRAPH_OK)
 				{
-					CHECK_CUDA(hipMemcpy((int *)clustering,
-										 clust.raw(),
-										 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy((double *)eig_vals,
-										 eigVals.raw(),
-										 (size_t)(n_eig_vects * sizeof(double)),
-										 hipMemcpyDefault));
-					CHECK_CUDA(hipMemcpy((double *)eig_vects,
-										 eigVecs.raw(),
-										 (size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(double)),
-										 hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((int *)clustering,
+										clust.raw(),
+										(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((double *)eig_vals,
+										eigVals.raw(),
+										(size_t)(n_eig_vects * sizeof(double)),
+										hipMemcpyDefault));
+					CHECK_HIP(hipMemcpy((double *)eig_vects,
+										eigVecs.raw(),
+										(size_t)(n_eig_vects * MCSRG->get_num_vertices() * sizeof(double)),
+										hipMemcpyDefault));
 				}
 				break;
 			}
@@ -2999,10 +2999,10 @@ namespace nvgraph
 				ValuedCsrGraph<int, float> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
-				CHECK_CUDA(hipMemcpy(clust.raw(),
-									 (int *)clustering,
-									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(clust.raw(),
+									(int *)clustering,
+									(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									hipMemcpyDefault));
 				rc = analyzeModularity<int, float>(network,
 												   n_clusters,
 												   clust.raw(),
@@ -3018,10 +3018,10 @@ namespace nvgraph
 				if (weight_index >= MCSRG->get_num_edge_dim() || n_clusters > static_cast<int>(MCSRG->get_num_vertices())) // base index is 0
 					return NVGRAPH_STATUS_INVALID_VALUE;
 				Vector<int> clust(MCSRG->get_num_vertices(), handle->stream);
-				CHECK_CUDA(hipMemcpy(clust.raw(),
-									 (int *)clustering,
-									 (size_t)(MCSRG->get_num_vertices() * sizeof(int)),
-									 hipMemcpyDefault));
+				CHECK_HIP(hipMemcpy(clust.raw(),
+									(int *)clustering,
+									(size_t)(MCSRG->get_num_vertices() * sizeof(int)),
+									hipMemcpyDefault));
 				ValuedCsrGraph<int, double> network =
 					*MCSRG->get_valued_csr_graph(weight_index);
 				rc = analyzeModularity<int, double>(network,

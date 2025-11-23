@@ -47,11 +47,11 @@ namespace nvgraph
         size_t temp_buf_size = 0;
         hipError_t err = cub_semiring::cub::DeviceSpmv::CsrMV<V, SR>(NULL, temp_buf_size, d_values, d_row_offsets, d_column_indices, d_vector_x,
                                                                      d_vector_y, alpha, beta, num_rows, num_cols, num_nonzeros, stream);
-        CHECK_CUDA(err);
+        CHECK_HIP(err);
         Vector<char> tmp_buf(std::max(temp_buf_size, size_t(1)), stream);
         err = cub_semiring::cub::DeviceSpmv::CsrMV<V, SR>(tmp_buf.raw(), temp_buf_size, d_values, d_row_offsets, d_column_indices, d_vector_x,
                                                           d_vector_y, alpha, beta, num_rows, num_cols, num_nonzeros, stream);
-        CHECK_CUDA(err);
+        CHECK_HIP(err);
         return NVGRAPH_OK;
     };
 

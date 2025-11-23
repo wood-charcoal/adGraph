@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #pragma once
 
+#include <hip/hip_runtime.h>
 #include <hipsparse.h>
 #include <cusparse_internal.h>
 #include "valued_csr_graph.hxx"
@@ -26,150 +27,147 @@
 
 namespace nvgraph
 {
-class Cusparse 
-{
-private:
-  // global CUSPARSE handle for nvgraph
-  static hipsparseHandle_t m_handle; // Constructor.
-  Cusparse();
-  // Destructor.
-  ~Cusparse();
-
-public:
-
-  // Get the handle.
-  static hipsparseHandle_t get_handle()
+  class Hipsparse
   {
+  private:
+    // global CUSPARSE handle for nvgraph
+    static hipsparseHandle_t m_handle; // Constructor.
+    Hipsparse();
+    // Destructor.
+    ~Hipsparse();
+
+  public:
+    // Get the handle.
+    static hipsparseHandle_t get_handle()
+    {
       if (m_handle == 0)
-          CHECK_CUSPARSE(hipsparseCreate(&m_handle));
+        CHECK_HIPSPARSE(hipsparseCreate(&m_handle));
       return m_handle;
-  }
-  // Destroy handle
-  static void destroy_handle()
-  {
-    if (m_handle != 0)
-      CHECK_CUSPARSE( hipsparseDestroy(m_handle) );
-    m_handle = 0;
-  }
-  static void setStream(hipStream_t stream) 
-  {   
-      hipsparseHandle_t handle = Cusparse::get_handle();
-      CHECK_CUSPARSE(hipsparseSetStream(handle, stream));
-  }
-  // Set pointer mode
-  static void set_pointer_mode_device();
-  static void set_pointer_mode_host();
+    }
+    // Destroy handle
+    static void destroy_handle()
+    {
+      if (m_handle != 0)
+        CHECK_HIPSPARSE(hipsparseDestroy(m_handle));
+      m_handle = 0;
+    }
+    static void setStream(hipStream_t stream)
+    {
+      hipsparseHandle_t handle = Hipsparse::get_handle();
+      CHECK_HIPSPARSE(hipsparseSetStream(handle, stream));
+    }
+    // Set pointer mode
+    static void set_pointer_mode_device();
+    static void set_pointer_mode_host();
 
-  // operate on all rows and columns y= alpha*A.x + beta*y
-  template <typename IndexType_, typename ValueType_>
-  static void csrmv( const bool transposed,
-                     const bool sym,
-                     const int m, const int n, const int nnz, 
-                     const ValueType_* alpha, 
-                     const ValueType_* csrVal,
-                     const IndexType_ *csrRowPtr, 
-                     const IndexType_ *csrColInd, 
-                     const ValueType_* x,
-                     const ValueType_* beta, 
-                     ValueType_* y);
-  
-  template <typename IndexType_, typename ValueType_>
-  static void csrmv( const bool transposed,
-                     const bool sym,
-                     const ValueType_* alpha, 
-                     const ValuedCsrGraph<IndexType_, ValueType_>& G,
-                     const Vector<ValueType_>& x,
-                     const ValueType_* beta, 
-                     Vector<ValueType_>& y
-                     );
-  
-  // future possible features
-  /*
-  template <class TConfig>
-  static void csrmv_with_mask( const typename TConfig::MatPrec alphaConst, 
-                     Matrix<TConfig> &A, 
-                     Vector<TConfig> &x,
-                     const typename TConfig::MatPrec betaConst, 
-                     Vector<TConfig> &y );
+    // operate on all rows and columns y= alpha*A.x + beta*y
+    template <typename IndexType_, typename ValueType_>
+    static void csrmv(const bool transposed,
+                      const bool sym,
+                      const int m, const int n, const int nnz,
+                      const ValueType_ *alpha,
+                      const ValueType_ *csrVal,
+                      const IndexType_ *csrRowPtr,
+                      const IndexType_ *csrColInd,
+                      const ValueType_ *x,
+                      const ValueType_ *beta,
+                      ValueType_ *y);
 
-  template <class TConfig>
-  static void csrmv_with_mask_restriction( const typename TConfig::MatPrec alphaConst, 
-                     Matrix<TConfig> &A, 
-                     Vector<TConfig> &x,
-                     const typename TConfig::MatPrec betaConst, 
-                     Vector<TConfig> &y, 
-                     Matrix<TConfig> &P);
+    template <typename IndexType_, typename ValueType_>
+    static void csrmv(const bool transposed,
+                      const bool sym,
+                      const ValueType_ *alpha,
+                      const ValuedCsrGraph<IndexType_, ValueType_> &G,
+                      const Vector<ValueType_> &x,
+                      const ValueType_ *beta,
+                      Vector<ValueType_> &y);
 
-  // E is a vector that represents a diagonal matrix
-  // operate on all rows and columns
-  // y= alpha*E.x + beta*y
-  template <class TConfig>
-  static void csrmv( const typename TConfig::MatPrec alphaConst, 
-                     Matrix<TConfig> &A, 
-                     const typename Matrix<TConfig>::MVector &E,
-                     Vector<TConfig> &x,
-                     const typename TConfig::MatPrec betaConst, 
-                     Vector<TConfig> &y, 
-                     ViewType view = OWNED );
+    // future possible features
+    /*
+    template <class TConfig>
+    static void csrmv_with_mask( const typename TConfig::MatPrec alphaConst,
+                       Matrix<TConfig> &A,
+                       Vector<TConfig> &x,
+                       const typename TConfig::MatPrec betaConst,
+                       Vector<TConfig> &y );
 
-  // operate only on columns specified by columnColorSelector, see enum ColumnColorSelector above
-  // operate only on rows of specified color, given by A.offsets_rows_per_color, A.sorted_rows_by_color
-  // y= alpha*A.x + beta*y
-  template <class TConfig>
-  static void csrmv( ColumnColorSelector columnColorSelector, 
-                     const int color,
-                     const typename TConfig::MatPrec alphaConst, 
-                     Matrix<TConfig> &A, 
-                     Vector<TConfig> &x,
-                     const typename TConfig::MatPrec betaConst, 
-                     Vector<TConfig> &y, 
-                     ViewType view = OWNED );
+    template <class TConfig>
+    static void csrmv_with_mask_restriction( const typename TConfig::MatPrec alphaConst,
+                       Matrix<TConfig> &A,
+                       Vector<TConfig> &x,
+                       const typename TConfig::MatPrec betaConst,
+                       Vector<TConfig> &y,
+                       Matrix<TConfig> &P);
 
-  // E is a vector that represents a diagonal matrix
-  // operate only on rows of specified color, given by A.offsets_rows_per_color, A.sorted_rows_by_color
-  // y= alpha*E.x + beta*y
-  template <class TConfig>
-  static void csrmv( const int color,
-                     typename TConfig::MatPrec alphaConst, 
-                     Matrix<TConfig> &A, 
-                     const typename Matrix<TConfig>::MVector &E, 
-                     Vector<TConfig> &x,
-                     typename TConfig::MatPrec betaConst, 
-                     Vector<TConfig> &y, 
-                     ViewType view=OWNED );
+    // E is a vector that represents a diagonal matrix
+    // operate on all rows and columns
+    // y= alpha*E.x + beta*y
+    template <class TConfig>
+    static void csrmv( const typename TConfig::MatPrec alphaConst,
+                       Matrix<TConfig> &A,
+                       const typename Matrix<TConfig>::MVector &E,
+                       Vector<TConfig> &x,
+                       const typename TConfig::MatPrec betaConst,
+                       Vector<TConfig> &y,
+                       ViewType view = OWNED );
 
-  template <class TConfig>
-  static void csrmm(typename TConfig::MatPrec alpha,
-                    Matrix<TConfig> &A,
-                    Vector<TConfig> &V,
-                    typename TConfig::VecPrec beta,
-                    Vector<TConfig> &Res);
+    // operate only on columns specified by columnColorSelector, see enum ColumnColorSelector above
+    // operate only on rows of specified color, given by A.offsets_rows_per_color, A.sorted_rows_by_color
+    // y= alpha*A.x + beta*y
+    template <class TConfig>
+    static void csrmv( ColumnColorSelector columnColorSelector,
+                       const int color,
+                       const typename TConfig::MatPrec alphaConst,
+                       Matrix<TConfig> &A,
+                       Vector<TConfig> &x,
+                       const typename TConfig::MatPrec betaConst,
+                       Vector<TConfig> &y,
+                       ViewType view = OWNED );
 
-*/
+    // E is a vector that represents a diagonal matrix
+    // operate only on rows of specified color, given by A.offsets_rows_per_color, A.sorted_rows_by_color
+    // y= alpha*E.x + beta*y
+    template <class TConfig>
+    static void csrmv( const int color,
+                       typename TConfig::MatPrec alphaConst,
+                       Matrix<TConfig> &A,
+                       const typename Matrix<TConfig>::MVector &E,
+                       Vector<TConfig> &x,
+                       typename TConfig::MatPrec betaConst,
+                       Vector<TConfig> &y,
+                       ViewType view=OWNED );
 
- template <typename IndexType_, typename ValueType_>
- static void csrmm(const bool transposed,
-                   const bool sym,
-                   const int m, 
-                   const int n, 
-                   const int k,
-                   const int nnz, 
-                   const ValueType_* alpha, 
-                   const ValueType_* csrVal,
-                   const IndexType_* csrRowPtr, 
-                   const IndexType_* csrColInd, 
-                   const ValueType_* x,
-                   const int ldx,
-                   const ValueType_* beta, 
-                   ValueType_* y,
-                   const int ldy);   
+    template <class TConfig>
+    static void csrmm(typename TConfig::MatPrec alpha,
+                      Matrix<TConfig> &A,
+                      Vector<TConfig> &V,
+                      typename TConfig::VecPrec beta,
+                      Vector<TConfig> &Res);
 
- //template <typename IndexType_, typename ValueType_>
- static void csr2coo( const int n, 
-                                     const int nnz, 
-                                     const int *csrRowPtr,
-                                     int *cooRowInd);   
-};
+  */
+
+    template <typename IndexType_, typename ValueType_>
+    static void csrmm(const bool transposed,
+                      const bool sym,
+                      const int m,
+                      const int n,
+                      const int k,
+                      const int nnz,
+                      const ValueType_ *alpha,
+                      const ValueType_ *csrVal,
+                      const IndexType_ *csrRowPtr,
+                      const IndexType_ *csrColInd,
+                      const ValueType_ *x,
+                      const int ldx,
+                      const ValueType_ *beta,
+                      ValueType_ *y,
+                      const int ldy);
+
+    // template <typename IndexType_, typename ValueType_>
+    static void csr2coo(const int n,
+                        const int nnz,
+                        const int *csrRowPtr,
+                        int *cooRowInd);
+  };
 
 } // end namespace nvgraph
-

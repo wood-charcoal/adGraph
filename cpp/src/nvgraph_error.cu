@@ -19,8 +19,8 @@
 namespace nvgraph
 {
 
-
-  void nvgraph_default_output(const char *msg, int length) {
+  void nvgraph_default_output(const char *msg, int length)
+  {
 #if defined(DEBUG) || defined(VERBOSE_DIAG)
     printf("%s", msg);
 #endif
@@ -28,24 +28,24 @@ namespace nvgraph
 
   NVGRAPH_output_callback nvgraph_output = nvgraph_default_output;
   NVGRAPH_output_callback error_output = nvgraph_default_output;
-  //NVGRAPH_output_callback nvgraph_distributed_output = nvgraph_default_output;*/
+  // NVGRAPH_output_callback nvgraph_distributed_output = nvgraph_default_output;*/
 
-  // Timer 
-  struct cuda_timer::event_pair
+  // Timer
+  struct hip_timer::event_pair
   {
     hipEvent_t start;
     hipEvent_t end;
   };
-  cuda_timer::cuda_timer(): p(new event_pair()) { }
-  
-  void cuda_timer::start()
+  hip_timer::hip_timer() : p(new event_pair()) {}
+
+  void hip_timer::start()
   {
     hipEventCreate(&p->start);
     hipEventCreate(&p->end);
     hipEventRecord(p->start, 0);
-    cudaCheckError();
+    hipCheckError();
   }
-  float cuda_timer::stop()
+  float hip_timer::stop()
   {
     hipEventRecord(p->end, 0);
     hipEventSynchronize(p->end);
@@ -53,9 +53,8 @@ namespace nvgraph
     hipEventElapsedTime(&elapsed_time, p->start, p->end);
     hipEventDestroy(p->start);
     hipEventDestroy(p->end);
-    cudaCheckError();
+    hipCheckError();
     return elapsed_time;
   }
 
 } // end namespace nvgraph
-

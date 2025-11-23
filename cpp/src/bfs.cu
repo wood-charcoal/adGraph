@@ -24,118 +24,111 @@
 
 using namespace bfs_kernels;
 
-namespace nvgraph {
-	enum BFS_ALGO_STATE {
-		TOPDOWN, BOTTOMUP
+namespace nvgraph
+{
+	enum BFS_ALGO_STATE
+	{
+		TOPDOWN,
+		BOTTOMUP
 	};
 
-	template<typename IndexType>
-	NVGRAPH_ERROR Bfs<IndexType>::setup() {
+	template <typename IndexType>
+	NVGRAPH_ERROR Bfs<IndexType>::setup()
+	{
 
 		// Determinism flag, false by default
 		deterministic = false;
-		//Working data
-		//Each vertex can be in the frontier at most once
+		// Working data
+		// Each vertex can be in the frontier at most once
 		hipMalloc(&frontier, n * sizeof(IndexType));
-		cudaCheckError()
-		;
+		hipCheckError();
 
-		//We will update frontier during the execution
-		//We need the orig to reset frontier, or hipFree
+		// We will update frontier during the execution
+		// We need the orig to reset frontier, or hipFree
 		original_frontier = frontier;
 
-		//size of bitmaps for vertices
+		// size of bitmaps for vertices
 		vertices_bmap_size = (n / (8 * sizeof(int)) + 1);
-		//ith bit of visited_bmap is set <=> ith vertex is visited
+		// ith bit of visited_bmap is set <=> ith vertex is visited
 		hipMalloc(&visited_bmap, sizeof(int) * vertices_bmap_size);
-		cudaCheckError()
-		;
+		hipCheckError();
 
-		//ith bit of isolated_bmap is set <=> degree of ith vertex = 0
+		// ith bit of isolated_bmap is set <=> degree of ith vertex = 0
 		hipMalloc(&isolated_bmap, sizeof(int) * vertices_bmap_size);
-		cudaCheckError()
-		;
+		hipCheckError();
 
-		//vertices_degree[i] = degree of vertex i
+		// vertices_degree[i] = degree of vertex i
 		hipMalloc(&vertex_degree, sizeof(IndexType) * n);
-		cudaCheckError()
-		;
+		hipCheckError();
 
-		//Cub working data
+		// Cub working data
 		cub_exclusive_sum_alloc(n + 1, d_cub_exclusive_sum_storage, cub_exclusive_sum_storage_bytes);
 
-		//We will need (n+1) ints buffer for two differents things (bottom up or top down) - sharing it since those uses are mutually exclusive
+		// We will need (n+1) ints buffer for two differents things (bottom up or top down) - sharing it since those uses are mutually exclusive
 		hipMalloc(&buffer_np1_1, (n + 1) * sizeof(IndexType));
-		cudaCheckError()
-		;
+		hipCheckError();
 		hipMalloc(&buffer_np1_2, (n + 1) * sizeof(IndexType));
-		cudaCheckError()
-		;
+		hipCheckError();
 
-		//Using buffers : top down
+		// Using buffers : top down
 
-		//frontier_vertex_degree[i] is the degree of vertex frontier[i]
+		// frontier_vertex_degree[i] is the degree of vertex frontier[i]
 		frontier_vertex_degree = buffer_np1_1;
-		//exclusive sum of frontier_vertex_degree
+		// exclusive sum of frontier_vertex_degree
 		exclusive_sum_frontier_vertex_degree = buffer_np1_2;
 
-		//Using buffers : bottom up
+		// Using buffers : bottom up
 
-		//contains list of unvisited vertices
+		// contains list of unvisited vertices
 		unvisited_queue = buffer_np1_1;
-		//size of the "last" unvisited queue : size_last_unvisited_queue
-		//refers to the size of unvisited_queue
-		//which may not be up to date (the queue may contains vertices that are now visited)
+		// size of the "last" unvisited queue : size_last_unvisited_queue
+		// refers to the size of unvisited_queue
+		// which may not be up to date (the queue may contains vertices that are now visited)
 
-		//We may leave vertices unvisited after bottom up main kernels - storing them here
+		// We may leave vertices unvisited after bottom up main kernels - storing them here
 		left_unvisited_queue = buffer_np1_2;
 
-		//We use buckets of edges (32 edges per bucket for now, see exact macro in bfs_kernels). frontier_vertex_degree_buckets_offsets[i] is the index k such as frontier[k] is the source of the first edge of the bucket
-		//See top down kernels for more details
-		hipMalloc(	&exclusive_sum_frontier_vertex_buckets_offsets,
-						((nnz / TOP_DOWN_EXPAND_DIMX + 1) * NBUCKETS_PER_BLOCK + 2) * sizeof(IndexType));
-		cudaCheckError()
-		;
+		// We use buckets of edges (32 edges per bucket for now, see exact macro in bfs_kernels). frontier_vertex_degree_buckets_offsets[i] is the index k such as frontier[k] is the source of the first edge of the bucket
+		// See top down kernels for more details
+		hipMalloc(&exclusive_sum_frontier_vertex_buckets_offsets,
+				  ((nnz / TOP_DOWN_EXPAND_DIMX + 1) * NBUCKETS_PER_BLOCK + 2) * sizeof(IndexType));
+		hipCheckError();
 
-		//Init device-side counters
-		//Those counters must be/can be reset at each bfs iteration
-		//Keeping them adjacent in memory allow use call only one hipMemset - launch latency is the current bottleneck
+		// Init device-side counters
+		// Those counters must be/can be reset at each bfs iteration
+		// Keeping them adjacent in memory allow use call only one hipMemset - launch latency is the current bottleneck
 		hipMalloc(&d_counters_pad, 4 * sizeof(IndexType));
-		cudaCheckError()
-		;
+		hipCheckError();
 
 		d_new_frontier_cnt = &d_counters_pad[0];
 		d_mu = &d_counters_pad[1];
 		d_unvisited_cnt = &d_counters_pad[2];
 		d_left_unvisited_cnt = &d_counters_pad[3];
 
-		//Lets use this int* for the next 3 lines
-		//Its dereferenced value is not initialized - so we dont care about what we put in it
-		IndexType * d_nisolated = d_new_frontier_cnt;
+		// Lets use this int* for the next 3 lines
+		// Its dereferenced value is not initialized - so we dont care about what we put in it
+		IndexType *d_nisolated = d_new_frontier_cnt;
 		hipMemsetAsync(d_nisolated, 0, sizeof(IndexType), stream);
-		cudaCheckError()
-		;
+		hipCheckError();
 
-		//Computing isolated_bmap
-		//Only dependent on graph - not source vertex - done once
+		// Computing isolated_bmap
+		// Only dependent on graph - not source vertex - done once
 		flag_isolated_vertices(n, isolated_bmap, row_offsets, vertex_degree, d_nisolated, stream);
 		hipMemcpyAsync(&nisolated, d_nisolated, sizeof(IndexType), hipMemcpyDeviceToHost, stream);
-		cudaCheckError()
-		;
+		hipCheckError();
 
-		//We need nisolated to be ready to use
+		// We need nisolated to be ready to use
 		hipStreamSynchronize(stream);
-		cudaCheckError()
-		;
+		hipCheckError();
 
 		return NVGRAPH_OK;
 	}
 
-	template<typename IndexType>
-	NVGRAPH_ERROR Bfs<IndexType>::configure(	IndexType *_distances,
-															IndexType *_predecessors,
-															int *_edge_mask)
-															{
+	template <typename IndexType>
+	NVGRAPH_ERROR Bfs<IndexType>::configure(IndexType *_distances,
+											IndexType *_predecessors,
+											int *_edge_mask)
+	{
 		distances = _distances;
 		predecessors = _predecessors;
 		edge_mask = _edge_mask;
@@ -144,55 +137,56 @@ namespace nvgraph {
 		computeDistances = (distances != NULL);
 		computePredecessors = (predecessors != NULL);
 
-		//We need distances to use bottom up
+		// We need distances to use bottom up
 		if (directed && !computeDistances)
 			hipMalloc(&distances, n * sizeof(IndexType));
 
-		cudaCheckError()
-		;
+		hipCheckError();
 
 		return NVGRAPH_OK;
 	}
 
-	template<typename IndexType>
-	NVGRAPH_ERROR Bfs<IndexType>::traverse(IndexType source_vertex) {
+	template <typename IndexType>
+	NVGRAPH_ERROR Bfs<IndexType>::traverse(IndexType source_vertex)
+	{
 
-		//Init visited_bmap
-		//If the graph is undirected, we not that
-		//we will never discover isolated vertices (in degree = out degree = 0)
-		//we avoid a lot of work by flagging them now
-		//in g500 graphs they represent ~25% of total vertices
-		//more than that for wiki and twitter graphs
+		// Init visited_bmap
+		// If the graph is undirected, we not that
+		// we will never discover isolated vertices (in degree = out degree = 0)
+		// we avoid a lot of work by flagging them now
+		// in g500 graphs they represent ~25% of total vertices
+		// more than that for wiki and twitter graphs
 
-		if (directed) {
+		if (directed)
+		{
 			hipMemsetAsync(visited_bmap, 0, vertices_bmap_size * sizeof(int), stream);
-		} else {
-			hipMemcpyAsync(	visited_bmap,
-									isolated_bmap,
-									vertices_bmap_size * sizeof(int),
-									hipMemcpyDeviceToDevice,
-									stream);
 		}
-		cudaCheckError()
-		;
+		else
+		{
+			hipMemcpyAsync(visited_bmap,
+						   isolated_bmap,
+						   vertices_bmap_size * sizeof(int),
+						   hipMemcpyDeviceToDevice,
+						   stream);
+		}
+		hipCheckError();
 
-		//If needed, setting all vertices as undiscovered (inf distance)
-		//We dont use computeDistances here
-		//if the graph is undirected, we may need distances even if
-		//computeDistances is false
+		// If needed, setting all vertices as undiscovered (inf distance)
+		// We dont use computeDistances here
+		// if the graph is undirected, we may need distances even if
+		// computeDistances is false
 		if (distances)
 			fill_vec(distances, n, vec_t<IndexType>::max, stream);
 
-		//If needed, setting all predecessors to non-existent (-1)
+		// If needed, setting all predecessors to non-existent (-1)
 		if (computePredecessors)
 		{
 			hipMemsetAsync(predecessors, -1, n * sizeof(IndexType), stream);
-			cudaCheckError()
-			;
+			hipCheckError();
 		}
 
 		//
-		//Initial frontier
+		// Initial frontier
 		//
 
 		frontier = original_frontier;
@@ -200,163 +194,158 @@ namespace nvgraph {
 		if (distances)
 		{
 			hipMemsetAsync(&distances[source_vertex], 0, sizeof(IndexType), stream);
-			cudaCheckError()
-			;
+			hipCheckError();
 		}
 
-		//Setting source_vertex as visited
-		//There may be bit already set on that bmap (isolated vertices) - if the graph is undirected
+		// Setting source_vertex as visited
+		// There may be bit already set on that bmap (isolated vertices) - if the graph is undirected
 		int current_visited_bmap_source_vert = 0;
 
-		if (!directed) {
+		if (!directed)
+		{
 			hipMemcpyAsync(&current_visited_bmap_source_vert,
-									&visited_bmap[source_vertex / INT_SIZE],
-									sizeof(int),
-									hipMemcpyDeviceToHost);
-			cudaCheckError()
-			;
-			//We need current_visited_bmap_source_vert
+						   &visited_bmap[source_vertex / INT_SIZE],
+						   sizeof(int),
+						   hipMemcpyDeviceToHost);
+			hipCheckError();
+			// We need current_visited_bmap_source_vert
 			hipStreamSynchronize(stream);
-			cudaCheckError()
-			;
-			//We could detect that source is isolated here
+			hipCheckError();
+			// We could detect that source is isolated here
 		}
 
 		int m = (1 << (source_vertex % INT_SIZE));
 
-		//In that case, source is isolated, done now
-		if (!directed && (m & current_visited_bmap_source_vert)) {
-			//Init distances and predecessors are done, (cf Streamsync in previous if)
-			cudaCheckError()
-			;
+		// In that case, source is isolated, done now
+		if (!directed && (m & current_visited_bmap_source_vert))
+		{
+			// Init distances and predecessors are done, (cf Streamsync in previous if)
+			hipCheckError();
 			return NVGRAPH_OK;
 		}
 
 		m |= current_visited_bmap_source_vert;
 
-		hipMemcpyAsync(	&visited_bmap[source_vertex / INT_SIZE],
-								&m,
-								sizeof(int),
-								hipMemcpyHostToDevice,
-								stream);
-		cudaCheckError()
-		;
+		hipMemcpyAsync(&visited_bmap[source_vertex / INT_SIZE],
+					   &m,
+					   sizeof(int),
+					   hipMemcpyHostToDevice,
+					   stream);
+		hipCheckError();
 
-		//Adding source_vertex to init frontier
-		hipMemcpyAsync(	&frontier[0],
-								&source_vertex,
-								sizeof(IndexType),
-								hipMemcpyHostToDevice,
-								stream);
-		cudaCheckError()
-		;
+		// Adding source_vertex to init frontier
+		hipMemcpyAsync(&frontier[0],
+					   &source_vertex,
+					   sizeof(IndexType),
+					   hipMemcpyHostToDevice,
+					   stream);
+		hipCheckError();
 
-		//mf : edges in frontier
-		//nf : vertices in frontier
-		//mu : edges undiscovered
-		//nu : nodes undiscovered
-		//lvl : current frontier's depth
+		// mf : edges in frontier
+		// nf : vertices in frontier
+		// mu : edges undiscovered
+		// nu : nodes undiscovered
+		// lvl : current frontier's depth
 		IndexType mf, nf, mu, nu;
 		bool growing;
 		IndexType lvl = 1;
 
-		//Frontier has one vertex
+		// Frontier has one vertex
 		nf = 1;
 
-		//all edges are undiscovered (by def isolated vertices have 0 edges)
+		// all edges are undiscovered (by def isolated vertices have 0 edges)
 		mu = nnz;
 
-		//all non isolated vertices are undiscovered (excepted source vertex, which is in frontier)
-		//That number is wrong if source_vertex is also isolated - but it's not important
+		// all non isolated vertices are undiscovered (excepted source vertex, which is in frontier)
+		// That number is wrong if source_vertex is also isolated - but it's not important
 		nu = n - nisolated - nf;
 
-		//Last frontier was 0, now it is 1
+		// Last frontier was 0, now it is 1
 		growing = true;
 
-		IndexType size_last_left_unvisited_queue = n; //we just need value > 0
-		IndexType size_last_unvisited_queue = 0; //queue empty
+		IndexType size_last_left_unvisited_queue = n; // we just need value > 0
+		IndexType size_last_unvisited_queue = 0;	  // queue empty
 
-		//Typical pre-top down workflow. set_frontier_degree + exclusive-scan
+		// Typical pre-top down workflow. set_frontier_degree + exclusive-scan
 		set_frontier_degree(frontier_vertex_degree, frontier, vertex_degree, nf, stream);
-		exclusive_sum(	d_cub_exclusive_sum_storage,
-							cub_exclusive_sum_storage_bytes,
-							frontier_vertex_degree,
-							exclusive_sum_frontier_vertex_degree,
-							nf + 1,
-							stream);
+		exclusive_sum(d_cub_exclusive_sum_storage,
+					  cub_exclusive_sum_storage_bytes,
+					  frontier_vertex_degree,
+					  exclusive_sum_frontier_vertex_degree,
+					  nf + 1,
+					  stream);
 
-		hipMemcpyAsync(	&mf,
-								&exclusive_sum_frontier_vertex_degree[nf],
-								sizeof(IndexType),
-								hipMemcpyDeviceToHost,
-								stream);
-		cudaCheckError()
-		;
+		hipMemcpyAsync(&mf,
+					   &exclusive_sum_frontier_vertex_degree[nf],
+					   sizeof(IndexType),
+					   hipMemcpyDeviceToHost,
+					   stream);
+		hipCheckError();
 
-		//We need mf
+		// We need mf
 		hipStreamSynchronize(stream);
-		cudaCheckError()
-		;
+		hipCheckError();
 
-		//At first we know we have to use top down
+		// At first we know we have to use top down
 		BFS_ALGO_STATE algo_state = TOPDOWN;
 
-		//useDistances : we check if a vertex is a parent using distances in bottom up - distances become working data
-		//undirected g : need parents to be in children's neighbors
+		// useDistances : we check if a vertex is a parent using distances in bottom up - distances become working data
+		// undirected g : need parents to be in children's neighbors
 		bool can_use_bottom_up = !directed && distances;
 
-		while (nf > 0) {
-			//Each vertices can appear only once in the frontierer array - we know it will fit
+		while (nf > 0)
+		{
+			// Each vertices can appear only once in the frontierer array - we know it will fit
 			new_frontier = frontier + nf;
 			IndexType old_nf = nf;
 			resetDevicePointers();
 
-			if (can_use_bottom_up) {
-				//Choosing algo
-				//Finite machine described in http://parlab.eecs.berkeley.edu/sites/all/parlab/files/main.pdf
+			if (can_use_bottom_up)
+			{
+				// Choosing algo
+				// Finite machine described in http://parlab.eecs.berkeley.edu/sites/all/parlab/files/main.pdf
 
-				switch (algo_state) {
+				switch (algo_state)
+				{
 				case TOPDOWN:
 					if (mf > mu / alpha)
 						algo_state = BOTTOMUP;
 					break;
 				case BOTTOMUP:
-					if (!growing && nf < n / beta) {
+					if (!growing && nf < n / beta)
+					{
 
-						//We need to prepare the switch back to top down
-						//We couldnt keep track of mu during bottom up - because we dont know what mf is. Computing mu here
-						count_unvisited_edges(	unvisited_queue,
-														size_last_unvisited_queue,
-														visited_bmap,
-														vertex_degree,
-														d_mu,
-														stream);
+						// We need to prepare the switch back to top down
+						// We couldnt keep track of mu during bottom up - because we dont know what mf is. Computing mu here
+						count_unvisited_edges(unvisited_queue,
+											  size_last_unvisited_queue,
+											  visited_bmap,
+											  vertex_degree,
+											  d_mu,
+											  stream);
 
-						//Typical pre-top down workflow. set_frontier_degree + exclusive-scan
+						// Typical pre-top down workflow. set_frontier_degree + exclusive-scan
 						set_frontier_degree(frontier_vertex_degree, frontier, vertex_degree, nf, stream);
-						exclusive_sum(	d_cub_exclusive_sum_storage,
-											cub_exclusive_sum_storage_bytes,
-											frontier_vertex_degree,
-											exclusive_sum_frontier_vertex_degree,
-											nf + 1,
-											stream);
+						exclusive_sum(d_cub_exclusive_sum_storage,
+									  cub_exclusive_sum_storage_bytes,
+									  frontier_vertex_degree,
+									  exclusive_sum_frontier_vertex_degree,
+									  nf + 1,
+									  stream);
 
-						hipMemcpyAsync(	&mf,
-												&exclusive_sum_frontier_vertex_degree[nf],
-												sizeof(IndexType),
-												hipMemcpyDeviceToHost,
-												stream);
-						cudaCheckError()
-						;
+						hipMemcpyAsync(&mf,
+									   &exclusive_sum_frontier_vertex_degree[nf],
+									   sizeof(IndexType),
+									   hipMemcpyDeviceToHost,
+									   stream);
+						hipCheckError();
 
 						hipMemcpyAsync(&mu, d_mu, sizeof(IndexType), hipMemcpyDeviceToHost, stream);
-						cudaCheckError()
-						;
+						hipCheckError();
 
-						//We will need mf and mu
+						// We will need mf and mu
 						hipStreamSynchronize(stream);
-						cudaCheckError()
-						;
+						hipCheckError();
 
 						algo_state = TOPDOWN;
 					}
@@ -364,87 +353,114 @@ namespace nvgraph {
 				}
 			}
 
-			//Executing algo
+			// Executing algo
 
-			switch (algo_state) {
+			switch (algo_state)
+			{
 			case TOPDOWN:
-				compute_bucket_offsets(	exclusive_sum_frontier_vertex_degree,
-												exclusive_sum_frontier_vertex_buckets_offsets,
-												nf,
-												mf,
-												stream);
-				frontier_expand(	row_offsets,
-										col_indices,
-										frontier,
-										nf,
-										mf,
-										lvl,
-										new_frontier,
-										d_new_frontier_cnt,
-										exclusive_sum_frontier_vertex_degree,
-										exclusive_sum_frontier_vertex_buckets_offsets,
-										visited_bmap,
-										distances,
-										predecessors,
-										edge_mask,
-										isolated_bmap,
-										directed,
-										stream,
-										deterministic);
+				compute_bucket_offsets(exclusive_sum_frontier_vertex_degree,
+									   exclusive_sum_frontier_vertex_buckets_offsets,
+									   nf,
+									   mf,
+									   stream);
+				frontier_expand(row_offsets,
+								col_indices,
+								frontier,
+								nf,
+								mf,
+								lvl,
+								new_frontier,
+								d_new_frontier_cnt,
+								exclusive_sum_frontier_vertex_degree,
+								exclusive_sum_frontier_vertex_buckets_offsets,
+								visited_bmap,
+								distances,
+								predecessors,
+								edge_mask,
+								isolated_bmap,
+								directed,
+								stream,
+								deterministic);
 
 				mu -= mf;
 
-				hipMemcpyAsync(	&nf,
-										d_new_frontier_cnt,
-										sizeof(IndexType),
-										hipMemcpyDeviceToHost,
-										stream);
-				cudaCheckError();
+				hipMemcpyAsync(&nf,
+							   d_new_frontier_cnt,
+							   sizeof(IndexType),
+							   hipMemcpyDeviceToHost,
+							   stream);
+				hipCheckError();
 
-				//We need nf
+				// We need nf
 				hipStreamSynchronize(stream);
-				cudaCheckError();
+				hipCheckError();
 
-				if (nf) {
+				if (nf)
+				{
 
-					//Typical pre-top down workflow. set_frontier_degree + exclusive-scan
+					// Typical pre-top down workflow. set_frontier_degree + exclusive-scan
 					set_frontier_degree(frontier_vertex_degree, new_frontier, vertex_degree, nf, stream);
-					exclusive_sum(	d_cub_exclusive_sum_storage,
-										cub_exclusive_sum_storage_bytes,
-										frontier_vertex_degree,
-										exclusive_sum_frontier_vertex_degree,
-										nf + 1,
-										stream);
-					hipMemcpyAsync(	&mf,
-											&exclusive_sum_frontier_vertex_degree[nf],
-											sizeof(IndexType),
-											hipMemcpyDeviceToHost,
-											stream);
-					cudaCheckError()
-					;
+					exclusive_sum(d_cub_exclusive_sum_storage,
+								  cub_exclusive_sum_storage_bytes,
+								  frontier_vertex_degree,
+								  exclusive_sum_frontier_vertex_degree,
+								  nf + 1,
+								  stream);
+					hipMemcpyAsync(&mf,
+								   &exclusive_sum_frontier_vertex_degree[nf],
+								   sizeof(IndexType),
+								   hipMemcpyDeviceToHost,
+								   stream);
+					hipCheckError();
 
-					//We need mf
+					// We need mf
 					hipStreamSynchronize(stream);
-					cudaCheckError()
-					;
+					hipCheckError();
 				}
 				break;
 
 			case BOTTOMUP:
 				fill_unvisited_queue(visited_bmap,
-											vertices_bmap_size,
-											n,
-											unvisited_queue,
-											d_unvisited_cnt,
-											stream,
-											deterministic);
+									 vertices_bmap_size,
+									 n,
+									 unvisited_queue,
+									 d_unvisited_cnt,
+									 stream,
+									 deterministic);
 
 				size_last_unvisited_queue = nu;
 
 				bottom_up_main(unvisited_queue,
-									size_last_unvisited_queue,
-									left_unvisited_queue,
-									d_left_unvisited_cnt,
+							   size_last_unvisited_queue,
+							   left_unvisited_queue,
+							   d_left_unvisited_cnt,
+							   visited_bmap,
+							   row_offsets,
+							   col_indices,
+							   lvl,
+							   new_frontier,
+							   d_new_frontier_cnt,
+							   distances,
+							   predecessors,
+							   edge_mask,
+							   stream,
+							   deterministic);
+
+				// The number of vertices left unvisited decreases
+				// If it wasnt necessary last time, it wont be this time
+				if (size_last_left_unvisited_queue)
+				{
+					hipMemcpyAsync(&size_last_left_unvisited_queue,
+								   d_left_unvisited_cnt,
+								   sizeof(IndexType),
+								   hipMemcpyDeviceToHost,
+								   stream);
+					hipCheckError();
+					// We need last_left_unvisited_size
+					hipStreamSynchronize(stream);
+					hipCheckError();
+					bottom_up_large(left_unvisited_queue,
+									size_last_left_unvisited_queue,
 									visited_bmap,
 									row_offsets,
 									col_indices,
@@ -456,88 +472,58 @@ namespace nvgraph {
 									edge_mask,
 									stream,
 									deterministic);
-
-				//The number of vertices left unvisited decreases
-				//If it wasnt necessary last time, it wont be this time
-				if (size_last_left_unvisited_queue) {
-					hipMemcpyAsync(	&size_last_left_unvisited_queue,
-											d_left_unvisited_cnt,
-											sizeof(IndexType),
-											hipMemcpyDeviceToHost,
-											stream);
-					cudaCheckError()
-					;
-					//We need last_left_unvisited_size
-					hipStreamSynchronize(stream);
-					cudaCheckError()
-					;
-					bottom_up_large(	left_unvisited_queue,
-											size_last_left_unvisited_queue,
-											visited_bmap,
-											row_offsets,
-											col_indices,
-											lvl,
-											new_frontier,
-											d_new_frontier_cnt,
-											distances,
-											predecessors,
-											edge_mask,
-											stream,
-											deterministic);
 				}
-				hipMemcpyAsync(	&nf,
-										d_new_frontier_cnt,
-										sizeof(IndexType),
-										hipMemcpyDeviceToHost,
-										stream);
-				cudaCheckError()
-				;
+				hipMemcpyAsync(&nf,
+							   d_new_frontier_cnt,
+							   sizeof(IndexType),
+							   hipMemcpyDeviceToHost,
+							   stream);
+				hipCheckError();
 
-				//We will need nf
+				// We will need nf
 				hipStreamSynchronize(stream);
-				cudaCheckError()
-				;
+				hipCheckError();
 
 				break;
 			}
 
-			//Updating undiscovered edges count
+			// Updating undiscovered edges count
 			nu -= nf;
 
-			//Using new frontier
+			// Using new frontier
 			frontier = new_frontier;
 			growing = (nf > old_nf);
 
 			++lvl;
 		}
 
-		cudaCheckError()
-		;
+		hipCheckError();
 		return NVGRAPH_OK;
 	}
 
-	//Just used for benchmarks now
-	template<typename IndexType>
-	NVGRAPH_ERROR Bfs<IndexType>::traverse(IndexType *source_vertices, IndexType nsources) {
+	// Just used for benchmarks now
+	template <typename IndexType>
+	NVGRAPH_ERROR Bfs<IndexType>::traverse(IndexType *source_vertices, IndexType nsources)
+	{
 		for (IndexType i = 0; i < nsources; ++i)
 			traverse(source_vertices[i]);
 
 		return NVGRAPH_OK;
 	}
 
-	template<typename IndexType>
-	void Bfs<IndexType>::resetDevicePointers() {
+	template <typename IndexType>
+	void Bfs<IndexType>::resetDevicePointers()
+	{
 		hipMemsetAsync(d_counters_pad, 0, 4 * sizeof(IndexType), stream);
-		cudaCheckError()
-		;
+		hipCheckError();
 	}
 
-	template<typename IndexType>
-	void Bfs<IndexType>::clean() {
-		cudaCheckError()
-		;
+	template <typename IndexType>
+	void Bfs<IndexType>::clean()
+	{
+		hipCheckError();
 
-		//the vectors have a destructor that takes care of cleaning
+		// the vectors have a destructor that takes care of cleaning
 		hipFree(original_frontier);
 		hipFree(visited_bmap);
 		hipFree(isolated_bmap);
@@ -548,13 +534,12 @@ namespace nvgraph {
 		hipFree(exclusive_sum_frontier_vertex_buckets_offsets);
 		hipFree(d_counters_pad);
 
-		//In that case, distances is a working data
+		// In that case, distances is a working data
 		if (directed && !computeDistances)
 			hipFree(distances);
 
-		cudaCheckError()
-		;
+		hipCheckError();
 	}
 
-	template class Bfs<int> ;
+	template class Bfs<int>;
 } // end namespace nvgraph

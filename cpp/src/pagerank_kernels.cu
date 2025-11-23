@@ -24,33 +24,32 @@
 namespace nvgraph
 {
 
-template <typename ValueType_>
-__global__ void update_dn_kernel(int num_vertices, ValueType_* aa, ValueType_ beta)
-{
-    int tidx = blockDim.x * blockIdx.x + threadIdx.x;
-    for (int r = tidx; r < num_vertices; r += blockDim.x * gridDim.x)
+    template <typename ValueType_>
+    __global__ void update_dn_kernel(int num_vertices, ValueType_ *aa, ValueType_ beta)
     {
-        // NOTE 1 : a = alpha*a + (1-alpha)e
-        if (aa[r] == 0.0)
-            aa[r] = beta; // NOTE 2 : alpha*0 + (1-alpha)*1 = (1-alpha)
+        int tidx = blockDim.x * blockIdx.x + threadIdx.x;
+        for (int r = tidx; r < num_vertices; r += blockDim.x * gridDim.x)
+        {
+            // NOTE 1 : a = alpha*a + (1-alpha)e
+            if (aa[r] == 0.0)
+                aa[r] = beta; // NOTE 2 : alpha*0 + (1-alpha)*1 = (1-alpha)
+        }
     }
-}
 
-template <typename ValueType_>
-void update_dangling_nodes(int num_vertices, ValueType_* dangling_nodes, ValueType_ damping_factor, hipStream_t stream)
-{
-	
-	int num_threads = 256;
-    int max_grid_size = 4096;
-    int num_blocks = std::min(max_grid_size, (num_vertices/num_threads)+1);
-    ValueType_ beta = 1.0-damping_factor;
-    update_dn_kernel<<<num_blocks, num_threads, 0, stream>>>(num_vertices, dangling_nodes,beta);
-    cudaCheckError();
-}
+    template <typename ValueType_>
+    void update_dangling_nodes(int num_vertices, ValueType_ *dangling_nodes, ValueType_ damping_factor, hipStream_t stream)
+    {
 
-//Explicit
+        int num_threads = 256;
+        int max_grid_size = 4096;
+        int num_blocks = std::min(max_grid_size, (num_vertices / num_threads) + 1);
+        ValueType_ beta = 1.0 - damping_factor;
+        update_dn_kernel<<<num_blocks, num_threads, 0, stream>>>(num_vertices, dangling_nodes, beta);
+        hipCheckError();
+    }
 
-template void update_dangling_nodes<double> (int num_vertices, double* dangling_nodes, double damping_factor, hipStream_t stream);
-template void update_dangling_nodes<float> (int num_vertices, float* dangling_nodes, float damping_factor, hipStream_t stream);
+    // Explicit
+
+    template void update_dangling_nodes<double>(int num_vertices, double *dangling_nodes, double damping_factor, hipStream_t stream);
+    template void update_dangling_nodes<float>(int num_vertices, float *dangling_nodes, float damping_factor, hipStream_t stream);
 } // end namespace nvgraph
-

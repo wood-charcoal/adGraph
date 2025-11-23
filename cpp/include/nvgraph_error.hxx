@@ -61,7 +61,7 @@ namespace nvgraph
     NVGRAPH_OK = 0,
     NVGRAPH_ERR_BAD_PARAMETERS = 1,
     NVGRAPH_ERR_UNKNOWN = 2,
-    NVGRAPH_ERR_CUDA_FAILURE = 3,
+    NVGRAPH_ERR_HIP_FAILURE = 3,
     NVGRAPH_ERR_THRUST_FAILURE = 4,
     NVGRAPH_ERR_IO = 5,
     NVGRAPH_ERR_NOT_IMPLEMENTED = 6,
@@ -117,82 +117,82 @@ namespace nvgraph
     throw nvgraph_exception(std::string(s) + "\n", _where.str(), _trace.str(), reason); \
   }
 
-#undef cudaCheckError
+#undef hipCheckError
 #if defined(DEBUG) || defined(VERBOSE_DIAG)
-#define cudaCheckError()                                          \
-  {                                                               \
-    hipError_t e = hipGetLastError();                             \
-    if (e != hipSuccess)                                          \
-    {                                                             \
-      std::stringstream _error;                                   \
-      _error << "Cuda failure: '" << hipGetErrorString(e) << "'"; \
-      FatalError(_error.str(), NVGRAPH_ERR_CUDA_FAILURE);         \
-    }                                                             \
+#define hipCheckError()                                          \
+  {                                                              \
+    hipError_t e = hipGetLastError();                            \
+    if (e != hipSuccess)                                         \
+    {                                                            \
+      std::stringstream _error;                                  \
+      _error << "HIP failure: '" << hipGetErrorString(e) << "'"; \
+      FatalError(_error.str(), NVGRAPH_ERR_HIP_FAILURE);         \
+    }                                                            \
   }
 #else // NO DEBUG
-#define cudaCheckError()                        \
-  {                                             \
-    hipError_t __e = hipGetLastError();         \
-    if (__e != hipSuccess)                      \
-    {                                           \
-      FatalError("", NVGRAPH_ERR_CUDA_FAILURE); \
-    }                                           \
+#define hipCheckError()                        \
+  {                                            \
+    hipError_t __e = hipGetLastError();        \
+    if (__e != hipSuccess)                     \
+    {                                          \
+      FatalError("", NVGRAPH_ERR_HIP_FAILURE); \
+    }                                          \
   }
 #endif
 
-#define CHECK_CUDA(call)                                  \
-  {                                                       \
-    hipError_t _e = (call);                               \
-    if (_e != hipSuccess)                                 \
-    {                                                     \
-      std::stringstream _error;                           \
-      _error << "CUDA Runtime failure: '#" << _e << "'";  \
-      FatalError(_error.str(), NVGRAPH_ERR_CUDA_FAILURE); \
-    }                                                     \
+#define CHECK_HIP(call)                                  \
+  {                                                      \
+    hipError_t _e = (call);                              \
+    if (_e != hipSuccess)                                \
+    {                                                    \
+      std::stringstream _error;                          \
+      _error << "HIP Runtime failure: '#" << _e << "'";  \
+      FatalError(_error.str(), NVGRAPH_ERR_HIP_FAILURE); \
+    }                                                    \
   }
 
-#define CHECK_CURAND(call)                                \
-  {                                                       \
-    hiprandStatus_t _e = (call);                          \
-    if (_e != HIPRAND_STATUS_SUCCESS)                     \
-    {                                                     \
-      std::stringstream _error;                           \
-      _error << "CURAND failure: '#" << _e << "'";        \
-      FatalError(_error.str(), NVGRAPH_ERR_CUDA_FAILURE); \
-    }                                                     \
+#define CHECK_HIPRAND(call)                              \
+  {                                                      \
+    hiprandStatus_t _e = (call);                         \
+    if (_e != HIPRAND_STATUS_SUCCESS)                    \
+    {                                                    \
+      std::stringstream _error;                          \
+      _error << "HIPRAND failure: '#" << _e << "'";      \
+      FatalError(_error.str(), NVGRAPH_ERR_HIP_FAILURE); \
+    }                                                    \
   }
 
-#define CHECK_CUBLAS(call)                                \
-  {                                                       \
-    hipblasStatus_t _e = (call);                          \
-    if (_e != HIPBLAS_STATUS_SUCCESS)                     \
-    {                                                     \
-      std::stringstream _error;                           \
-      _error << "CUBLAS failure: '#" << _e << "'";        \
-      FatalError(_error.str(), NVGRAPH_ERR_CUDA_FAILURE); \
-    }                                                     \
+#define CHECK_HIPBLAS(call)                              \
+  {                                                      \
+    hipblasStatus_t _e = (call);                         \
+    if (_e != HIPBLAS_STATUS_SUCCESS)                    \
+    {                                                    \
+      std::stringstream _error;                          \
+      _error << "HIPBLAS failure: '#" << _e << "'";      \
+      FatalError(_error.str(), NVGRAPH_ERR_HIP_FAILURE); \
+    }                                                    \
   }
 
-#define CHECK_CUSPARSE(call)                              \
-  {                                                       \
-    hipsparseStatus_t _e = (call);                        \
-    if (_e != HIPSPARSE_STATUS_SUCCESS)                   \
-    {                                                     \
-      std::stringstream _error;                           \
-      _error << "CURAND failure: '#" << _e << "'";        \
-      FatalError(_error.str(), NVGRAPH_ERR_CUDA_FAILURE); \
-    }                                                     \
+#define CHECK_HIPSPARSE(call)                            \
+  {                                                      \
+    hipsparseStatus_t _e = (call);                       \
+    if (_e != HIPSPARSE_STATUS_SUCCESS)                  \
+    {                                                    \
+      std::stringstream _error;                          \
+      _error << "HIPRAND failure: '#" << _e << "'";      \
+      FatalError(_error.str(), NVGRAPH_ERR_HIP_FAILURE); \
+    }                                                    \
   }
 
-#define CHECK_CUSOLVER(call)                              \
-  {                                                       \
-    hipsolverStatus_t _e = (call);                        \
-    if (_e != HIPSOLVER_STATUS_SUCCESS)                    \
-    {                                                     \
-      std::stringstream _error;                           \
-      _error << "CURAND failure: '#" << _e << "'";        \
-      FatalError(_error.str(), NVGRAPH_ERR_CUDA_FAILURE); \
-    }                                                     \
+#define CHECK_HIPSOLVER(call)                            \
+  {                                                      \
+    hipsolverStatus_t _e = (call);                       \
+    if (_e != HIPSOLVER_STATUS_SUCCESS)                  \
+    {                                                    \
+      std::stringstream _error;                          \
+      _error << "CURAND failure: '#" << _e << "'";       \
+      FatalError(_error.str(), NVGRAPH_ERR_HIP_FAILURE); \
+    }                                                    \
   }
 
 #define NVGRAPH_CATCHES(rc)                                                                                                                    \
@@ -239,10 +239,10 @@ namespace nvgraph
 
   // simple cuda timer
   // can be called in cpp files
-  class cuda_timer
+  class hip_timer
   {
   public:
-    cuda_timer();
+    hip_timer();
     void start();
     float stop(); // in ms
   private:
