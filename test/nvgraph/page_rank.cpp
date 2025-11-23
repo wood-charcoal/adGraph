@@ -7,6 +7,7 @@
 #include "inttypes.h"
 #include "stdio.h"
 #include "nvgraph.h"
+#include <cublas_v2.h>
 #include <ctime>
 #include <stdio.h>
 #include <time.h>
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
 {
     size_t n = 200;
     size_t nnz = 300;
-
+    
     size_t vert_sets = 2, edge_sets = 1;
     float alpha1 = 0.9f;
     void *alpha1_p = (void *)&alpha1;
@@ -158,13 +159,13 @@ int main(int argc, char **argv)
     nvgraphHandle_t handle;
     nvgraphGraphDescr_t graph;
     nvgraphCSCTopology32I_t CSC_input;
-    hipblasDatatype_t edge_dimT = HIPBLAS_R_32F;
-    hipblasDatatype_t *vertex_dimT;
-
+    cudaDataType_t edge_dimT = CUDA_R_32F;
+    cudaDataType_t *vertex_dimT;
+    
     // Allocate host data
     float *pr_1 = (float *)malloc(n * sizeof(float));
     void **vertex_dim = (void **)malloc(vert_sets * sizeof(void *));
-    vertex_dimT = (hipblasDatatype_t *)malloc(vert_sets * sizeof(hipblasDatatype_t));
+    vertex_dimT = (cudaDataType_t *)malloc(vert_sets * sizeof(cudaDataType_t));
     CSC_input = (nvgraphCSCTopology32I_t)malloc(sizeof(struct
                                                        nvgraphCSCTopology32I_st));
 
@@ -175,12 +176,12 @@ int main(int argc, char **argv)
     {
         bookmark_h[i] = 1.0f / (float)n; // Uniform personalization vector
     }
-
+    
     vertex_dim[0] = (void *)bookmark_h;
     vertex_dim[1] = (void *)pr_1;
-    vertex_dimT[0] = HIPBLAS_R_32F;
-    vertex_dimT[1] = HIPBLAS_R_32F;
-    // vertex_dimT[2] = HIPBLAS_R_32F;
+    vertex_dimT[0] = CUDA_R_32F;
+    vertex_dimT[1] = CUDA_R_32F;
+    // vertex_dimT[2] = CUDA_R_32F;
     // Starting nvgraph
     NVGRAPH_CHECK(nvgraphCreate(&handle));
     NVGRAPH_CHECK(nvgraphCreateGraphDescr(handle, &graph));
@@ -191,10 +192,10 @@ int main(int argc, char **argv)
 
     // Set graph connectivity and properties (tranfers)
     NVGRAPH_CHECK(nvgraphSetGraphStructure(handle, graph, (void *)CSC_input,
-                                           NVGRAPH_CSC_32));
+                                   NVGRAPH_CSC_32));
     NVGRAPH_CHECK(nvgraphAllocateVertexData(handle, graph, vert_sets, vertex_dimT));
     NVGRAPH_CHECK(nvgraphAllocateEdgeData(handle, graph, edge_sets, &edge_dimT));
-
+    
     for (int i = 0; i < 2; ++i)
         NVGRAPH_CHECK(nvgraphSetVertexData(handle, graph, vertex_dim[i], i));
     // NVGRAPH_CHECK(nvgraphSetVertexData(handle, graph, vertex_dim[0], 0));
@@ -211,7 +212,7 @@ int main(int argc, char **argv)
     long diff_ns = (end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec);
     printf("\n--- PageRank execution time ---\n");
     printf("Time: %ld ns\n\n", diff_ns);
-
+    
     // Get result
     NVGRAPH_CHECK(nvgraphGetVertexData(handle, graph, vertex_dim[1], 1));
     printf("\n--- PageRank Result ---\n");
@@ -223,10 +224,9 @@ int main(int argc, char **argv)
 #endif
     for (size_t i = 0; i < print_limit; i++)
         printf("Node %zu: %f\n", i, pr_1[i]);
-    if (n > print_limit)
-        printf("...\n");
+    if (n > print_limit) printf("...\n");
     printf("\n");
-
+    
     // Cleanup
     NVGRAPH_CHECK(nvgraphDestroyGraphDescr(handle, graph));
     NVGRAPH_CHECK(nvgraphDestroy(handle));
