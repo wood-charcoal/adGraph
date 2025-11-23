@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <time.h>
+#include <hip/hip_runtime.h>
 
 #include <stacktrace.h>
 
