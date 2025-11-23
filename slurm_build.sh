@@ -1,8 +1,25 @@
 #!/bin/bash
+#SBATCH -J adGraph
+#SBATCH -p kshdexcluxd
+#SBATCH -N 1
+#SBATCH -n 8
+#SBATCH -o %j-%x.log
+#SBATCH -e %j-%x.log
+#SBATCH --gres=dcu:1
 
-# HIP/ROCm Environment Setup Script for adGraph
-# This script sets up the environment variables needed to build and run adGraph with HIP/ROCm
+echo "SLURM_JOB_NODELIST=${SLURM_JOB_NODELIST}"
+echo "SLURM_NODELIST=${SLURM_NODELIST}"
 
+cd ${SLURM_SUBMIT_DIR}
+
+module purge
+module load compiler/gcc/8.2.0
+module load compiler/dtk/24.04
+module load compiler/cmake/3.23.3
+module list
+
+
+# ========================== Set HIP/ROCm Environment ==========================
 # Default ROCm installation path - modify if needed
 DEFAULT_ROCM_PATH="/public/software/compiler/rocm/dtk-24.04"
 
@@ -28,10 +45,9 @@ if [ ! -d "$DTK_ROOT" ]; then
 fi
 
 # Set up environment variables
-export PATH="$DTK_ROOT/bin:$PATH"
-export LD_LIBRARY_PATH="$DTK_ROOT/lib:$LD_LIBRARY_PATH"
-export LD_LIBRARY_PATH=/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
-export HIP_PATH="$DTK_ROOT"
+export PATH=$DTK_ROOT/hip/bin/hipify:/public/software/compiler/gcc-8.2.0/bin:$DTK_ROOT/bin:$PATH
+export LD_LIBRARY_PATH=$DTK_ROOT/lib:/public/software/compiler/gcc-8.2.0/isl-0.18/lib:$LD_LIBRARY_PATH
+export HIP_PATH=$DTK_ROOT
 export LAPACK_INSTALL_ROOT=$HOME/projects/lapack-3.12.0/install
 
 # Set compiler paths
@@ -64,4 +80,9 @@ fi
 
 echo ""
 echo "Environment setup complete!"
-echo "You can now run: ./build_hip.sh"
+
+# ========================== Build Project ==========================
+echo "Starting build process..."
+./build.sh -v
+
+date

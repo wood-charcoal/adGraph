@@ -20,6 +20,6 @@ module list
 
 source ./setup_hip_env.sh
 
-./build_hip.sh -v
+./build.sh -v
 
 date
