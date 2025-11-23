@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J adGraph
+#SBATCH -J compile
 #SBATCH -p kshdexcluxd
 #SBATCH -N 1
 #SBATCH -n 8
