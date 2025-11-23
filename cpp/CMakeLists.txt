@@ -161,7 +161,7 @@ add_library(nvgraph SHARED
             src/triangles_counting_kernels.cpp
             src/triangles_counting.cpp
             src/pagerank.cpp
-            src/pagerank_kernels.cu
+            src/pagerank_kernels.cpp
             # src/partition.cu
             src/valued_csr_graph.cpp
             # src/widest_path.cu         
