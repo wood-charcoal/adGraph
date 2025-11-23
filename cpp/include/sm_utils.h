@@ -37,7 +37,7 @@ namespace utils
         // int id;
         // asm ( "mov.u32 %0, %%laneid;" : "=r"(id) );
         // return id;
-        return __lane_id();
+        return __lane_id() % 32;
     }
 
     static __device__ __forceinline__ int lane_mask_lt()

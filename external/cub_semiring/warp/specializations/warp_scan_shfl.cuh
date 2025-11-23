@@ -42,6 +42,8 @@
 #include "../../util_ptx.cuh"
 #include "../../util_namespace.cuh"
 
+#define WARP_SIZE 32
+
 /// Optional outer namespace(s)
 CUB_NS_PREFIX
 
@@ -226,7 +228,7 @@ struct WarpScanShfl
 
         float shuffled = __shfl_up(input, offset, first_lane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {
@@ -286,7 +288,7 @@ struct WarpScanShfl
 
         unsigned long long shuffled = __shfl_up(input, offset, first_lane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {
@@ -346,7 +348,7 @@ struct WarpScanShfl
 
         long long shuffled = __shfl_up(input, offset, first_lane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {
@@ -406,7 +408,7 @@ struct WarpScanShfl
 
         double shuffled = __shfl_up(input, offset, first_lane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {

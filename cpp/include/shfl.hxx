@@ -18,6 +18,8 @@
 #include <hip/hip_runtime.h>
 #include <hip/device_functions.h>
 
+#define WARP_SIZE 32
+
 namespace nvgraph{
 
     __device__ __forceinline__ float shflFPAdd(
@@ -55,7 +57,7 @@ namespace nvgraph{
 
         float shuffled = __shfl_up(input, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         // Check if the source lane (laneId - offset) is valid (>= 0).
         // The conditional addition in the original PTX essentially guards against this.
@@ -124,7 +126,7 @@ namespace nvgraph{
 
         double shuffled = __shfl_up(input, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {
@@ -170,7 +172,7 @@ namespace nvgraph{
 
         float shuffled = __shfl_up(input, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {
@@ -233,7 +235,7 @@ namespace nvgraph{
 
         double shuffled = __shfl_up(input, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {
@@ -279,7 +281,7 @@ namespace nvgraph{
 
         float shuffled = __shfl_up(input, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {
@@ -342,7 +344,7 @@ namespace nvgraph{
 
         double shuffled = __shfl_up(input, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         
         if (laneId >= offset)
         {
@@ -398,7 +400,7 @@ namespace nvgraph{
 
         uint32_t shuffled_bits = __shfl_up(input_bits, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         uint32_t output_bits;
         
         if (laneId >= offset)
@@ -473,7 +475,7 @@ namespace nvgraph{
 
         uint64_t shuffled_bits = __shfl_up(input_bits, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         uint64_t output_bits;
         
         if (laneId >= offset)
@@ -534,7 +536,7 @@ __device__ __forceinline__ float shflFPLog(
 
         float shuffled = __shfl_up(expinput, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         float shuffled_sum;
 
         if (laneId >= offset)
@@ -608,7 +610,7 @@ __device__ __forceinline__ float shflFPLog(
 
         double shuffled = __shfl_up(expinput, offset, firstLane);
 
-        int laneId = (threadIdx.x % warpSize);
+        int laneId = (threadIdx.x % WARP_SIZE);
         double shuffled_sum_result;
 
         if (laneId >= offset)

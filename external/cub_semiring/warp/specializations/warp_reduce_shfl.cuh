@@ -39,6 +39,8 @@
 #include "../../util_macro.cuh"
 #include "../../util_namespace.cuh"
 
+#define WARP_SIZE 32
+
 /// Optional outer namespace(s)
 CUB_NS_PREFIX
 
@@ -209,7 +211,7 @@ struct WarpReduceShfl
 
         float peer_value = __shfl_down(input, offset, last_lane);
 
-        int lane_id = threadIdx.x & (warpSize - 1); 
+        int lane_id = threadIdx.x & (WARP_SIZE - 1); 
         
         if (lane_id < (last_lane - offset)) {
             input += peer_value;
@@ -260,7 +262,7 @@ struct WarpReduceShfl
 
     unsigned long long peer_value = __shfl_down(input, offset, last_lane);
 
-    int lane_id = threadIdx.x & (warpSize - 1); 
+    int lane_id = threadIdx.x & (WARP_SIZE - 1); 
     
     if (lane_id < (last_lane - offset)) {
         input += peer_value;
@@ -312,7 +314,7 @@ struct WarpReduceShfl
 
     long long peer_value = __shfl_down(input, offset, last_lane);
     
-    int lane_id = threadIdx.x & (warpSize - 1); 
+    int lane_id = threadIdx.x & (WARP_SIZE - 1); 
     
     if (lane_id < (last_lane - offset)) {
         input += peer_value;
@@ -368,7 +370,7 @@ struct WarpReduceShfl
 
     double peer_value = __shfl_down(input, offset, last_lane);
 
-    int lane_id = threadIdx.x & (warpSize - 1); 
+    int lane_id = threadIdx.x & (WARP_SIZE - 1); 
     
     if (lane_id < (last_lane - offset)) {
         input += peer_value;
