@@ -21,4 +21,17 @@
 # Log files
 *.log
 *.out
-!test/*/*.log
+!./test/**/*.log
+
+# Compiled source #
+*.com
+*.class
+*.dll
+*.exe
+*.obj
+*.so
+*.o
+*.pyc
+*.pyo
+*.pyd
+*.pdf
